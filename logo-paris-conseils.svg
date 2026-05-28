@@ -1,33 +1,35 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 760" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Paris Conseils — Ingénierie financière et optimisation fiscale">
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -210 1820 670" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Paris Conseils — Ingénierie financière et optimisation fiscale">
   <defs>
-    <linearGradient id="ringGrad" x1="100%" y1="0%" x2="0%" y2="100%">
+    <linearGradient id="pc-swoosh-grad" x1="100%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%"   stop-color="#3b6fbf" stop-opacity="1"/>
-      <stop offset="40%"  stop-color="#5d8cd0" stop-opacity="0.92"/>
-      <stop offset="70%"  stop-color="#a8bdde" stop-opacity="0.45"/>
-      <stop offset="100%" stop-color="#e6ecf5" stop-opacity="0.05"/>
+      <stop offset="55%"  stop-color="#7a9ed6" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#cfd9ec" stop-opacity="0.25"/>
     </linearGradient>
   </defs>
 
-  <!-- Anneau elliptique fin (orbite tiltée) — outer ellipse - inner ellipse via even-odd -->
-  <g transform="translate(370,320) rotate(-15)">
-    <path d="M -300,0
-             A 300,112 0 1 1 300,0
-             A 300,112 0 1 1 -300,0 Z
-             M -270,0
-             A 270,86 0 1 0 270,0
-             A 270,86 0 1 0 -270,0 Z"
-          fill="url(#ringGrad)" fill-rule="evenodd"/>
+  <!-- Anneau bleu (swoosh) qui enserre le C -->
+  <g transform="translate(80,160) rotate(-22)">
+    <path d="M 0,140
+             C 60,-20  720,-60  900,40
+             C 720,10  140,40  80,170
+             C 70,150  35,150  0,140 Z"
+          fill="url(#pc-swoosh-grad)"/>
   </g>
 
-  <!-- PARIS CONSEILS — serif, droit -->
-  <text x="450" y="455"
-        font-family="'Trajan Pro', Cinzel, Georgia, 'Times New Roman', serif"
-        font-size="200" font-weight="500" letter-spacing="2"
+  <!-- PARIS CONSEILS (serif, noir) -->
+  <text x="290" y="330"
+        font-family="Georgia, 'Trajan Pro', 'Cinzel', 'Times New Roman', serif"
+        font-size="170"
+        font-weight="400"
+        letter-spacing="6"
         fill="#0a0a0a">PARIS CONSEILS</text>
 
   <!-- Tagline -->
-  <text x="455" y="588"
-        font-family="'Trajan Pro', Cinzel, Georgia, 'Times New Roman', serif"
-        font-size="60" font-weight="400" letter-spacing="5"
+  <text x="295" y="430"
+        font-family="Georgia, 'Trajan Pro', 'Cinzel', 'Times New Roman', serif"
+        font-size="46"
+        font-weight="400"
+        letter-spacing="6"
         fill="#1a1a1a">INGÉNIERIE FINANCIÈRE &amp; OPTIMISATION FISCALE</text>
 </svg>
