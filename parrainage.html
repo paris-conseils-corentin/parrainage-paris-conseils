@@ -1,0 +1,901 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Paris Conseils — Programme Parrainage</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/cormorant-garamond@5.0.16/300-italic.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/cormorant-garamond@5.0.16/400.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/cormorant-garamond@5.0.16/400-italic.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/playfair-display@5.0.20/400.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/playfair-display@5.0.20/700.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/cinzel@5.0.18/500.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/cinzel@5.0.18/700.css">
+  <style>
+    :root{
+      --pc-navy:#1f3a5f;--pc-navy-d:#14263f;--pc-navy-x:#0a1729;
+      --pc-blue:#3b6fbf;--pc-gold:#c9a961;--pc-gold-l:#e8d28a;--pc-gold-d:#8a6818;
+      --pc-cream:#faf8f3;--pc-cream-d:#f4ede0;
+      --muted:#6b7280;--border:#e5e7eb;
+    }
+    body{background:var(--pc-cream);margin:0;color:#14263f;}
+
+    /* ===== Topbar ===== */
+    .pc-topbar{background:#fff;border-bottom:1px solid var(--border);
+      padding:14px 28px;display:flex;align-items:center;justify-content:space-between;
+      position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(15,23,42,.04);}
+    .pc-topbar .logo-wrap{height:64px;display:flex;align-items:center;}
+    .pc-topbar .logo-wrap object{height:100%;width:auto;max-width:360px;display:block;overflow:visible;pointer-events:none;}
+    .pc-topbar .links{display:flex;gap:22px;align-items:center;font-size:14px;}
+    .pc-topbar .links a{color:var(--pc-navy);text-decoration:none;font-weight:500;}
+    .pc-topbar .links a:hover{color:var(--pc-blue);}
+    .pc-topbar .btn-mini{background:var(--pc-gold);color:var(--pc-navy-d);padding:11px 22px;border-radius:999px;
+      font-size:14px;font-weight:700;letter-spacing:.3px;
+      box-shadow:0 4px 12px rgba(201,169,97,.35),inset 0 1px 0 rgba(255,255,255,.4);
+      border:1px solid var(--pc-gold-d);transition:transform .15s,box-shadow .15s;}
+    .pc-topbar .btn-mini:hover{background:var(--pc-gold-l);transform:translateY(-1px);
+      box-shadow:0 6px 18px rgba(201,169,97,.5);}
+
+    /* ===== Hero navy ===== */
+    .pc-hero{position:relative;
+      background:radial-gradient(ellipse at 80% -20%, rgba(59,111,191,.25), transparent 60%),
+                 linear-gradient(135deg, var(--pc-navy-d) 0%, var(--pc-navy) 60%, #2a4f80 100%);
+      color:#fff;padding:90px 24px 110px;overflow:hidden;}
+    .pc-hero::before{content:"";position:absolute;inset:0;
+      background:radial-gradient(circle at 15% 80%, rgba(201,169,97,.12), transparent 50%);pointer-events:none;}
+    .pc-hero-inner{max-width:1120px;margin:0 auto;display:grid;
+      grid-template-columns:1.15fr 1fr;gap:60px;align-items:center;position:relative;z-index:2;}
+    .pc-hero .eyebrow{display:inline-block;background:rgba(201,169,97,.18);color:var(--pc-gold);
+      font-family:'Cinzel',serif;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;
+      padding:8px 16px;border-radius:999px;border:1px solid rgba(201,169,97,.4);margin-bottom:22px;}
+    .pc-hero h1{font-family:'Playfair Display',Georgia,serif;font-size:52px;line-height:1.1;
+      font-weight:400;margin:0 0 22px;letter-spacing:-.4px;}
+    .pc-hero h1 .gold{color:var(--pc-gold);font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:400;}
+    .pc-hero p.lead{font-size:17px;line-height:1.65;opacity:.92;margin:0 0 16px;max-width:520px;}
+    .pc-hero p.tagline{font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--pc-gold-l);
+      font-size:18px;line-height:1.5;margin:0 0 30px;max-width:520px;}
+    .pc-hero .cta{background:var(--pc-gold);color:var(--pc-navy-d);padding:15px 28px;border-radius:10px;
+      font-weight:700;font-size:15px;border:0;cursor:pointer;text-decoration:none;
+      transition:transform .15s, box-shadow .15s;display:inline-flex;align-items:center;gap:10px;
+      letter-spacing:.3px;}
+    .pc-hero .cta:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.28);}
+
+    /* ===== Hero card scratch — révèle la somme ===== */
+    .hero-counter{position:relative;background:rgba(255,255,255,.06);backdrop-filter:blur(8px);
+      border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:30px 26px;text-align:center;overflow:hidden;}
+    .hero-counter .hc-eyebrow{font-family:'Cinzel',serif;font-size:10px;letter-spacing:5px;color:var(--pc-gold);
+      text-transform:uppercase;font-weight:700;margin-bottom:8px;}
+    .hero-counter .hc-question{font-family:'Cormorant Garamond',serif;font-style:italic;color:#fff;
+      font-size:18px;line-height:1.45;font-weight:300;margin:0 0 18px;}
+
+    /* Le ticket à gratter — le cœur de la carte */
+    .scratch-zone{position:relative;border-radius:14px;overflow:hidden;
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.12), 0 8px 22px rgba(0,0,0,.25);
+      aspect-ratio:11/7;background:#fff;}
+    .scratch-reveal{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+      background:linear-gradient(160deg,#0a1729 0%,#1f3a5f 100%);padding:18px;}
+    .scratch-reveal .r-label{font-family:'Cinzel',serif;font-size:11px;letter-spacing:5px;color:var(--pc-gold);font-weight:700;text-transform:uppercase;margin-bottom:4px;}
+    .scratch-reveal .r-amount{font-family:'Playfair Display',serif;font-size:64px;line-height:1;color:#fff;font-weight:400;letter-spacing:-2px;}
+    .scratch-reveal .r-amount sup{font-size:28px;color:var(--pc-gold);margin-left:4px;vertical-align:top;font-weight:400;}
+    .scratch-reveal .r-desc{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:14px;color:#cdd2dc;margin-top:8px;line-height:1.45;max-width:280px;}
+    .scratch-reveal .r-desc strong{color:var(--pc-gold-l);font-weight:600;font-style:normal;}
+    .scratch-canvas{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair;touch-action:none;display:block;}
+    .scratch-hint{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+      pointer-events:none;color:#5b430a;text-shadow:0 1px 2px rgba(255,255,255,.4);transition:opacity .5s;}
+    .scratch-hint .h-pic{font-size:36px;line-height:1;}
+    .scratch-hint .h-cta{font-family:'Cinzel',serif;font-weight:700;font-size:15px;letter-spacing:8px;margin-top:8px;}
+    .scratch-hint .h-sub{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:13px;margin-top:4px;color:#5b430a;}
+    .hero-counter .after-reveal{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:13px;
+      color:#cdd2dc;margin-top:14px;line-height:1.55;}
+
+    /* ===== Sections ===== */
+    .pc-section{padding:80px 24px;max-width:1120px;margin:0 auto;}
+    .pc-section h2{font-family:'Playfair Display',Georgia,serif;font-size:34px;color:var(--pc-navy);
+      text-align:center;margin:0 0 14px;font-weight:400;}
+    .pc-section h2 .it{font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--pc-gold);}
+    .pc-section .section-sub{text-align:center;color:var(--muted);max-width:640px;
+      margin:0 auto 50px;font-size:16px;line-height:1.6;font-family:'Cormorant Garamond',serif;font-style:italic;}
+
+    /* Eyebrow doré sur sections cream */
+    .sec-eyebrow{font-family:'Cinzel',serif;font-size:10px;letter-spacing:5px;color:var(--pc-gold);
+      font-weight:700;text-align:center;text-transform:uppercase;display:block;margin-bottom:8px;}
+
+    /* ===== Paliers cards ===== */
+    .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-bottom:30px;}
+    .tier{background:#fff;border-radius:16px;padding:36px 26px 32px;text-align:center;
+      box-shadow:0 4px 24px rgba(31,58,95,.06);border:1px solid rgba(31,58,95,.06);
+      position:relative;overflow:hidden;transition:transform .25s, box-shadow .25s;}
+    .tier:hover{transform:translateY(-6px);box-shadow:0 14px 40px rgba(31,58,95,.12);}
+    .tier::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;
+      background:linear-gradient(90deg,var(--pc-blue),var(--pc-gold));}
+    .tier .rang-icon{width:56px;height:56px;border-radius:50%;
+      background:linear-gradient(135deg,var(--pc-navy),var(--pc-blue));
+      color:#fff;font-family:'Playfair Display',serif;font-size:22px;display:flex;align-items:center;
+      justify-content:center;margin:0 auto 16px;font-weight:700;}
+    .tier .rang-label{font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;
+      color:var(--muted);font-weight:700;margin-bottom:10px;}
+    .tier .amount{font-family:'Playfair Display',serif;font-size:44px;color:var(--pc-navy);font-weight:400;letter-spacing:-1px;}
+    .tier .desc{font-size:13px;color:var(--muted);margin-top:6px;}
+    .tier.best{background:linear-gradient(135deg,var(--pc-navy),var(--pc-navy-d));color:#fff;
+      transform:translateY(-12px);}
+    .tier.best:hover{transform:translateY(-16px);}
+    .tier.best .rang-label,.tier.best .desc{color:rgba(255,255,255,.78);}
+    .tier.best .amount{color:var(--pc-gold);}
+    .tier.best .rang-icon{background:var(--pc-gold);color:var(--pc-navy-d);}
+
+    /* Méga paliers */
+    .mega-tiers{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:30px;}
+    .mega{position:relative;border-radius:18px;padding:38px 30px;color:#fff;overflow:hidden;
+      box-shadow:0 14px 40px rgba(20,38,63,.18);}
+    .mega.five{background:linear-gradient(135deg,#1f3a5f 0%,#3b6fbf 100%);}
+    .mega.ten{background:linear-gradient(135deg,#14263f 0%,#1f3a5f 60%,#c9a961 220%);}
+    .mega .ribbon{position:absolute;top:18px;right:-48px;background:var(--pc-gold);color:var(--pc-navy-d);
+      font-family:'Cinzel',serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+      padding:6px 50px;transform:rotate(30deg);box-shadow:0 4px 10px rgba(0,0,0,.2);}
+    .mega .count{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:22px;opacity:.92;}
+    .mega .count strong{font-size:32px;color:var(--pc-gold);font-weight:400;font-style:italic;}
+    .mega .big{font-family:'Playfair Display',serif;font-size:64px;line-height:1;font-weight:400;
+      margin:14px 0 8px;letter-spacing:-1.5px;}
+    .mega .big sup{font-size:28px;color:var(--pc-gold);vertical-align:top;margin-left:4px;}
+    .mega .small{font-size:14px;opacity:.92;line-height:1.5;}
+    .mega .small em{color:var(--pc-gold);font-style:normal;font-weight:600;}
+
+    .bonus-note{max-width:760px;margin:30px auto 0;text-align:center;
+      font-size:13px;color:var(--muted);line-height:1.6;font-family:'Cormorant Garamond',serif;font-style:italic;}
+
+    /* ===== Slogan band ===== */
+    .slogan-band{background:linear-gradient(135deg, var(--pc-gold) 0%, #b8924a 100%);
+      color:var(--pc-navy-d);padding:38px 24px;text-align:center;}
+    .slogan-band .inner{max-width:900px;margin:0 auto;
+      font-family:'Cormorant Garamond',serif;font-style:italic;font-size:26px;line-height:1.4;font-weight:400;}
+    .slogan-band .inner strong{font-weight:600;font-style:normal;}
+
+    /* ===== Cas d'usage ===== */
+    .usecases{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;}
+    .uc{background:#fff;border-radius:16px;overflow:hidden;border:1px solid rgba(31,58,95,.08);
+      box-shadow:0 4px 16px rgba(31,58,95,.05);transition:.25s;}
+    .uc:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(31,58,95,.12);}
+    .uc-img{height:180px;background-size:cover;background-position:center;position:relative;}
+    .uc-img::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 50%, rgba(20,38,63,.55));}
+    .uc-tag{position:absolute;top:14px;left:14px;background:var(--pc-gold);color:var(--pc-navy-d);
+      font-family:'Cinzel',serif;font-size:10px;font-weight:700;letter-spacing:2px;padding:5px 12px;border-radius:999px;z-index:2;}
+    .uc-body{padding:18px 20px 22px;}
+    .uc-body h3{font-family:'Playfair Display',serif;font-weight:400;color:var(--pc-navy);font-size:20px;margin:0 0 6px;}
+    .uc-body p{font-size:13px;color:var(--muted);margin:0;line-height:1.5;}
+    .uc-amount{font-family:'Playfair Display',serif;font-weight:400;color:var(--pc-gold-d);font-size:22px;letter-spacing:-.5px;margin-top:10px;}
+
+    /* ===== Comment ça marche ===== */
+    .pc-steps-section{background:#fff;padding:80px 24px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+    .steps{max-width:1120px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:22px;position:relative;}
+    .steps::before{content:"";position:absolute;top:32px;left:12%;right:12%;height:2px;
+      background:linear-gradient(90deg,var(--pc-blue),var(--pc-gold));opacity:.3;z-index:0;}
+    .step{text-align:center;position:relative;z-index:1;}
+    .step .num{width:64px;height:64px;border-radius:50%;background:#fff;color:var(--pc-navy);
+      border:2px solid var(--pc-blue);display:inline-flex;align-items:center;justify-content:center;
+      font-family:'Playfair Display',serif;font-size:26px;font-weight:700;margin-bottom:16px;
+      box-shadow:0 4px 16px rgba(59,111,191,.15);}
+    .step h3{margin:0 0 8px;color:var(--pc-navy);font-size:16px;font-family:'Cinzel',serif;font-weight:700;letter-spacing:1px;}
+    .step p{margin:0;color:var(--muted);font-size:14px;line-height:1.6;font-family:'Cormorant Garamond',serif;font-style:italic;}
+
+    /* ===== Pyramide visualisation ===== */
+    .pyr-wrap{display:grid;grid-template-columns:1fr 1fr;gap:50px;align-items:center;}
+    .pyr-controls{display:flex;gap:8px;justify-content:center;margin-top:20px;flex-wrap:wrap;}
+    .pyr-btn{background:#fff;border:1.5px solid var(--border);color:var(--pc-navy);
+      padding:8px 16px;border-radius:999px;font-family:'Cinzel',serif;font-size:11px;font-weight:700;
+      letter-spacing:1.5px;cursor:pointer;transition:.15s;}
+    .pyr-btn:hover{border-color:var(--pc-gold);color:var(--pc-gold-d);}
+    .pyr-btn.active{background:var(--pc-gold);border-color:var(--pc-gold);color:var(--pc-navy-d);}
+    .pyr-levels{display:flex;flex-direction:column;gap:12px;}
+    .pyr-level{display:flex;gap:16px;align-items:center;padding:16px 18px;border-radius:12px;
+      background:#fff;border:1px solid var(--border);transition:.25s;}
+    .pyr-level.unlocked{box-shadow:0 6px 22px rgba(201,169,97,.18);border-color:rgba(201,169,97,.45);}
+    .pyr-medal{width:48px;height:48px;border-radius:50%;flex:0 0 auto;
+      display:flex;align-items:center;justify-content:center;
+      font-family:'Playfair Display',serif;font-weight:700;font-size:18px;
+      background:#f1f3f7;color:#9aa3b2;border:2px solid #e5e7eb;}
+    .pyr-level.unlocked .pyr-medal{
+      background:linear-gradient(135deg,var(--pc-gold-l),var(--pc-gold) 60%,var(--pc-gold-d));
+      color:var(--pc-navy-d);border-color:var(--pc-gold);}
+    .pyr-info{flex:1;}
+    .pyr-info .pyr-title{font-family:'Cinzel',serif;font-weight:700;color:var(--pc-navy);font-size:12px;letter-spacing:1.5px;}
+    .pyr-info .pyr-sub{color:var(--muted);font-size:13px;margin-top:3px;font-family:'Cormorant Garamond',serif;font-style:italic;}
+    .pyr-amount{font-family:'Playfair Display',serif;font-size:22px;color:#9aa3b2;font-weight:400;text-align:right;transition:.25s;}
+    .pyr-level.unlocked .pyr-amount{color:var(--pc-gold-d);}
+
+    /* ===== Form gamifié ===== */
+    .form-section{background:linear-gradient(135deg,var(--pc-cream),#fff);padding:80px 24px;}
+    .form-card{max-width:1120px;margin:0 auto;background:#fff;border-radius:18px;padding:48px 44px;
+      box-shadow:0 14px 48px rgba(31,58,95,.10);border:1px solid rgba(31,58,95,.06);}
+    .form-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;}
+    .form-card h2{font-family:'Playfair Display',serif;color:var(--pc-navy);font-size:32px;font-weight:400;
+      margin:0 0 8px;text-align:center;}
+    .form-card .sub{color:var(--muted);margin:0 0 36px;font-size:15px;text-align:center;font-family:'Cormorant Garamond',serif;font-style:italic;}
+
+    .form-section-title{font-family:'Cinzel',serif;font-size:11px;letter-spacing:3px;color:var(--pc-gold-d);font-weight:700;
+      text-transform:uppercase;margin:14px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border);
+      display:flex;align-items:center;justify-content:space-between;}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+    .form-group{margin-bottom:14px;}
+    .form-group label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:600;letter-spacing:.5px;}
+    .form-group input,.form-group textarea{width:100%;padding:12px 14px;font-size:16px;
+      border:1px solid var(--border);border-radius:8px;background:#fafbfc;font-family:inherit;box-sizing:border-box;}
+    .form-group input:focus,.form-group textarea:focus{outline:2px solid var(--pc-gold);
+      outline-offset:-1px;border-color:transparent;background:#fff;}
+    .form-group textarea{min-height:70px;resize:vertical;}
+
+    .filleul-block{position:relative;background:#fafbfc;border:1px solid var(--border);border-radius:14px;
+      padding:18px 20px 4px;margin-top:14px;animation:fadeUp .55s cubic-bezier(.2,.8,.2,1);}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+    .filleul-block .fb-title{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;}
+    .filleul-block .fb-name{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:20px;color:var(--pc-navy);}
+    .filleul-block .fb-prime{font-family:'Playfair Display',serif;font-size:16px;color:var(--pc-gold-d);font-weight:400;}
+    .filleul-block .fb-del{background:transparent;color:#b91c1c;border:0;font-size:12px;cursor:pointer;
+      padding:4px 8px;border-radius:6px;margin-top:4px;}
+    .filleul-block .fb-del:hover{background:#fee2e2;}
+    .add-filleul-btn{display:flex;justify-content:space-between;align-items:center;width:100%;padding:20px;margin-top:14px;
+      background:var(--pc-navy);color:var(--pc-gold-l);border:0;border-radius:12px;
+      font-family:'Cinzel',serif;font-weight:700;font-size:12px;letter-spacing:3px;cursor:pointer;transition:.15s;}
+    .add-filleul-btn:hover{background:var(--pc-navy-d);}
+    .add-filleul-btn .it{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:14px;color:var(--pc-gold);letter-spacing:0;font-weight:400;text-transform:none;}
+
+    /* ===== Tableau de bord live (right column) ===== */
+    .dash{background:linear-gradient(160deg,#14263f 0%,#1f3a5f 100%);border-radius:18px;padding:28px 26px;color:#fff;position:relative;overflow:hidden;}
+    .dash-label{font-family:'Cinzel',serif;font-size:10px;letter-spacing:4px;color:var(--pc-gold);font-weight:700;text-align:center;text-transform:uppercase;}
+    .dash-counter-zone{text-align:center;margin:8px 0 14px;position:relative;padding:4px 0;border-radius:8px;}
+    .dash-counter{font-family:'Playfair Display',serif;font-size:56px;line-height:1;color:var(--pc-gold-l);font-weight:400;letter-spacing:-1.5px;}
+    .dash-counter sup{font-size:22px;color:var(--pc-gold);vertical-align:top;margin-left:4px;}
+    .dash-next{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:14px;color:#cdd2dc;margin-top:4px;}
+    .dash-gauge{height:4px;background:rgba(255,255,255,.1);border-radius:999px;overflow:hidden;margin-top:14px;}
+    .dash-gauge .fill{height:100%;background:linear-gradient(90deg,var(--pc-gold),var(--pc-gold-l));border-radius:999px;transition:width 1.1s cubic-bezier(.2,.8,.2,1);}
+    .dash-pyr-mini{margin:24px 0 8px;display:flex;justify-content:center;}
+    .dash-grat{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;min-height:30px;align-items:center;margin-top:8px;}
+    .dash-smile{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid var(--pc-gold);color:var(--pc-gold-l);
+      font-size:14px;display:inline-flex;align-items:center;justify-content:center;animation:pop .55s cubic-bezier(.5,1.8,.5,.9);}
+    @keyframes pop{from{transform:scale(0) rotate(-30deg)}to{transform:scale(1) rotate(0)}}
+    .dash-grat-msg{text-align:center;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:13px;color:#cdd2dc;margin-top:10px;line-height:1.55;}
+    .dash-floater{position:absolute;font-family:'Playfair Display',serif;font-weight:400;color:var(--pc-gold);pointer-events:none;animation:floatUp 1.8s ease-out forwards;}
+    @keyframes floatUp{0%{opacity:0;transform:translate(-50%,0) scale(.6)}20%{opacity:1;transform:translate(-50%,-12px) scale(1)}100%{opacity:0;transform:translate(-50%,-100px) scale(1.1)}}
+    .dash-toast{position:absolute;top:14px;left:50%;transform:translateX(-50%);background:#fff;color:var(--pc-navy);border:1px solid var(--pc-gold);
+      font-family:'Cinzel',serif;font-weight:700;font-size:10px;letter-spacing:4px;padding:8px 16px;border-radius:999px;opacity:0;pointer-events:none;animation:toast 2.6s ease-out;box-shadow:0 6px 18px rgba(0,0,0,.25);}
+    @keyframes toast{0%{opacity:0;transform:translate(-50%,8px)}10%,75%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-8px)}}
+    .pulse-once{animation:pulseOnce 1.4s ease-out;}
+    @keyframes pulseOnce{0%{box-shadow:0 0 0 0 rgba(232,210,138,.5)}50%{box-shadow:0 0 0 16px rgba(232,210,138,0)}100%{box-shadow:0 0 0 0 rgba(232,210,138,0)}}
+    .tier-stone{transition:fill .8s, filter .8s;}
+    .tier-stone.lit{fill:url(#pcMiniGoldFront)!important;filter:drop-shadow(0 0 12px rgba(232,210,138,.7));}
+    .tier-side{transition:fill .8s;}
+    .tier-side.lit{fill:url(#pcMiniGoldSide)!important;}
+    .tier-text{transition:fill .8s;}
+    .tier-text.lit{fill:#14263f!important;}
+
+    .cons-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+    .cons-card{border:2px solid var(--border);border-radius:12px;padding:16px 12px;text-align:center;
+      cursor:pointer;transition:.15s;background:#fff;}
+    .cons-card:hover{border-color:var(--pc-blue);}
+    .cons-card.selected{border-color:var(--pc-gold);background:#fffbf0;box-shadow:0 0 0 3px rgba(201,169,97,.15);}
+    .cons-card .avatar{width:48px;height:48px;border-radius:50%;
+      background:linear-gradient(135deg,var(--pc-navy),var(--pc-blue));color:#fff;
+      font-family:'Playfair Display',serif;font-size:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-weight:700;}
+    .cons-card.selected .avatar{background:linear-gradient(135deg,var(--pc-gold),var(--pc-gold-d));}
+    .cons-card .nom{font-size:14px;font-weight:600;color:var(--pc-navy);line-height:1.3;}
+
+    .consent-row{display:flex;gap:10px;align-items:flex-start;padding:14px 16px;margin:6px 0 0;
+      background:#f8fafc;border-radius:8px;border:1px solid var(--border);font-size:13px;color:var(--muted);line-height:1.55;}
+    .consent-row input{width:auto;margin-top:3px;flex:0 0 auto;}
+    .consent-row a{color:var(--pc-navy);}
+    .submit-row{margin-top:30px;display:flex;justify-content:center;}
+    .submit-btn{background:var(--pc-gold);color:var(--pc-navy-d);padding:18px 50px;font-size:14px;font-weight:700;
+      font-family:'Cinzel',serif;letter-spacing:4px;border:0;border-radius:12px;cursor:pointer;transition:.15s;}
+    .submit-btn:hover{background:var(--pc-gold-d);color:#fff;}
+    .flash{padding:14px 16px;border-radius:10px;margin:16px 0 0;font-size:14.5px;}
+    .flash.success{background:#ecfdf5;color:#065f46;border:1px solid #6ee7b7;}
+    .flash.error{background:#fef2f2;color:#991b1b;border:1px solid #fca5a5;}
+
+    /* ===== Citation Socrate ===== */
+    .pacte-section{padding:90px 24px;background:var(--pc-cream-d);text-align:center;}
+    .pacte-inner{max-width:680px;margin:0 auto;}
+    .pacte-rule{display:flex;align-items:center;justify-content:center;gap:18px;margin-bottom:26px;}
+    .pacte-rule .line{width:50px;height:1px;background:var(--pc-gold);}
+    .pacte-rule .roman{font-family:'Cinzel',serif;font-size:11px;letter-spacing:8px;color:var(--pc-gold);font-weight:700;}
+    .pacte-quote{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;font-size:36px;line-height:1.3;color:var(--pc-navy);margin:0 0 16px;}
+    .pacte-quote .gold{color:var(--pc-gold);}
+    .pacte-attrib{font-family:'Cinzel',serif;font-size:10px;letter-spacing:5px;color:var(--pc-navy);font-weight:700;}
+    .pacte-desc{font-family:'Cormorant Garamond',serif;font-size:17px;color:var(--muted);font-style:italic;margin:30px auto 0;max-width:520px;line-height:1.7;}
+    .pacte-desc strong{color:var(--pc-navy);font-style:normal;font-weight:600;}
+    .pacte-badges{display:flex;justify-content:center;gap:46px;margin-top:34px;flex-wrap:wrap;}
+    .pacte-badge{text-align:center;}
+    .pacte-badge svg{width:22px;height:22px;stroke:var(--pc-gold);fill:none;stroke-width:1.5;}
+    .pacte-badge .lbl{font-family:'Cinzel',serif;font-size:10px;letter-spacing:3px;color:var(--pc-navy);font-weight:700;margin-top:8px;text-transform:uppercase;}
+
+    /* ===== Footer ===== */
+    .pc-footer{background:var(--pc-navy-d);color:rgba(255,255,255,.7);padding:36px 24px;text-align:center;font-size:13px;}
+    .pc-footer a{color:var(--pc-gold);text-decoration:none;}
+    .pc-footer .logo-wrap{height:54px;margin-bottom:14px;display:inline-block;}
+    .pc-footer .logo-wrap object{height:100%;width:auto;max-width:300px;filter:brightness(0) invert(1) opacity(.9);}
+
+    @media (max-width:880px){
+      .pc-hero-inner{grid-template-columns:1fr;gap:30px;}
+      .pc-hero h1{font-size:34px;}
+      .hero-counter .amount{font-size:54px;}
+      .tiers,.steps,.grid2,.cons-cards,.mega-tiers,.usecases,.pyr-wrap,.form-grid{grid-template-columns:1fr;}
+      .steps::before{display:none;}
+      .tier.best{transform:none;}
+      .form-card{padding:32px 22px;}
+      .pc-topbar{padding:12px 18px;}
+      .pc-topbar .logo-wrap{height:48px;}
+      .pc-topbar .links a:not(.btn-mini){display:none;}
+      .slogan-band .inner{font-size:20px;}
+      .pacte-quote{font-size:26px;}
+    }
+  </style>
+</head>
+<body>
+
+  <header class="pc-topbar">
+    <a aria-label="Paris Conseils — Accueil" class="logo-wrap" href="/parrainage">
+      <object data="assets/logo-paris-conseils.png" type="image/png" aria-label="Logo Paris Conseils">
+        <object data="assets/logo-paris-conseils.svg" type="image/svg+xml" aria-label="Logo Paris Conseils"></object>
+      </object>
+    </a>
+    <nav class="links">
+      <a href="#paliers">Les paliers</a>
+      <a href="#fonctionnement">Comment ça marche</a>
+      <a href="#formulaire" class="btn-mini">Recommander</a>
+    </nav>
+  </header>
+
+  <section class="pc-hero">
+    <div class="pc-hero-inner">
+      <div>
+        <span class="eyebrow">Programme parrainage</span>
+        <h1>Recommandez Paris Conseils,<br><span class="gold">soyez récompensé.</span></h1>
+        <p class="lead">
+          Chaque proche que vous présentez débloque une nouvelle pierre dorée
+          dans votre pyramide annuelle — jusqu'à
+          <strong>15 000 € de primes</strong> et des cadeaux bonus<sup>*</sup>.
+        </p>
+        <p class="tagline">
+          « Gratter, c'est facile. Agir, c'est généreux. »
+        </p>
+        <a href="#formulaire" class="cta">Recommander un proche →</a>
+      </div>
+
+      <div class="hero-counter">
+        <div class="hc-eyebrow">Découvrez votre potentiel</div>
+        <p class="hc-question">
+          Combien pouvez-vous gagner cette année
+          en rendant service à votre entourage&nbsp;?
+        </p>
+
+        <div class="scratch-zone" id="scratch-zone">
+          <div class="scratch-reveal">
+            <div class="r-label">Jusqu'à</div>
+            <div class="r-amount">15&nbsp;000<sup>€</sup></div>
+            <div class="r-desc">
+              de primes pour 10&nbsp;contacts confirmés
+              <strong>+ cadeaux bonus*</strong>
+            </div>
+          </div>
+
+          <canvas id="scratch-canvas" class="scratch-canvas" width="540" height="340"></canvas>
+
+          <div id="scratch-hint" class="scratch-hint">
+            <div class="h-pic">✦</div>
+            <div class="h-cta">GRATTER ICI</div>
+            <div class="h-sub">déplacez la souris pour révéler la somme</div>
+          </div>
+        </div>
+
+        <div class="after-reveal" id="after-reveal" style="display:none;">
+          ✓ Vous avez débloqué votre potentiel — à vous de jouer.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="pc-section" id="paliers">
+    <span class="sec-eyebrow">I · Les paliers</span>
+    <h2>Une prime <span class="it">qui grandit</span> avec votre confiance</h2>
+    <p class="section-sub">
+      Plus vous recommandez, plus votre prime augmente.
+      Chaque dossier finalisé est récompensé.
+    </p>
+
+    <div class="tiers">
+      <div class="tier">
+        <div class="rang-icon">1</div>
+        <div class="rang-label">1ER FILLEUL</div>
+        <div class="amount">500 €</div>
+        <div class="desc">Versés au dossier finalisé</div>
+      </div>
+      <div class="tier best">
+        <div class="rang-icon">2</div>
+        <div class="rang-label">2E FILLEUL</div>
+        <div class="amount">750 €</div>
+        <div class="desc">Prime bonifiée</div>
+      </div>
+      <div class="tier">
+        <div class="rang-icon">3</div>
+        <div class="rang-label">3E FILLEUL</div>
+        <div class="amount">1 000 €</div>
+        <div class="desc">Prime maximale unitaire</div>
+      </div>
+    </div>
+
+    <div class="mega-tiers">
+      <div class="mega five">
+        <div class="count"><strong>5</strong> contacts confirmés</div>
+        <div class="big">5 000<sup>€</sup></div>
+        <div class="small">de primes cumulées versées par virement</div>
+      </div>
+      <div class="mega ten">
+        <div class="ribbon">Top parrain</div>
+        <div class="count"><strong>10</strong> contacts confirmés</div>
+        <div class="big">15 000<sup>€</sup></div>
+        <div class="small">de primes cumulées <em>+ cadeaux bonus<sup>*</sup></em></div>
+      </div>
+    </div>
+
+    <p class="bonus-note">
+      <sup>*</sup> Cadeaux bonus (séjour, expérience, coffret cadeau) attribués
+      aux parrains atteignant le sommet — 10 filleuls confirmés sur une année civile.
+    </p>
+  </section>
+
+  <section class="slogan-band">
+    <div class="inner">
+      « <strong>Un bon moyen d'augmenter son pouvoir d'achat</strong>
+      en rendant service aux autres. »
+    </div>
+  </section>
+
+  <section class="pc-section">
+    <span class="sec-eyebrow">II · Ce que vous en faites</span>
+    <h2>Votre prime, <span class="it">votre rêve</span></h2>
+    <p class="section-sub">
+      Avec quelques recommandations, ce qui semblait lointain devient à portée de main.
+    </p>
+
+    <div class="usecases">
+      <div class="uc">
+        <div class="uc-img" style="background-image:linear-gradient(180deg,rgba(0,0,0,.1),rgba(0,0,0,.3)),url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&q=80');">
+          <div class="uc-tag">Voyage</div>
+        </div>
+        <div class="uc-body">
+          <h3>Au bout du monde</h3>
+          <p>Avec 5 contacts, financez le voyage que vous remettez chaque année.</p>
+          <div class="uc-amount">5 000 €</div>
+        </div>
+      </div>
+      <div class="uc">
+        <div class="uc-img" style="background-image:linear-gradient(180deg,rgba(0,0,0,.1),rgba(0,0,0,.3)),url('https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600&q=80');">
+          <div class="uc-tag">Tech</div>
+        </div>
+        <div class="uc-body">
+          <h3>Un Mac tout neuf</h3>
+          <p>3 filleuls et votre nouvel ordinateur arrive sans toucher à l'épargne.</p>
+          <div class="uc-amount">2 250 €</div>
+        </div>
+      </div>
+      <div class="uc">
+        <div class="uc-img" style="background-image:linear-gradient(180deg,rgba(0,0,0,.1),rgba(0,0,0,.3)),url('https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&q=80');">
+          <div class="uc-tag">Fiscal</div>
+        </div>
+        <div class="uc-body">
+          <h3>Impôts allégés</h3>
+          <p>Au sommet de la pyramide, vos primes couvrent un acompte entier.</p>
+          <div class="uc-amount">15 000 €</div>
+        </div>
+      </div>
+      <div class="uc">
+        <div class="uc-img" style="background-image:linear-gradient(180deg,rgba(0,0,0,.1),rgba(0,0,0,.3)),url('https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=600&q=80');">
+          <div class="uc-tag">Lien</div>
+        </div>
+        <div class="uc-body">
+          <h3>Un service rendu</h3>
+          <p>Chaque filleul, c'est une trajectoire qui change — votre vraie récompense.</p>
+          <div class="uc-amount">∞</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="pc-steps-section" id="fonctionnement">
+    <div class="pc-section" style="padding:0;">
+      <span class="sec-eyebrow">III · Comment ça marche</span>
+      <h2>Quatre étapes, <span class="it">trois minutes</span></h2>
+      <p class="section-sub">Un processus simple, transparent, sécurisé.</p>
+      <div class="steps">
+        <div class="step"><div class="num">1</div><h3>Vous recommandez</h3><p>Ajoutez autant de filleuls que vous souhaitez, le tout en un seul envoi.</p></div>
+        <div class="step"><div class="num">2</div><h3>Vous confirmez</h3><p>Une étape vérifie chaque prénom, email et téléphone avant l'envoi.</p></div>
+        <div class="step"><div class="num">3</div><h3>Le conseiller agit</h3><p>Votre conseiller contacte chaque filleul sous 48 heures.</p></div>
+        <div class="step"><div class="num">4</div><h3>Vous êtes récompensé</h3><p>Dossier finalisé = prime versée + une nouvelle pierre dorée.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="form-section" id="formulaire">
+    <div class="form-card">
+      <span class="sec-eyebrow">IV · Le moteur</span>
+      <h2>Chaque ajout illumine <span class="it" style="color:var(--pc-gold);">votre pyramide</span></h2>
+      <p class="sub">Vous pouvez ajouter autant de filleuls que vous souhaitez. À droite, votre potentiel monte en temps réel.</p>
+
+      <div class="form-grid">
+        <div>
+          <div class="form-section-title">Vos coordonnées</div>
+          <div class="grid2">
+            <div class="form-group"><label for="p_prenom">Prénom *</label><input id="p_prenom" required></div>
+            <div class="form-group"><label for="p_nom">Nom *</label><input id="p_nom" required></div>
+            <div class="form-group"><label for="p_email">Email *</label><input id="p_email" type="email" required></div>
+            <div class="form-group"><label for="p_tel">Téléphone</label><input id="p_tel" type="tel"></div>
+          </div>
+
+          <div class="form-section-title">
+            <span>Vos filleuls</span>
+            <span style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:12px;color:var(--muted);font-weight:400;letter-spacing:.5px;text-transform:none;">autant que vous voulez</span>
+          </div>
+          <div id="filleuls-list"></div>
+          <button type="button" class="add-filleul-btn" id="add-filleul">
+            <span>+ AJOUTER UN AUTRE FILLEUL</span>
+            <span class="it">une pierre dorée de plus</span>
+          </button>
+
+          <div class="form-section-title">Quel conseiller ?</div>
+          <div class="cons-cards" id="cons-cards">
+            <div class="cons-card" data-id="pereira"><div class="avatar">DP</div><div class="nom">David Pereira</div></div>
+            <div class="cons-card" data-id="moreau"><div class="avatar">NM</div><div class="nom">Nicolas Moreau</div></div>
+            <div class="cons-card" data-id="curtet"><div class="avatar">CC</div><div class="nom">Corentin Curtet</div></div>
+          </div>
+          <input type="hidden" id="conseiller_id" name="conseiller_id" value="">
+
+          <div class="form-section-title">RIB (facultatif)</div>
+          <div class="form-group"><label for="iban">IBAN</label>
+            <input id="iban" placeholder="FR76 0000 0000 0000 0000 0000 000"
+                   style="font-family:'Courier New',monospace;letter-spacing:1px;">
+          </div>
+
+          <div class="consent-row"><input type="checkbox" id="cgu_rib">
+            <label for="cgu_rib" style="font-size:13px;color:var(--muted);margin:0;font-weight:400;">
+              <strong>RGPD :</strong> j'autorise Paris Conseils à conserver mon IBAN pour le versement.
+              Suppression à <a href="mailto:contact@parisconseils.fr">contact@parisconseils.fr</a>.
+            </label>
+          </div>
+          <div class="consent-row"><input type="checkbox" id="cgu_filleul" required>
+            <label for="cgu_filleul" style="font-size:13px;color:var(--muted);margin:0;font-weight:400;">
+              J'ai informé mes filleuls et j'accepte le
+              <a href="reglement-parrainage.pdf" target="_blank">règlement</a>.
+            </label>
+          </div>
+
+          <div class="submit-row">
+            <button type="button" class="submit-btn" id="submit-btn">ENVOYER MA RECOMMANDATION →</button>
+          </div>
+          <div id="flash" style="display:none;"></div>
+        </div>
+
+        <div class="dash">
+          <div id="dash-toast-zone"></div>
+          <div class="dash-label">Potentiel de gain</div>
+          <div class="dash-counter-zone" id="dash-counter-zone">
+            <div class="dash-counter"><span id="dash-cum">0</span><sup>€</sup></div>
+          </div>
+          <div id="dash-next" class="dash-next">Ajoutez votre premier filleul pour débloquer le palier I.</div>
+
+          <div class="dash-gauge"><div id="dash-gauge" class="fill" style="width:0%;"></div></div>
+          <div style="display:flex;justify-content:space-between;font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;color:#a8aeba;font-weight:700;margin-top:8px;">
+            <span>0 €</span><span>15 000 €</span>
+          </div>
+
+          <div class="dash-pyr-mini">
+            <svg viewBox="0 0 360 280" style="width:95%;height:auto;display:block;">
+              <defs>
+                <linearGradient id="pcMiniGoldFront" gradientUnits="userSpaceOnUse" x1="180" y1="50" x2="180" y2="240">
+                  <stop offset="0%" stop-color="#fff8d0"/>
+                  <stop offset="35%" stop-color="#f0d077"/>
+                  <stop offset="65%" stop-color="#c9a542"/>
+                  <stop offset="100%" stop-color="#7a5a10"/>
+                </linearGradient>
+                <linearGradient id="pcMiniGoldSide" gradientUnits="userSpaceOnUse" x1="180" y1="50" x2="338" y2="240">
+                  <stop offset="0%" stop-color="#a07c15"/>
+                  <stop offset="100%" stop-color="#3d2c08"/>
+                </linearGradient>
+                <linearGradient id="pcMiniNavy" gradientUnits="userSpaceOnUse" x1="180" y1="50" x2="180" y2="240">
+                  <stop offset="0%" stop-color="#1f3a5f"/>
+                  <stop offset="100%" stop-color="#0a1729"/>
+                </linearGradient>
+                <linearGradient id="pcMiniNavySide" gradientUnits="userSpaceOnUse" x1="180" y1="50" x2="338" y2="240">
+                  <stop offset="0%" stop-color="#0a1729"/>
+                  <stop offset="100%" stop-color="#040912"/>
+                </linearGradient>
+                <radialGradient id="pcMiniHalo" cx="50%" cy="50%" r="60%">
+                  <stop offset="0%" stop-color="#fff3c4" stop-opacity="0.5"/>
+                  <stop offset="100%" stop-color="#c9a961" stop-opacity="0"/>
+                </radialGradient>
+                <filter id="pcMiniDrop" x="-20%" y="-20%" width="140%" height="160%">
+                  <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+                  <feOffset dx="1" dy="4"/>
+                  <feComponentTransfer><feFuncA type="linear" slope="0.45"/></feComponentTransfer>
+                  <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+              </defs>
+
+              <!-- Halo behind apex -->
+              <ellipse cx="180" cy="55" rx="80" ry="60" fill="url(#pcMiniHalo)"/>
+
+              <!-- Side faces (drawn first, behind front) -->
+              <g filter="url(#pcMiniDrop)">
+                <polygon id="msSide1" class="tier-side" points="320,240 338,228 308,188 290,200" fill="url(#pcMiniNavySide)" stroke="rgba(232,210,138,.18)" stroke-width="0.5"/>
+                <polygon id="msSide2" class="tier-side" points="290,200 308,188 279,148 261,160" fill="url(#pcMiniNavySide)" stroke="rgba(232,210,138,.18)" stroke-width="0.5"/>
+                <polygon id="msSide3" class="tier-side" points="261,160 279,148 242,98 224,110" fill="url(#pcMiniNavySide)" stroke="rgba(232,210,138,.18)" stroke-width="0.5"/>
+                <polygon id="msSide4" class="tier-side" points="224,110 242,98 180,50" fill="url(#pcMiniNavySide)" stroke="rgba(232,210,138,.18)" stroke-width="0.5"/>
+
+                <polygon id="ms1" class="tier-stone" points="40,240 320,240 290,200 70,200" fill="url(#pcMiniNavy)" stroke="rgba(232,210,138,.3)" stroke-width="0.5"/>
+                <polygon id="ms2" class="tier-stone" points="70,200 290,200 261,160 99,160" fill="url(#pcMiniNavy)" stroke="rgba(232,210,138,.3)" stroke-width="0.5"/>
+                <polygon id="ms3" class="tier-stone" points="99,160 261,160 224,110 136,110" fill="url(#pcMiniNavy)" stroke="rgba(232,210,138,.3)" stroke-width="0.5"/>
+                <polygon id="ms4" class="tier-stone" points="136,110 224,110 180,50" fill="url(#pcMiniNavy)" stroke="rgba(232,210,138,.3)" stroke-width="0.5"/>
+              </g>
+
+              <!-- Thin gold rules between tiers (decoration) -->
+              <line x1="70" y1="200" x2="290" y2="200" stroke="#c9a961" stroke-width="0.7" opacity="0.6"/>
+              <line x1="99" y1="160" x2="261" y2="160" stroke="#c9a961" stroke-width="0.7" opacity="0.6"/>
+              <line x1="136" y1="110" x2="224" y2="110" stroke="#c9a961" stroke-width="0.7" opacity="0.6"/>
+
+              <!-- Numbers — Playfair 700, bigger and marked -->
+              <g font-family="'Playfair Display',serif" font-weight="700" text-anchor="middle" letter-spacing="-0.5">
+                <text id="mt1" class="tier-text" x="180" y="226" font-size="22" fill="#e8d28a">500 €</text>
+                <text id="mt2" class="tier-text" x="180" y="186" font-size="18" fill="#e8d28a">2 250 €</text>
+                <text id="mt3" class="tier-text" x="180" y="141" font-size="14" fill="#e8d28a">5 000 €</text>
+                <text id="mt4" class="tier-text" x="180" y="87" font-size="11" fill="#e8d28a">15 000 €</text>
+              </g>
+
+              <!-- Apex star -->
+              <g transform="translate(180,42)">
+                <path d="M0,-11 L2.5,-2.5 L11,0 L2.5,2.5 L0,11 L-2.5,2.5 L-11,0 L-2.5,-2.5 Z" fill="url(#pcMiniGoldFront)" stroke="#5b430a" stroke-width="0.4"/>
+                <circle r="2" fill="#fff8d0">
+                  <animate attributeName="r" values="1.6;3;1.6" dur="2.6s" repeatCount="indefinite"/>
+                </circle>
+              </g>
+            </svg>
+          </div>
+
+          <div class="dash-label">Gratitude</div>
+          <div id="dash-smiles" class="dash-grat"></div>
+          <div id="dash-grat-msg" class="dash-grat-msg">Personne aidée pour l'instant.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="pacte-section">
+    <div class="pacte-inner">
+      <div class="pacte-rule">
+        <div class="line"></div>
+        <div class="roman">V · LE PACTE</div>
+        <div class="line"></div>
+      </div>
+      <blockquote class="pacte-quote">
+        « Le savoir est la seule matière<br>
+        qui <span class="gold">s'accroît</span> quand on la partage. »
+      </blockquote>
+      <div class="pacte-attrib">— Socrate</div>
+      <p class="pacte-desc">
+        Recommander un proche, c'est lui ouvrir la porte d'un accompagnement de qualité.
+        Et se rendre service à soi-même.
+        <strong>Tout le monde y gagne.</strong>
+      </p>
+      <div class="pacte-badges">
+        <div class="pacte-badge">
+          <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+          <div class="lbl">Confidentialité</div>
+        </div>
+        <div class="pacte-badge">
+          <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+          <div class="lbl">Secret professionnel</div>
+        </div>
+        <div class="pacte-badge">
+          <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          <div class="lbl">Reconnaissance</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="pc-footer">
+    <div class="logo-wrap">
+      <object data="assets/logo-paris-conseils.png" type="image/png" aria-label="Logo Paris Conseils">
+        <object data="assets/logo-paris-conseils.svg" type="image/svg+xml" aria-label="Logo Paris Conseils"></object>
+      </object>
+    </div>
+    <div>© <span id="yy"></span> Paris Conseils — Ingénierie financière &amp; optimisation fiscale</div>
+    <div style="margin-top:8px;">
+      <a href="reglement-parrainage.pdf" target="_blank">Règlement du programme</a> ·
+      <a href="mailto:contact@parisconseils.fr">contact@parisconseils.fr</a>
+    </div>
+  </footer>
+
+  <script>
+  (function(){
+    document.getElementById('yy').textContent = new Date().getFullYear();
+
+    var REWARDS = [500,750,1000,1250,500,500,1000,1000,1500,5500];
+    var cumAt = function(n){ var s=0; for(var i=0;i<n;i++) s+=REWARDS[i]; return s; };
+    var TARGETS = [{n:1,label:'500 €'},{n:3,label:'2 250 €'},{n:5,label:'5 000 €'},{n:10,label:'15 000 €'}];
+    var ICONS = ['♥','★','✦','✿','✻','✿','✽','✾','✿','♛'];
+
+    var canvas = document.getElementById('scratch-canvas');
+    if (canvas) {
+      var hint = document.getElementById('scratch-hint');
+      var afterReveal = document.getElementById('after-reveal');
+      var W = 540, H = 340;
+      canvas.width = W; canvas.height = H;
+      var ctx = canvas.getContext('2d');
+      var paintCover = function(){
+        var g = ctx.createLinearGradient(0,0,W,H);
+        g.addColorStop(0,'#c9a961'); g.addColorStop(0.35,'#e8d28a');
+        g.addColorStop(0.65,'#c9a961'); g.addColorStop(1,'#8a6818');
+        ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+        ctx.strokeStyle = 'rgba(255,255,255,.18)'; ctx.lineWidth = 1;
+        for (var i = -H; i < W; i += 18){
+          ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i+H,H); ctx.stroke();
+        }
+        ctx.fillStyle = 'rgba(255,255,255,.12)';
+        for (var j = 0; j < 80; j++){
+          ctx.beginPath(); ctx.arc(Math.random()*W, Math.random()*H, Math.random()*1.5+0.4, 0, 6.28); ctx.fill();
+        }
+      };
+      paintCover();
+
+      var isDrawing = false, scratched = 0, hintHidden = false, autoCleared = false;
+      var scratchAt = function(cx, cy){
+        var r = canvas.getBoundingClientRect();
+        var x = (cx - r.left) * (W/r.width);
+        var y = (cy - r.top) * (H/r.height);
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.beginPath(); ctx.arc(x,y,32,0,6.28); ctx.fill();
+        scratched++;
+        if (!hintHidden && scratched > 4){ hint.style.opacity='0'; hintHidden=true; }
+        if (!autoCleared && scratched > 28){
+          autoCleared = true;
+          canvas.style.transition = 'opacity 1.2s';
+          canvas.style.opacity = '0';
+          setTimeout(function(){
+            if (afterReveal) afterReveal.style.display = 'block';
+            canvas.style.pointerEvents = 'none';
+          }, 700);
+        }
+      };
+      canvas.addEventListener('pointerdown', function(e){ isDrawing=true; scratchAt(e.clientX,e.clientY); });
+      canvas.addEventListener('pointermove', function(e){ if(isDrawing) scratchAt(e.clientX,e.clientY); });
+      canvas.addEventListener('pointerup',   function(){ isDrawing=false; });
+      canvas.addEventListener('pointerleave',function(){ isDrawing=false; });
+    }
+
+    var consCards = document.querySelectorAll('.cons-card');
+    var consHidden = document.getElementById('conseiller_id');
+    consCards.forEach(function(c){
+      c.addEventListener('click', function(){
+        consCards.forEach(function(x){ x.classList.remove('selected'); });
+        c.classList.add('selected'); consHidden.value = c.getAttribute('data-id');
+      });
+    });
+    var preset = new URLSearchParams(location.search).get('c');
+    if (preset){ var m = document.querySelector('.cons-card[data-id="'+preset+'"]'); if(m) m.click(); }
+
+    var list = document.getElementById('filleuls-list');
+    var stones = [document.getElementById('ms1'),document.getElementById('ms2'),document.getElementById('ms3'),document.getElementById('ms4')];
+    var sides  = [document.getElementById('msSide1'),document.getElementById('msSide2'),document.getElementById('msSide3'),document.getElementById('msSide4')];
+    var texts  = [document.getElementById('mt1'),document.getElementById('mt2'),document.getElementById('mt3'),document.getElementById('mt4')];
+    var thresholds = [1,3,5,10];
+    var cumEl = document.getElementById('dash-cum');
+    var nextEl = document.getElementById('dash-next');
+    var gauge = document.getElementById('dash-gauge');
+    var smiles = document.getElementById('dash-smiles');
+    var counterZone = document.getElementById('dash-counter-zone');
+    var toastZone = document.getElementById('dash-toast-zone');
+    var gratEl = document.getElementById('dash-grat-msg');
+    var count = 0, lastTier = -1;
+
+    var nextTeaser = function(n){
+      if (n >= 10) return 'Sommet atteint — challenge gagné, cadeaux bonus à la clé.';
+      var next = TARGETS.find(function(t){ return t.n > n; });
+      var r = next.n - n;
+      return 'Encore ' + (r===1?'un filleul':r+' filleuls') + ' pour atteindre ' + next.label + '.';
+    };
+    var gratMsg = function(n){
+      if (n===0) return 'Personne aidée pour l\'instant.';
+      if (n===1) return 'Une personne aura un accompagnement sur-mesure.';
+      if (n<5)  return n + ' proches qui vous remercieront sincèrement.';
+      if (n<10) return n + ' proches accompagnés — vous changez leur trajectoire.';
+      return n + ' personnes qui ont compris la valeur de votre conseil.';
+    };
+    var renumber = function(){
+      Array.prototype.forEach.call(list.children, function(b,i){
+        b.querySelector('.fb-name').textContent = 'Filleul n°'+(i+1);
+        b.querySelector('.fb-prime').textContent = '+ ' + REWARDS[i].toLocaleString('fr-FR') + ' €';
+      });
+    };
+    var refresh = function(){
+      var cum = cumAt(count);
+      cumEl.textContent = cum.toLocaleString('fr-FR');
+      nextEl.textContent = nextTeaser(count);
+      var p = Math.min(Math.round(cum/15000*100), 100);
+      gauge.style.width = p + '%';
+      gratEl.textContent = gratMsg(count);
+      counterZone.classList.remove('pulse-once'); void counterZone.offsetWidth; counterZone.classList.add('pulse-once');
+      var tier = -1;
+      thresholds.forEach(function(th,i){ if (count >= th) tier = i; });
+      stones.forEach(function(s,i){ if (i <= tier) s.classList.add('lit'); else s.classList.remove('lit'); });
+      sides.forEach(function(s,i){ if (s && i <= tier) s.classList.add('lit'); else if (s) s.classList.remove('lit'); });
+      texts.forEach(function(t,i){ if (t && i <= tier) t.classList.add('lit'); else if (t) t.classList.remove('lit'); });
+      if (tier > lastTier){
+        var labels = ['PALIER I DÉBLOQUÉ','PALIER II DÉBLOQUÉ','PALIER III DÉBLOQUÉ','SOMMET ATTEINT'];
+        var t = document.createElement('div'); t.className='dash-toast'; t.textContent='✦ '+labels[tier];
+        toastZone.appendChild(t); setTimeout(function(){ t.remove(); }, 2600);
+        lastTier = tier;
+      }
+    };
+    var spawnFloater = function(){
+      var f = document.createElement('div'); f.className = 'dash-floater';
+      f.textContent = '+ '+ REWARDS[count-1].toLocaleString('fr-FR') +' €';
+      f.style.cssText += 'top:6px;left:50%;font-size:30px;'; counterZone.appendChild(f);
+      setTimeout(function(){ f.remove(); }, 1800);
+    };
+    var spawnSmile = function(){
+      var i = document.createElement('span'); i.className='dash-smile';
+      i.textContent = ICONS[(count-1) % ICONS.length]; smiles.appendChild(i);
+    };
+    var addFilleul = function(silent){
+      count++;
+      var w = document.createElement('div');
+      w.className = 'filleul-block';
+      w.innerHTML =
+        '<div class="fb-title">'+
+          '<div class="fb-name">Filleul n°'+count+'</div>'+
+          '<div class="fb-prime">+ '+ REWARDS[count-1].toLocaleString('fr-FR') +' €</div>'+
+        '</div>'+
+        '<div class="grid2">'+
+          '<div class="form-group"><label>Prénom *</label><input class="fi-prenom" required></div>'+
+          '<div class="form-group"><label>Nom *</label><input class="fi-nom" required></div>'+
+          '<div class="form-group"><label>Email *</label><input class="fi-email" type="email" required></div>'+
+          '<div class="form-group"><label>Téléphone *</label><input class="fi-tel" type="tel" required></div>'+
+        '</div>'+
+        '<button type="button" class="fb-del">— Supprimer ce filleul</button>';
+      list.appendChild(w);
+      w.querySelector('.fb-del').addEventListener('click', function(){
+        if (list.children.length <= 1){ alert('Au moins un filleul est requis.'); return; }
+        w.remove(); count--; renumber(); refresh();
+      });
+      if (!silent){ spawnFloater(); spawnSmile(); }
+      refresh();
+    };
+    addFilleul(true);
+
+    document.getElementById('add-filleul').addEventListener('click', function(){
+      if (count >= 10){ alert('Le programme est plafonné à 10 filleuls par parrain et par an.'); return; }
+      addFilleul(false);
+    });
+
+    document.getElementById('submit-btn').addEventListener('click', function(){
+      var flash = document.getElementById('flash');
+      var missing = [];
+      ['p_prenom','p_nom','p_email'].forEach(function(id){ if (!document.getElementById(id).value.trim()) missing.push(id); });
+      Array.prototype.forEach.call(list.children, function(b, i){
+        ['fi-prenom','fi-nom','fi-email','fi-tel'].forEach(function(cls){
+          var el = b.querySelector('.'+cls);
+          if (!el.value.trim()) missing.push('filleul '+(i+1)+' / '+cls.replace('fi-',''));
+        });
+      });
+      if (!consHidden.value) missing.push('conseiller');
+      if (!document.getElementById('cgu_filleul').checked) missing.push('consentement');
+      if (missing.length){
+        flash.className='flash error'; flash.style.display='block';
+        flash.innerHTML = 'Merci de compléter : <strong>'+missing.join(', ')+'</strong>.';
+        return;
+      }
+      flash.className='flash success'; flash.style.display='block';
+      flash.innerHTML = '✓ Merci ! Vos <strong>'+list.children.length+'</strong> recommandation(s) sont enregistrées. Vous recevrez un email à chaque palier débloqué.';
+    });
+  })();
+  </script>
+
+</body>
+</html>
