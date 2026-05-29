@@ -306,6 +306,21 @@
     .pacte-badge svg{width:22px;height:22px;stroke:var(--pc-gold);fill:none;stroke-width:1.5;}
     .pacte-badge .lbl{font-family:'Cinzel',serif;font-size:10px;letter-spacing:3px;color:var(--pc-navy);font-weight:700;margin-top:8px;text-transform:uppercase;}
 
+    /* ===== Contact ===== */
+    .contact-section{padding:80px 24px;background:linear-gradient(135deg,var(--pc-cream),#fff);}
+    .contact-inner{max-width:680px;margin:0 auto;background:#fff;border-radius:18px;padding:48px 44px;
+      box-shadow:0 14px 48px rgba(31,58,95,.10);border:1px solid rgba(31,58,95,.06);}
+    .contact-form .form-group{margin-bottom:14px;}
+    .contact-form .form-group label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:600;letter-spacing:.5px;}
+    .contact-form .form-group input,
+    .contact-form .form-group textarea{width:100%;padding:12px 14px;font-size:16px;
+      border:1px solid var(--border);border-radius:8px;background:#fafbfc;font-family:inherit;box-sizing:border-box;}
+    .contact-form .form-group input:focus,
+    .contact-form .form-group textarea:focus,
+    .contact-form .form-group select:focus{outline:2px solid var(--pc-gold);
+      outline-offset:-1px;border-color:transparent;background:#fff;}
+    .contact-form .form-group textarea{min-height:120px;resize:vertical;}
+
     /* ===== Footer ===== */
     .pc-footer{background:var(--pc-navy-d);color:rgba(255,255,255,.7);padding:36px 24px;text-align:center;font-size:13px;}
     .pc-footer a{color:var(--pc-gold);text-decoration:none;}
@@ -339,6 +354,7 @@
     <nav class="links">
       <a href="#paliers">Les paliers</a>
       <a href="#fonctionnement">Comment ça marche</a>
+      <a href="#contact">Nous contacter</a>
       <a href="#formulaire" class="btn-mini">Recommander</a>
     </nav>
   </header>
@@ -712,6 +728,65 @@
     </div>
   </section>
 
+  <!-- ===== NOUS CONTACTER ===== -->
+  <section class="contact-section" id="contact">
+    <div class="contact-inner">
+      <span class="sec-eyebrow">Nous contacter</span>
+      <h2 style="font-family:'Playfair Display',Georgia,serif;font-size:34px;color:var(--pc-navy);text-align:center;margin:0 0 14px;font-weight:400;">
+        Une question, <span class="it" style="font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--pc-gold);">une suggestion</span> ?
+      </h2>
+      <p style="text-align:center;color:var(--muted);max-width:560px;margin:0 auto 36px;font-size:16px;line-height:1.6;font-family:'Cormorant Garamond',serif;font-style:italic;">
+        Écrivez-nous, on revient vers vous sous 48 h.
+      </p>
+
+      <form name="contact" method="POST" data-netlify="true" data-netlify-honeypot="bot-field" class="contact-form" id="contact-form">
+        <input type="hidden" name="form-name" value="contact">
+        <p hidden><label>Ne pas remplir : <input name="bot-field"></label></p>
+
+        <div class="grid2">
+          <div class="form-group">
+            <label for="c_prenom">Prénom *</label>
+            <input id="c_prenom" name="prenom" required>
+          </div>
+          <div class="form-group">
+            <label for="c_nom">Nom *</label>
+            <input id="c_nom" name="nom" required>
+          </div>
+          <div class="form-group">
+            <label for="c_email">Email *</label>
+            <input id="c_email" name="email" type="email" required>
+          </div>
+          <div class="form-group">
+            <label for="c_tel">Téléphone</label>
+            <input id="c_tel" name="telephone" type="tel">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="c_sujet">Sujet *</label>
+          <select id="c_sujet" name="sujet" required style="width:100%;padding:12px 14px;font-size:16px;border:1px solid var(--border);border-radius:8px;background:#fafbfc;font-family:inherit;box-sizing:border-box;">
+            <option value="">— Choisir —</option>
+            <option value="question">Une question sur le parrainage</option>
+            <option value="suggestion">Une suggestion</option>
+            <option value="rendez-vous">Demande de rendez-vous</option>
+            <option value="autre">Autre</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="c_message">Message *</label>
+          <textarea id="c_message" name="message" required rows="5" placeholder="Votre message..."></textarea>
+        </div>
+
+        <div class="submit-row">
+          <button type="submit" class="submit-btn">ENVOYER →</button>
+        </div>
+
+        <div id="contact-flash" style="display:none;"></div>
+      </form>
+    </div>
+  </section>
+
   <footer class="pc-footer">
     <div class="logo-wrap">
       <object data="logo-paris-conseils.png" type="image/png" aria-label="Logo Paris Conseils">
@@ -884,6 +959,28 @@
       if (count >= 10){ alert('Le programme est plafonné à 10 filleuls par parrain et par an.'); return; }
       addFilleul(false);
     });
+
+    var contactForm = document.getElementById('contact-form');
+    var contactFlash = document.getElementById('contact-flash');
+    if (contactForm){
+      contactForm.addEventListener('submit', function(e){
+        e.preventDefault();
+        var fd = new FormData(contactForm);
+        fetch('/', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+          body: new URLSearchParams(fd).toString()})
+          .then(function(){
+            contactFlash.className = 'flash success';
+            contactFlash.style.display = 'block';
+            contactFlash.innerHTML = '✓ Merci ! Votre message a bien été envoyé. On revient vers vous sous 48 h.';
+            contactForm.reset();
+          })
+          .catch(function(){
+            contactFlash.className = 'flash error';
+            contactFlash.style.display = 'block';
+            contactFlash.innerHTML = 'Erreur d\'envoi. Réessayez ou écrivez à contact@parisconseils.fr';
+          });
+      });
+    }
 
     document.getElementById('submit-btn').addEventListener('click', function(){
       var flash = document.getElementById('flash');
