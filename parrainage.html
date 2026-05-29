@@ -586,6 +586,14 @@
             <button type="button" class="submit-btn" id="submit-btn">ENVOYER MA RECOMMANDATION →</button>
           </div>
           <div id="flash" style="display:none;"></div>
+
+          <!-- Form caché juste pour que Netlify détecte les champs lors du build -->
+          <form name="parrainage" data-netlify="true" data-netlify-honeypot="bot-field" hidden>
+            <input name="parrain_prenom"><input name="parrain_nom"><input name="parrain_email"><input name="parrain_telephone">
+            <input name="conseiller"><input name="iban"><input name="nb_filleuls">
+            <input name="filleuls_json"><input name="recap">
+            <input name="bot-field">
+          </form>
         </div>
 
         <div class="dash">
@@ -999,8 +1007,51 @@
         flash.innerHTML = 'Merci de compléter : <strong>'+missing.join(', ')+'</strong>.';
         return;
       }
-      flash.className='flash success'; flash.style.display='block';
-      flash.innerHTML = '✓ Merci ! Vos <strong>'+list.children.length+'</strong> recommandation(s) sont enregistrées. Vous recevrez un email à chaque palier débloqué.';
+
+      var filleuls = [];
+      var recapLines = [];
+      Array.prototype.forEach.call(list.children, function(b, i){
+        var f = {
+          prenom: b.querySelector('.fi-prenom').value.trim(),
+          nom:    b.querySelector('.fi-nom').value.trim(),
+          email:  b.querySelector('.fi-email').value.trim(),
+          tel:    b.querySelector('.fi-tel').value.trim(),
+          message:(b.querySelector('.fi-msg') && b.querySelector('.fi-msg').value || '').trim()
+        };
+        filleuls.push(f);
+        recapLines.push('Filleul '+(i+1)+' : '+f.prenom+' '+f.nom+' — '+f.email+(f.tel?' — '+f.tel:'')+(f.message?'\n  Projet : '+f.message:''));
+      });
+
+      var consId = consHidden.value;
+      var consName = document.querySelector('.cons-card[data-id="'+consId+'"] .nom') ? document.querySelector('.cons-card[data-id="'+consId+'"] .nom').textContent : consId;
+
+      var payload = new URLSearchParams();
+      payload.append('form-name', 'parrainage');
+      payload.append('parrain_prenom', document.getElementById('p_prenom').value.trim());
+      payload.append('parrain_nom',    document.getElementById('p_nom').value.trim());
+      payload.append('parrain_email',  document.getElementById('p_email').value.trim());
+      payload.append('parrain_telephone', document.getElementById('p_tel').value.trim());
+      payload.append('conseiller',     consName);
+      payload.append('iban',           document.getElementById('iban').value.trim());
+      payload.append('nb_filleuls',    String(filleuls.length));
+      payload.append('filleuls_json',  JSON.stringify(filleuls));
+      payload.append('recap',          recapLines.join('\n\n'));
+
+      flash.className='flash info'; flash.style.display='block';
+      flash.innerHTML = 'Envoi en cours...';
+
+      fetch('/', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: payload.toString()})
+        .then(function(r){
+          if (!r.ok) throw new Error('HTTP '+r.status);
+          flash.className='flash success';
+          flash.innerHTML = '✓ Merci ! Vos <strong>'+filleuls.length+'</strong> recommandation(s) sont bien envoyées. '+
+                            'Le conseiller <strong>'+consName+'</strong> est notifié et reviendra vers chaque filleul sous 48 h. '+
+                            'Vous recevrez un email à chaque palier débloqué.';
+        })
+        .catch(function(err){
+          flash.className='flash error';
+          flash.innerHTML = '⚠ Erreur d\'envoi ('+err.message+'). Réessayez ou écrivez à <a href="mailto:contact@parisconseils.fr">contact@parisconseils.fr</a>.';
+        });
     });
   })();
   </script>
