@@ -177,7 +177,20 @@
     .step h3{margin:0 0 8px;color:var(--pc-navy);font-size:16px;font-family:'Cinzel',serif;font-weight:700;letter-spacing:1px;}
     .step p{margin:0;color:var(--muted);font-size:14px;line-height:1.6;font-family:'Cormorant Garamond',serif;font-style:italic;}
 
-    /* ===== Pyramide visualisation ===== */
+    /* ===== Constellation visualisation ===== */
+    .star-base{transition:fill .9s ease, transform .9s ease, filter .9s ease; transform-origin:center;}
+    .star-base.dim{fill:#0e2240; stroke:#1f3a5f; stroke-width:.6;}
+    .star-base.lit{filter:drop-shadow(0 0 7px rgba(232,210,138,.85));}
+    .star-tier.dim{fill:#13294a; stroke:#3b5478; stroke-width:.6;}
+    .star-tier.lit{filter:drop-shadow(0 0 14px rgba(255,224,140,.95));}
+    .star-link{transition:stroke-dashoffset 1.2s ease, opacity .8s ease;
+               stroke:url(#pcGoldLink); stroke-width:1.2; stroke-linecap:round; opacity:0;}
+    .star-link.on{opacity:.85;}
+    .star-label{transition:fill .9s ease, opacity .9s ease; fill:#5a6680; opacity:.55;
+                font-family:'Playfair Display',serif; font-weight:700; text-anchor:middle;}
+    .star-label.lit{fill:#f0d077; opacity:1;}
+    .pyr-old-keep{display:none;}
+    /* ===== (anciens styles pyramide conservés pour compat) ===== */
     .pyr-wrap{display:grid;grid-template-columns:1fr 1fr;gap:50px;align-items:center;}
     .pyr-controls{display:flex;gap:8px;justify-content:center;margin-top:20px;flex-wrap:wrap;}
     .pyr-btn{background:#fff;border:1.5px solid var(--border);color:var(--pc-navy);
@@ -366,7 +379,7 @@
         <h1>Recommandez,<br><span class="gold">soyez récompensé.</span></h1>
         <p class="lead">
           Chaque proche que vous présentez débloque une nouvelle pierre dorée
-          dans votre pyramide annuelle — jusqu'à
+          dans votre constellation annuelle — jusqu'à
           <strong>15 000 € de primes</strong> et des cadeaux bonus<sup>*</sup>.
         </p>
         <p class="tagline">
@@ -423,25 +436,37 @@
         <div class="amount">500 €</div>
         <div class="desc">Versés au dossier finalisé</div>
       </div>
-      <div class="tier best">
+      <div class="tier">
         <div class="rang-icon">2</div>
         <div class="rang-label">2E FILLEUL</div>
-        <div class="amount">750 €</div>
-        <div class="desc">Prime bonifiée</div>
+        <div class="amount">500 €</div>
+        <div class="desc">Encore 500 € — cumul 1 000 €</div>
       </div>
-      <div class="tier">
+      <div class="tier best">
         <div class="rang-icon">3</div>
-        <div class="rang-label">3E FILLEUL</div>
-        <div class="amount">1 000 €</div>
-        <div class="desc">Prime maximale unitaire</div>
+        <div class="rang-label">3E FILLEUL · JACKPOT</div>
+        <div class="amount">4 500 €</div>
+        <div class="desc">1 500 € × 3 — la prime triple <strong style="color:var(--pc-gold-l);">avec effet rétroactif</strong></div>
+      </div>
+    </div>
+
+    <!-- v200a — Bandeau rétro qui explique la mécanique -->
+    <div style="background:linear-gradient(135deg,#fdf6e3 0%,#fffaf0 100%);border:1px solid var(--pc-gold);border-left:4px solid var(--pc-gold);border-radius:14px;padding:24px 28px;margin:30px 0 18px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+      <div style="font-family:'Cinzel',serif;font-size:34px;color:var(--pc-gold-d);font-weight:700;flex-shrink:0;">★ ★ ★</div>
+      <div style="flex:1;min-width:280px;">
+        <div style="font-family:'Cinzel',serif;font-size:11px;letter-spacing:4px;color:var(--pc-gold-d);text-transform:uppercase;font-weight:700;margin-bottom:6px;">Effet rétroactif à partir du 3<sup>e</sup> filleul</div>
+        <div style="font-family:'Playfair Display',serif;font-size:22px;color:var(--pc-navy);line-height:1.35;">
+          Dès qu'un <strong>3<sup>e</sup> dossier</strong> est confirmé, vos 2 premiers filleuls passent <strong>aussi</strong> à <strong>1 500 €</strong>.
+          <span class="it" style="font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--pc-gold-d);">Vous recevez un complément de 2 000 €</span>.
+        </div>
       </div>
     </div>
 
     <div class="mega-tiers">
       <div class="mega five">
         <div class="count"><strong>5</strong> contacts confirmés</div>
-        <div class="big">5 000<sup>€</sup></div>
-        <div class="small">de primes cumulées versées par virement</div>
+        <div class="big">7 500<sup>€</sup></div>
+        <div class="small">de primes cumulées <em>(5 × 1 500 €)</em> versées par virement</div>
       </div>
       <div class="mega ten">
         <div class="ribbon">Top parrain</div>
@@ -453,7 +478,7 @@
 
     <p class="bonus-note">
       <sup>*</sup> Cadeaux bonus (séjour, expérience, coffret cadeau) attribués
-      aux parrains atteignant le sommet — 10 filleuls confirmés sur une année civile.
+      aux parrains atteignant le sommet — 10 filleuls confirmés sur une année civile (plafond 15 000 €).
     </p>
   </section>
 
@@ -532,7 +557,7 @@
   <section class="form-section" id="formulaire">
     <div class="form-card">
       <span class="sec-eyebrow">IV · Le moteur</span>
-      <h2>Chaque ajout illumine <span class="it" style="color:var(--pc-gold);">votre pyramide</span></h2>
+      <h2>Chaque ajout illumine <span class="it" style="color:var(--pc-gold);">votre constellation</span></h2>
       <p class="sub">Vous pouvez ajouter autant de filleuls que vous souhaitez. À droite, votre potentiel monte en temps réel.</p>
 
       <div class="form-grid">
@@ -610,87 +635,130 @@
           </div>
 
           <div class="dash-pyr-mini">
-            <svg viewBox="0 0 380 290" style="width:96%;height:auto;display:block;">
+            <!-- ===== Constellation des 10 étoiles : ciel navy, étoiles qui s'allument ===== -->
+            <svg viewBox="0 0 380 290" style="width:100%;height:auto;display:block;border-radius:14px;">
               <defs>
-                <linearGradient id="pcMiniGoldFront" gradientUnits="userSpaceOnUse" x1="190" y1="35" x2="190" y2="270">
-                  <stop offset="0%"  stop-color="#fff8d0"/>
-                  <stop offset="30%" stop-color="#f0d077"/>
-                  <stop offset="60%" stop-color="#c9a542"/>
-                  <stop offset="100%" stop-color="#7a5a10"/>
+                <radialGradient id="pcSky" cx="50%" cy="60%" r="75%">
+                  <stop offset="0%"   stop-color="#16315c"/>
+                  <stop offset="60%"  stop-color="#0c1e3a"/>
+                  <stop offset="100%" stop-color="#06122a"/>
+                </radialGradient>
+                <linearGradient id="pcGoldStar" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%"   stop-color="#fff6c2"/>
+                  <stop offset="45%"  stop-color="#f5d57a"/>
+                  <stop offset="100%" stop-color="#c79a3a"/>
                 </linearGradient>
-                <linearGradient id="pcMiniNavy" gradientUnits="userSpaceOnUse" x1="190" y1="35" x2="190" y2="270">
-                  <stop offset="0%"  stop-color="#2a4f80"/>
-                  <stop offset="55%" stop-color="#1f3a5f"/>
-                  <stop offset="100%" stop-color="#0a1729"/>
+                <linearGradient id="pcSilverStar" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%"   stop-color="#eef4ff"/>
+                  <stop offset="100%" stop-color="#b8c4dc"/>
                 </linearGradient>
-                <linearGradient id="pcGoldShine" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%"   stop-color="#fff" stop-opacity="0"/>
-                  <stop offset="50%"  stop-color="#fff" stop-opacity="0.35"/>
-                  <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+                <linearGradient id="pcGoldLink" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%"   stop-color="#c9a542" stop-opacity="0.2"/>
+                  <stop offset="50%"  stop-color="#f0d077" stop-opacity="0.95"/>
+                  <stop offset="100%" stop-color="#c9a542" stop-opacity="0.2"/>
                 </linearGradient>
-                <radialGradient id="pcMiniHalo" cx="50%" cy="50%" r="60%">
-                  <stop offset="0%"   stop-color="#fff3c4" stop-opacity="0.6"/>
+                <radialGradient id="pcHalo" cx="50%" cy="50%" r="60%">
+                  <stop offset="0%"   stop-color="#fff3c4" stop-opacity="0.55"/>
+                  <stop offset="70%"  stop-color="#c9a961" stop-opacity="0.10"/>
                   <stop offset="100%" stop-color="#c9a961" stop-opacity="0"/>
                 </radialGradient>
-                <filter id="pcMiniDrop" x="-20%" y="-20%" width="140%" height="160%">
-                  <feGaussianBlur in="SourceAlpha" stdDeviation="5"/>
-                  <feOffset dx="2" dy="8"/>
-                  <feComponentTransfer><feFuncA type="linear" slope="0.55"/></feComponentTransfer>
-                  <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
-                </filter>
               </defs>
 
-              <!-- Halo respirant derrière l'apex -->
-              <ellipse cx="190" cy="55" rx="105" ry="80" fill="url(#pcMiniHalo)">
-                <animate attributeName="opacity" values="0.55;1;0.55" dur="3.2s" repeatCount="indefinite"/>
-              </ellipse>
+              <!-- Ciel -->
+              <rect x="0" y="0" width="380" height="290" rx="14" fill="url(#pcSky)"/>
 
-              <!-- Pyramide 2D propre, 4 paliers — pas de 3D bancale -->
-              <g filter="url(#pcMiniDrop)">
-                <polygon id="ms1" class="tier-stone"
-                         points="50,265 330,265 297,210 83,210"
-                         fill="url(#pcMiniNavy)" stroke="#c9a961" stroke-width="0.6" stroke-opacity="0.45"/>
-                <polygon id="ms2" class="tier-stone"
-                         points="83,210 297,210 263,155 117,155"
-                         fill="url(#pcMiniNavy)" stroke="#c9a961" stroke-width="0.6" stroke-opacity="0.45"/>
-                <polygon id="ms3" class="tier-stone"
-                         points="117,155 263,155 236,110 144,110"
-                         fill="url(#pcMiniNavy)" stroke="#c9a961" stroke-width="0.6" stroke-opacity="0.45"/>
-                <polygon id="ms4" class="tier-stone"
-                         points="144,110 236,110 190,35"
-                         fill="url(#pcMiniNavy)" stroke="#c9a961" stroke-width="0.6" stroke-opacity="0.45"/>
+              <!-- Poussière d'étoiles décoratives -->
+              <g fill="#ffffff">
+                <circle cx="22"  cy="42"  r="0.6" opacity=".5"/>
+                <circle cx="55"  cy="78"  r="0.5" opacity=".4"/>
+                <circle cx="98"  cy="40"  r="0.7" opacity=".55"/>
+                <circle cx="155" cy="68"  r="0.5" opacity=".45"/>
+                <circle cx="220" cy="32"  r="0.7" opacity=".6"/>
+                <circle cx="284" cy="58"  r="0.5" opacity=".5"/>
+                <circle cx="338" cy="22"  r="0.6" opacity=".5"/>
+                <circle cx="42"  cy="200" r="0.5" opacity=".4"/>
+                <circle cx="118" cy="248" r="0.7" opacity=".5"/>
+                <circle cx="200" cy="260" r="0.5" opacity=".4"/>
+                <circle cx="290" cy="248" r="0.5" opacity=".45"/>
+                <circle cx="352" cy="200" r="0.6" opacity=".5"/>
               </g>
 
-              <!-- Reflet ciselé en haut de chaque palier (subtle highlight) -->
-              <polygon points="83,210 297,210 293,213 87,213" fill="#fff" opacity="0.08"/>
-              <polygon points="117,155 263,155 260,158 120,158" fill="#fff" opacity="0.08"/>
-              <polygon points="144,110 236,110 234,113 146,113" fill="#fff" opacity="0.08"/>
-
-              <!-- Filets dorés bien visibles entre paliers -->
-              <line x1="83" y1="210" x2="297" y2="210" stroke="#c9a961" stroke-width="1.1" opacity="0.85"/>
-              <line x1="117" y1="155" x2="263" y2="155" stroke="#c9a961" stroke-width="1" opacity="0.85"/>
-              <line x1="144" y1="110" x2="236" y2="110" stroke="#c9a961" stroke-width="0.9" opacity="0.85"/>
-
-              <!-- Chiffres — Playfair 700, bien centrés, marqués -->
-              <g font-family="'Playfair Display',serif" font-weight="700" text-anchor="middle" letter-spacing="-0.3">
-                <text id="mt1" class="tier-text" x="190" y="244" font-size="26" fill="#e8d28a">500 €</text>
-                <text id="mt2" class="tier-text" x="190" y="189" font-size="22" fill="#e8d28a">2 250 €</text>
-                <text id="mt3" class="tier-text" x="190" y="137" font-size="17" fill="#e8d28a">5 000 €</text>
-                <text id="mt4" class="tier-text" x="190" y="92" font-size="12" fill="#e8d28a">15 000 €</text>
+              <!-- Lignes reliant les étoiles (s'allument progressivement) -->
+              <g>
+                <line id="cl1" class="star-link" x1="38"  y1="240" x2="78"  y2="222"/>
+                <line id="cl2" class="star-link" x1="78"  y1="222" x2="120" y2="198"/>
+                <line id="cl3" class="star-link" x1="120" y1="198" x2="162" y2="170"/>
+                <line id="cl4" class="star-link" x1="162" y1="170" x2="205" y2="142"/>
+                <line id="cl5" class="star-link" x1="205" y1="142" x2="240" y2="118"/>
+                <line id="cl6" class="star-link" x1="240" y1="118" x2="270" y2="96"/>
+                <line id="cl7" class="star-link" x1="270" y1="96"  x2="297" y2="77"/>
+                <line id="cl8" class="star-link" x1="297" y1="77"  x2="322" y2="60"/>
+                <line id="cl9" class="star-link" x1="322" y1="60"  x2="348" y2="40"/>
               </g>
 
-              <!-- Apex : étoile plus généreuse + double pulse -->
-              <g transform="translate(190,25)">
-                <circle r="11" fill="#fff8d0" opacity="0.12">
-                  <animate attributeName="r" values="8;16;8" dur="3s" repeatCount="indefinite"/>
-                  <animate attributeName="opacity" values="0.05;0.22;0.05" dur="3s" repeatCount="indefinite"/>
-                </circle>
-                <path d="M0,-13 L3,-3 L13,0 L3,3 L0,13 L-3,3 L-13,0 L-3,-3 Z"
-                      fill="url(#pcMiniGoldFront)" stroke="#5b430a" stroke-width="0.5"/>
-                <circle r="2.2" fill="#fff8d0">
-                  <animate attributeName="r" values="1.8;3.2;1.8" dur="2.6s" repeatCount="indefinite"/>
-                </circle>
+              <!-- Étoiles palier (1, 3, 5, 10) — grandes + dorées + halo -->
+              <!-- Étoile #1 — Palier I (500 €) -->
+              <g transform="translate(38,240)">
+                <circle id="ch1" class="star-halo" r="14" fill="url(#pcHalo)" opacity="0"/>
+                <path id="cs1" class="star-base star-tier dim"
+                      d="M0,-11 L2.7,-3.4 L11,-3.4 L4.4,1.3 L7,9 L0,4.4 L-7,9 L-4.4,1.3 L-11,-3.4 L-2.7,-3.4 Z"/>
               </g>
+              <text id="cv1" class="star-label" x="38" y="265" font-size="11">500 €</text>
+
+              <!-- Étoile #3 — Palier II (2 250 €) -->
+              <g transform="translate(120,198)">
+                <circle id="ch3" class="star-halo" r="14" fill="url(#pcHalo)" opacity="0"/>
+                <path id="cs3" class="star-base star-tier dim"
+                      d="M0,-11 L2.7,-3.4 L11,-3.4 L4.4,1.3 L7,9 L0,4.4 L-7,9 L-4.4,1.3 L-11,-3.4 L-2.7,-3.4 Z"/>
+              </g>
+              <text id="cv3" class="star-label" x="120" y="223" font-size="11">4 500 €</text>
+
+              <!-- Étoile #5 — Palier III (5 000 €) -->
+              <g transform="translate(205,142)">
+                <circle id="ch5" class="star-halo" r="15" fill="url(#pcHalo)" opacity="0"/>
+                <path id="cs5" class="star-base star-tier dim"
+                      d="M0,-12 L3,-3.7 L12,-3.7 L4.8,1.4 L7.6,10 L0,4.8 L-7.6,10 L-4.8,1.4 L-12,-3.7 L-3,-3.7 Z"/>
+              </g>
+              <text id="cv5" class="star-label" x="205" y="168" font-size="11">7 500 €</text>
+
+              <!-- Étoile #10 — Sommet (15 000 €) - la plus grande -->
+              <g transform="translate(348,40)">
+                <circle id="ch10" class="star-halo" r="20" fill="url(#pcHalo)" opacity="0"/>
+                <path id="cs10" class="star-base star-tier dim"
+                      d="M0,-15 L3.7,-4.6 L15,-4.6 L6,1.8 L9.5,12.5 L0,6 L-9.5,12.5 L-6,1.8 L-15,-4.6 L-3.7,-4.6 Z"/>
+              </g>
+              <text id="cv10" class="star-label" x="348" y="20" font-size="11">15 000 €</text>
+
+              <!-- Étoiles intermédiaires (2,4,6,7,8,9) — petites, argentées -->
+              <g transform="translate(78,222)">
+                <path id="cs2" class="star-base dim"
+                      d="M0,-7 L1.7,-2.2 L7,-2.2 L2.8,0.8 L4.4,5.7 L0,2.8 L-4.4,5.7 L-2.8,0.8 L-7,-2.2 L-1.7,-2.2 Z"/>
+              </g>
+              <g transform="translate(162,170)">
+                <path id="cs4" class="star-base dim"
+                      d="M0,-7 L1.7,-2.2 L7,-2.2 L2.8,0.8 L4.4,5.7 L0,2.8 L-4.4,5.7 L-2.8,0.8 L-7,-2.2 L-1.7,-2.2 Z"/>
+              </g>
+              <g transform="translate(240,118)">
+                <path id="cs6" class="star-base dim"
+                      d="M0,-7 L1.7,-2.2 L7,-2.2 L2.8,0.8 L4.4,5.7 L0,2.8 L-4.4,5.7 L-2.8,0.8 L-7,-2.2 L-1.7,-2.2 Z"/>
+              </g>
+              <g transform="translate(270,96)">
+                <path id="cs7" class="star-base dim"
+                      d="M0,-7 L1.7,-2.2 L7,-2.2 L2.8,0.8 L4.4,5.7 L0,2.8 L-4.4,5.7 L-2.8,0.8 L-7,-2.2 L-1.7,-2.2 Z"/>
+              </g>
+              <g transform="translate(297,77)">
+                <path id="cs8" class="star-base dim"
+                      d="M0,-7 L1.7,-2.2 L7,-2.2 L2.8,0.8 L4.4,5.7 L0,2.8 L-4.4,5.7 L-2.8,0.8 L-7,-2.2 L-1.7,-2.2 Z"/>
+              </g>
+              <g transform="translate(322,60)">
+                <path id="cs9" class="star-base dim"
+                      d="M0,-7 L1.7,-2.2 L7,-2.2 L2.8,0.8 L4.4,5.7 L0,2.8 L-4.4,5.7 L-2.8,0.8 L-7,-2.2 L-1.7,-2.2 Z"/>
+              </g>
+
+              <!-- Légende discrète en pied -->
+              <text x="190" y="282" text-anchor="middle"
+                    font-family="'Cinzel',serif" font-size="8" letter-spacing="3"
+                    fill="#7a8aa8" opacity="0.7">CONSTELLATION DE LA RECONNAISSANCE</text>
             </svg>
           </div>
 
@@ -812,9 +880,20 @@
   (function(){
     document.getElementById('yy').textContent = new Date().getFullYear();
 
-    var REWARDS = [500,750,1000,1250,500,500,1000,1000,1500,5500];
+    // v200a — Nouvelle règle : 500 €/filleul pour les 2 premiers,
+    // puis 1 500 €/filleul dès le 3ème AVEC RÉTROACTIVITÉ sur les 2 premiers.
+    // Plafond : 10 filleuls/an = 15 000 €.
+    // Le 3ème déclenche le palier : 3 × 1500 = 4 500 € (au lieu de 500+500+1500 = 2 500).
+    // Stocké comme rewards individuels où le 3ème "rattrape" le bonus rétro.
+    var REWARDS = [500, 500, 3500, 1500, 1500, 1500, 1500, 1500, 1500, 1500];
+    // Total cumulé : 500, 1000, 4500, 6000, 7500, 9000, 10500, 12000, 13500, 15000
     var cumAt = function(n){ var s=0; for(var i=0;i<n;i++) s+=REWARDS[i]; return s; };
-    var TARGETS = [{n:1,label:'500 €'},{n:3,label:'2 250 €'},{n:5,label:'5 000 €'},{n:10,label:'15 000 €'}];
+    var TARGETS = [
+      {n:1,  label:'500 €'},
+      {n:3,  label:'4 500 €'},   // JACKPOT : 3 × 1500 € avec rétro
+      {n:5,  label:'7 500 €'},
+      {n:10, label:'15 000 €'}   // sommet : 10 × 1500 €
+    ];
     var ICONS = ['♥','★','✦','✿','✻','✿','✽','✾','✿','♛'];
 
     var canvas = document.getElementById('scratch-canvas');
@@ -877,8 +956,15 @@
     if (preset){ var m = document.querySelector('.cons-card[data-id="'+preset+'"]'); if(m) m.click(); }
 
     var list = document.getElementById('filleuls-list');
-    var stones = [document.getElementById('ms1'),document.getElementById('ms2'),document.getElementById('ms3'),document.getElementById('ms4')];
-    var texts  = [document.getElementById('mt1'),document.getElementById('mt2'),document.getElementById('mt3'),document.getElementById('mt4')];
+    // Constellation : 10 étoiles + 9 lignes + 4 labels (paliers 1,3,5,10)
+    var stars = [];
+    for (var si=1; si<=10; si++) stars.push(document.getElementById('cs'+si));
+    var links = [];
+    for (var li=1; li<=9; li++) links.push(document.getElementById('cl'+li));
+    var halos = {1:document.getElementById('ch1'), 3:document.getElementById('ch3'),
+                 5:document.getElementById('ch5'), 10:document.getElementById('ch10')};
+    var labels = {1:document.getElementById('cv1'), 3:document.getElementById('cv3'),
+                  5:document.getElementById('cv5'), 10:document.getElementById('cv10')};
     var thresholds = [1,3,5,10];
     var cumEl = document.getElementById('dash-cum');
     var nextEl = document.getElementById('dash-next');
@@ -918,8 +1004,28 @@
       counterZone.classList.remove('pulse-once'); void counterZone.offsetWidth; counterZone.classList.add('pulse-once');
       var tier = -1;
       thresholds.forEach(function(th,i){ if (count >= th) tier = i; });
-      stones.forEach(function(s,i){ if (i <= tier) s.classList.add('lit'); else s.classList.remove('lit'); });
-      texts.forEach(function(t,i){ if (t && i <= tier) t.classList.add('lit'); else if (t) t.classList.remove('lit'); });
+      // Étoiles : on illumine les `count` premières (de 1 à 10)
+      stars.forEach(function(s,i){
+        if (!s) return;
+        if (i < count) {
+          s.classList.add('lit');
+          s.setAttribute('fill', s.classList.contains('star-tier') ? 'url(#pcGoldStar)' : 'url(#pcSilverStar)');
+        } else {
+          s.classList.remove('lit');
+          s.setAttribute('fill', s.classList.contains('star-tier') ? '#13294a' : '#0e2240');
+        }
+      });
+      // Lignes : on dessine les `count-1` premières
+      links.forEach(function(l,i){
+        if (!l) return;
+        if (i < count - 1) l.classList.add('on'); else l.classList.remove('on');
+      });
+      // Halos & labels paliers : actifs si seuil atteint
+      [1,3,5,10].forEach(function(th){
+        var reached = count >= th;
+        if (halos[th])  halos[th].setAttribute('opacity', reached ? '1' : '0');
+        if (labels[th]) { if (reached) labels[th].classList.add('lit'); else labels[th].classList.remove('lit'); }
+      });
       if (tier > lastTier){
         var labels = ['PALIER I DÉBLOQUÉ','PALIER II DÉBLOQUÉ','PALIER III DÉBLOQUÉ','SOMMET ATTEINT'];
         var t = document.createElement('div'); t.className='dash-toast'; t.textContent='✦ '+labels[tier];
@@ -1019,39 +1125,83 @@
           message:(b.querySelector('.fi-msg') && b.querySelector('.fi-msg').value || '').trim()
         };
         filleuls.push(f);
-        recapLines.push('Filleul '+(i+1)+' : '+f.prenom+' '+f.nom+' — '+f.email+(f.tel?' — '+f.tel:'')+(f.message?'\n  Projet : '+f.message:''));
+        recapLines.push(
+          '— FILLEUL ' + (i+1) + ' ' + '—'.repeat(40) + '\n' +
+          '  Prénom / Nom : ' + f.prenom + ' ' + f.nom + '\n' +
+          '  Email        : ' + f.email + '\n' +
+          (f.tel     ? '  Téléphone    : ' + f.tel     + '\n' : '') +
+          (f.message ? '  Projet       : ' + f.message + '\n' : '')
+        );
       });
 
       var consId = consHidden.value;
       var consName = document.querySelector('.cons-card[data-id="'+consId+'"] .nom') ? document.querySelector('.cons-card[data-id="'+consId+'"] .nom').textContent : consId;
 
+      var parrain = {
+        prenom: document.getElementById('p_prenom').value.trim(),
+        nom:    document.getElementById('p_nom').value.trim(),
+        email:  document.getElementById('p_email').value.trim(),
+        tel:    document.getElementById('p_tel').value.trim()
+      };
+      var iban = document.getElementById('iban').value.trim();
+
+      var recapHeader =
+        '════════════════════════════════════════════\n' +
+        '  NOUVEAU PARRAINAGE — ' + filleuls.length + ' filleul(s)\n' +
+        '════════════════════════════════════════════\n\n' +
+        '▸ PARRAIN\n' +
+        '  ' + parrain.prenom + ' ' + parrain.nom + '\n' +
+        '  ✉  ' + parrain.email + '\n' +
+        (parrain.tel ? '  ☎  ' + parrain.tel + '\n' : '') +
+        '\n' +
+        '▸ CONSEILLER SOUHAITÉ : ' + consName + '\n' +
+        (iban ? '▸ IBAN parrain : ' + iban + '\n' : '') +
+        '\n';
+
       var payload = new URLSearchParams();
       payload.append('form-name', 'parrainage');
-      payload.append('parrain_prenom', document.getElementById('p_prenom').value.trim());
-      payload.append('parrain_nom',    document.getElementById('p_nom').value.trim());
-      payload.append('parrain_email',  document.getElementById('p_email').value.trim());
-      payload.append('parrain_telephone', document.getElementById('p_tel').value.trim());
+      payload.append('parrain_prenom', parrain.prenom);
+      payload.append('parrain_nom',    parrain.nom);
+      payload.append('parrain_email',  parrain.email);
+      payload.append('parrain_telephone', parrain.tel);
       payload.append('conseiller',     consName);
-      payload.append('iban',           document.getElementById('iban').value.trim());
+      payload.append('iban',           iban);
       payload.append('nb_filleuls',    String(filleuls.length));
       payload.append('filleuls_json',  JSON.stringify(filleuls));
-      payload.append('recap',          recapLines.join('\n\n'));
+      payload.append('recap',          recapHeader + recapLines.join('\n'));
 
       flash.className='flash info'; flash.style.display='block';
       flash.innerHTML = 'Envoi en cours...';
 
-      fetch('/', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: payload.toString()})
-        .then(function(r){
-          if (!r.ok) throw new Error('HTTP '+r.status);
+      // 1) Netlify Forms (notification mail + archive)
+      var pNetlify = fetch('/', {
+        method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body: payload.toString()
+      }).then(function(r){ if (!r.ok) throw new Error('Netlify HTTP '+r.status); return true; });
+
+      // 2) Relais vers le dashboard ICA (parrainageAdd, 1 appel par filleul)
+      var pDashboard = fetch('/.netlify/functions/parrainage-relay', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ parrain: parrain, conseiller: consName, filleuls: filleuls })
+      }).then(function(r){
+        return r.json().then(function(j){ return { ok: r.ok && j.ok, body: j }; });
+      }).catch(function(e){ return { ok:false, body:{error:e.message} }; });
+
+      // On considère l'envoi réussi si Netlify Forms a marché (ICA est best-effort).
+      pNetlify.then(function(){
+        return pDashboard.then(function(dash){
           flash.className='flash success';
-          flash.innerHTML = '✓ Merci ! Vos <strong>'+filleuls.length+'</strong> recommandation(s) sont bien envoyées. '+
+          flash.innerHTML = '✓ Merci ! Vos <strong>'+filleuls.length+'</strong> recommandation(s) sont bien enregistrées. '+
                             'Le conseiller <strong>'+consName+'</strong> est notifié et reviendra vers chaque filleul sous 48 h. '+
-                            'Vous recevrez un email à chaque palier débloqué.';
-        })
-        .catch(function(err){
-          flash.className='flash error';
-          flash.innerHTML = '⚠ Erreur d\'envoi ('+err.message+'). Réessayez ou écrivez à <a href="mailto:contact@parisconseils.fr">contact@parisconseils.fr</a>.';
+                            'Vous recevrez un email à chaque palier débloqué.' +
+                            (dash.ok ? '' : '<br><small style="opacity:.7">(Dashboard ICA en cours de synchronisation.)</small>');
         });
+      }).catch(function(err){
+        flash.className='flash error';
+        flash.innerHTML = '⚠ Erreur d\'envoi ('+err.message+'). Réessayez ou écrivez à <a href="mailto:contact@parisconseils.fr">contact@parisconseils.fr</a>.';
+      });
     });
   })();
   </script>
