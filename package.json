@@ -1,0 +1,9 @@
+{
+  "name": "parrainage-paris-conseils",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Site parrainage + backend appels Paris Conseils",
+  "dependencies": {
+    "@netlify/blobs": "^8.0.0"
+  }
+}
