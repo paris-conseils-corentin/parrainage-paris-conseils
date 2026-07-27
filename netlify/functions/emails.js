@@ -1,273 +1,358 @@
 // Templates HTML des 3 emails du parrainage Paris Conseils
-// — Email 1 : Parrain (accusé de réception, ton chaleureux)
-// — Email 2 : Conseiller (notification opérationnelle, ton pro)
-// — Email 3 : Filleul (annonce élégante, présentation Paris Conseils)
+// — Email 1 : Parrain     (confirmation soignée : récap, paliers, prime, IBAN masqué)
+// — Email 2 : Conseiller  (fiche opérationnelle : parrain + IBAN complet, filleuls cliquables, checklist)
+// — Email 3 : Filleul     (annonce élégante et sobre, sans mention d'argent)
 //
-// Charte : navy #1a2842, or #c9a542, crème #fbf7ec, serif Playfair pour les titres.
+// Charte : navy #1a2842, or #c9a542, crème #fbf7ec, serif Georgia/Playfair.
+// Contraintes email : tables + styles inline uniquement, couleurs pleines
+// (les dégradés et polices web sont ignorés par Outlook/Gmail).
 
 const NAVY     = '#1a2842';
 const NAVY_D   = '#0c1a35';
 const GOLD     = '#c9a542';
 const GOLD_L   = '#f0d077';
+const GOLD_BG  = '#faf3df';
 const CREAM    = '#fbf7ec';
-const INK      = '#1a1a1a';
+const INK      = '#1f2430';
 const MUTED    = '#6b7280';
-const LOGO_URL = 'https://parrainage.parisconseils.fr/logo-paris-conseils.png';
+const LINE     = '#e8e2d2';
 
-const baseShell = (opts) => `<!DOCTYPE html>
+const LOGO_URL      = 'https://parrainage.parisconseils.fr/logo-paris-conseils.png';
+const SITE_URL      = 'https://parrainage.parisconseils.fr/parrainage.html';
+const DASHBOARD_URL = 'https://visionary-croquembouche-672f9b.netlify.app/equipe.html';
+const CONTACT_EMAIL = 'contact@parisconseils.fr';
+
+const SERIF   = "Georgia,'Times New Roman',serif";
+const TITLE_F = "'Playfair Display',Georgia,'Times New Roman',serif";
+
+const escapeHtml = (s) => String(s || '').replace(/[&<>"']/g, c => (
+  { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+));
+
+// IBAN affiché en clair mais groupé par 4 (lisibilité conseiller)
+function formatIban(iban) {
+  return String(iban || '').replace(/\s+/g, '').replace(/(.{4})/g, '$1 ').trim();
+}
+
+// IBAN masqué pour le parrain : FR86 ···· ···· 3325
+function maskIban(iban) {
+  const raw = String(iban || '').replace(/\s+/g, '');
+  if (raw.length < 8) return '';
+  return raw.slice(0, 4) + ' ···· ···· ' + raw.slice(-4);
+}
+
+// Bouton compatible tous clients (table, pas de <button>)
+function button(href, label, { bg = GOLD, color = NAVY_D } = {}) {
+  return `
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:28px auto;">
+    <tr>
+      <td bgcolor="${bg}" style="border-radius:8px;">
+        <a href="${href}" target="_blank"
+           style="display:inline-block;padding:15px 34px;font-family:${SERIF};font-size:12px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:${color};text-decoration:none;border-radius:8px;">
+          ${label}
+        </a>
+      </td>
+    </tr>
+  </table>`;
+}
+
+// Coquille commune : préheader caché, en-tête navy + logo, filet or, corps, pied de page
+function baseShell({ title, preheader, eyebrow, heading, subtitle, body }) {
+  return `<!DOCTYPE html>
 <html lang="fr">
-<head><meta charset="utf-8"><title>${opts.title}</title></head>
-<body style="margin:0;padding:0;background:${CREAM};font-family:Georgia,'Times New Roman',serif;color:${INK};">
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:${CREAM};padding:40px 16px;">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>${escapeHtml(title)}</title>
+</head>
+<body style="margin:0;padding:0;background:${CREAM};font-family:${SERIF};color:${INK};">
+  <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">${escapeHtml(preheader || '')}&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>
+
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" bgcolor="${CREAM}" style="background:${CREAM};padding:36px 12px;">
     <tr><td align="center">
-      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width:600px;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 6px 30px rgba(12,26,53,0.08);">
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="width:600px;max-width:100%;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 6px 30px rgba(12,26,53,0.10);">
 
-        <!-- En-tête navy + logo -->
+        <!-- En-tete navy + logo -->
         <tr>
-          <td style="background:${NAVY};padding:30px 40px;text-align:center;">
-            <img src="${LOGO_URL}" alt="Paris Conseils" width="200" height="auto" style="display:inline-block;max-width:200px;height:auto;">
+          <td bgcolor="${NAVY}" style="background:${NAVY};padding:28px 40px;text-align:center;">
+            <img src="${LOGO_URL}" alt="Paris Conseils" width="190" style="display:inline-block;max-width:190px;height:auto;border:0;">
           </td>
         </tr>
+        <tr><td bgcolor="${GOLD}" style="height:3px;line-height:3px;font-size:0;background:${GOLD};">&nbsp;</td></tr>
 
-        <!-- Filet doré -->
-        <tr><td style="height:3px;background:linear-gradient(90deg, ${GOLD} 0%, ${GOLD_L} 50%, ${GOLD} 100%);"></td></tr>
-
-        <!-- Eyebrow -->
+        <!-- Eyebrow + titre -->
         <tr>
-          <td style="padding:28px 40px 0 40px;text-align:center;">
-            <div style="font-family:Georgia,serif;font-size:10px;letter-spacing:5px;color:${GOLD};text-transform:uppercase;">${opts.eyebrow}</div>
+          <td style="padding:32px 44px 0 44px;text-align:center;">
+            <div style="font-family:${SERIF};font-size:11px;letter-spacing:4px;color:${GOLD};text-transform:uppercase;font-weight:700;">${eyebrow}</div>
+            <h1 style="font-family:${TITLE_F};font-size:27px;font-weight:400;color:${NAVY_D};margin:12px 0 0 0;line-height:1.25;">${heading}</h1>
+            ${subtitle ? `<div style="font-family:${SERIF};font-style:italic;font-size:14px;color:${MUTED};margin-top:10px;">${subtitle}</div>` : ''}
           </td>
         </tr>
-
-        <!-- Titre -->
-        <tr>
-          <td style="padding:14px 40px 8px 40px;text-align:center;">
-            <h1 style="font-family:'Playfair Display',Georgia,serif;font-size:28px;font-weight:400;color:${NAVY_D};margin:0;line-height:1.2;">${opts.title}</h1>
-          </td>
-        </tr>
-
-        ${opts.subtitle ? `<tr><td style="padding:0 40px 20px 40px;text-align:center;">
-          <div style="font-family:Georgia,serif;font-style:italic;font-size:15px;color:${MUTED};">${opts.subtitle}</div>
-        </td></tr>` : ''}
 
         <!-- Corps -->
-        <tr><td style="padding:10px 40px 30px 40px;font-family:Georgia,serif;font-size:15px;line-height:1.7;color:${INK};">
-          ${opts.body}
-        </td></tr>
+        <tr>
+          <td style="padding:22px 44px 34px 44px;font-family:${SERIF};font-size:15px;line-height:1.75;color:${INK};">
+            ${body}
+          </td>
+        </tr>
 
         <!-- Pied de page -->
-        <tr><td style="background:${CREAM};padding:24px 40px;text-align:center;font-family:Georgia,serif;font-size:12px;color:${MUTED};border-top:1px solid #eee;">
-          <div style="margin-bottom:8px;">Paris Conseils — Ingénierie financière &amp; optimisation fiscale</div>
-          <div>Confidentialité absolue · Secret professionnel</div>
-          <div style="margin-top:14px;">
-            <a href="https://parrainage.parisconseils.fr" style="color:${NAVY};text-decoration:none;">parrainage.parisconseils.fr</a>
-            &nbsp;·&nbsp;
-            <a href="mailto:contact@parisconseils.fr" style="color:${NAVY};text-decoration:none;">contact@parisconseils.fr</a>
-          </div>
-        </td></tr>
+        <tr>
+          <td bgcolor="${NAVY_D}" style="background:${NAVY_D};padding:26px 40px;text-align:center;">
+            <div style="font-family:${TITLE_F};font-size:15px;color:#ffffff;letter-spacing:1px;">Paris Conseils</div>
+            <div style="font-family:${SERIF};font-size:11px;color:#8b97b3;margin-top:6px;letter-spacing:1px;">Ingénierie financière &amp; optimisation fiscale</div>
+            <div style="font-family:${SERIF};font-size:11px;color:#8b97b3;margin-top:2px;">Confidentialité absolue · Secret professionnel</div>
+            <div style="margin-top:14px;font-size:12px;">
+              <a href="${SITE_URL}" style="color:${GOLD_L};text-decoration:none;">parrainage.parisconseils.fr</a>
+              <span style="color:#4a5872;">&nbsp;·&nbsp;</span>
+              <a href="mailto:${CONTACT_EMAIL}" style="color:${GOLD_L};text-decoration:none;">${CONTACT_EMAIL}</a>
+            </div>
+          </td>
+        </tr>
 
       </table>
+
+      <div style="max-width:600px;margin:16px auto 0 auto;font-family:${SERIF};font-size:11px;color:#9aa0ab;text-align:center;line-height:1.6;">
+        Vous recevez cet email dans le cadre du programme de parrainage Paris Conseils.<br>
+        Pour toute question ou suppression de vos données : <a href="mailto:${CONTACT_EMAIL}" style="color:#9aa0ab;">${CONTACT_EMAIL}</a>
+      </div>
     </td></tr>
   </table>
 </body></html>`;
-
-const escapeHtml = (s) => String(s||'').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
-
-// v200 — Rangée d'étoiles dorées : N étoiles allumées sur 10
-function starsRow(nLit) {
-  const goldStar  = '★';
-  const dimStar   = '☆';
-  let html = '<div style="text-align:center;font-size:28px;letter-spacing:6px;line-height:1;margin:14px 0;">';
-  for (let i = 0; i < 10; i++) {
-    const color = i < nLit ? GOLD : '#cbd2de';
-    html += `<span style="color:${color};">${i < nLit ? goldStar : dimStar}</span>`;
-  }
-  html += '</div>';
-  return html;
 }
 
-// ============================================================================
-// EMAIL 1 — PARRAIN (accusé de réception)
-// ============================================================================
-function emailParrain({ parrain, conseiller, filleuls, total, nbFilleulsConfirmes }) {
-  const nbConfirmes = (typeof nbFilleulsConfirmes === 'number') ? nbFilleulsConfirmes : 0;
-  const nbApresAjout = nbConfirmes + filleuls.length;
-  // Bandeau rétro déclenché si on passe à 3+ filleuls grâce à cet envoi
-  const triggersRetro = nbConfirmes < 3 && nbApresAjout >= 3;
-  const stars = starsRow(Math.min(nbApresAjout, 10));
-  const filleulsHtml = filleuls.map((f, i) => `
+// Carte listant les filleuls (partagée parrain/conseiller, densité différente)
+function filleulsCard(filleuls, { withActions = false } = {}) {
+  const rows = filleuls.map((f, i) => `
     <tr>
-      <td style="padding:14px 18px;border-bottom:1px solid #f0eee6;font-family:Georgia,serif;">
-        <div style="font-family:'Playfair Display',Georgia,serif;font-size:16px;color:${NAVY_D};font-weight:400;">
-          ${i+1}. ${escapeHtml(f.prenom)} ${escapeHtml(f.nom)}
+      <td width="44" valign="top" style="padding:16px 0 16px 20px;">
+        <div style="width:28px;height:28px;line-height:28px;border-radius:50%;background:${NAVY};color:${GOLD_L};font-family:${SERIF};font-size:13px;font-weight:700;text-align:center;">${i + 1}</div>
+      </td>
+      <td valign="top" style="padding:14px 20px 16px 10px;${i < filleuls.length - 1 ? `border-bottom:1px solid ${LINE};` : ''}">
+        <div style="font-family:${TITLE_F};font-size:17px;color:${NAVY_D};">${escapeHtml(f.prenom)} ${escapeHtml(f.nom)}</div>
+        <div style="font-size:13px;color:${MUTED};margin-top:5px;line-height:1.9;">
+          ${f.email ? (withActions
+            ? `✉&nbsp; <a href="mailto:${escapeHtml(f.email)}" style="color:${NAVY};text-decoration:none;border-bottom:1px solid ${GOLD};">${escapeHtml(f.email)}</a><br>`
+            : `✉&nbsp; ${escapeHtml(f.email)}<br>`) : ''}
+          ${f.tel ? (withActions
+            ? `☎&nbsp; <a href="tel:${escapeHtml(String(f.tel).replace(/\s+/g, ''))}" style="color:${NAVY};text-decoration:none;border-bottom:1px solid ${GOLD};">${escapeHtml(f.tel)}</a>`
+            : `☎&nbsp; ${escapeHtml(f.tel)}`) : ''}
+          ${f.message ? `<div style="margin-top:6px;font-style:italic;color:${INK};">« ${escapeHtml(f.message)} »</div>` : ''}
         </div>
-        ${f.email ? `<div style="font-size:13px;color:${MUTED};margin-top:3px;">✉ ${escapeHtml(f.email)}</div>` : ''}
-        ${f.tel   ? `<div style="font-size:13px;color:${MUTED};margin-top:3px;">☎ ${escapeHtml(f.tel)}</div>` : ''}
       </td>
     </tr>`).join('');
 
+  return `
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="${CREAM}" style="background:${CREAM};border-radius:12px;border:1px solid ${LINE};margin:6px 0 24px 0;">
+    ${rows}
+  </table>`;
+}
+
+// ============================================================================
+// EMAIL 1 — PARRAIN (confirmation)
+// ============================================================================
+function emailParrain({ parrain, conseiller, filleuls, total, iban }) {
+  const n = filleuls.length;
+  const masked = maskIban(iban);
+
   const body = `
-    <p>Bonjour ${escapeHtml(parrain.prenom)},</p>
+    <p style="margin:0 0 16px 0;">Bonjour ${escapeHtml(parrain.prenom)},</p>
 
-    <p>Nous avons bien reçu votre recommandation. <strong>${filleuls.length} proche${filleuls.length>1?'s ont':' a'} été transmis</strong>
-    à votre conseiller <strong>${escapeHtml(conseiller)}</strong>, qui prendra contact avec chacun sous <strong>48 heures</strong>.</p>
+    <p style="margin:0 0 16px 0;">Merci pour votre confiance. Votre recommandation de
+    <strong>${n} proche${n > 1 ? 's' : ''}</strong> est bien enregistrée et transmise à
+    <strong>${escapeHtml(conseiller)}</strong>, qui contactera ${n > 1 ? 'chacun d’eux' : 'votre filleul'}
+    personnellement <strong>sous 48&nbsp;heures</strong>.</p>
 
-    <!-- Étoiles dorées du parrain -->
-    <div style="background:linear-gradient(135deg,${NAVY} 0%,${NAVY_D} 100%);border-radius:14px;padding:24px 20px;margin:24px 0;text-align:center;">
-      <div style="font-family:Georgia,serif;font-size:10px;letter-spacing:4px;color:${GOLD_L};text-transform:uppercase;margin-bottom:4px;">Votre constellation</div>
-      ${stars}
-      <div style="font-family:'Playfair Display',Georgia,serif;font-size:16px;color:${GOLD_L};font-style:italic;margin-top:4px;">${Math.min(nbApresAjout,10)} étoile${nbApresAjout>1?'s':''} sur 10</div>
-    </div>
+    <div style="font-family:${SERIF};font-size:11px;letter-spacing:3px;color:${GOLD};text-transform:uppercase;font-weight:700;margin:26px 0 10px 0;">Votre recommandation</div>
+    ${filleulsCard(filleuls)}
 
-    ${triggersRetro ? `<div style="background:linear-gradient(135deg,#fffaf0 0%,#fdf6e3 100%);border:1px solid ${GOLD};border-left:4px solid ${GOLD};border-radius:10px;padding:18px 22px;margin:22px 0;">
-      <div style="font-family:Georgia,serif;font-size:10px;letter-spacing:3px;color:#8a6818;text-transform:uppercase;font-weight:700;margin-bottom:6px;">★ ★ ★ Effet rétroactif déclenché</div>
-      <div style="font-family:'Playfair Display',Georgia,serif;font-size:18px;color:${NAVY_D};line-height:1.4;">Avec ce 3<sup>e</sup> filleul, vos 2 premiers parrainages passent rétroactivement à <strong>1 500 €</strong>. Vous gagnez un complément de <strong>2 000 €</strong>.</div>
-    </div>` : ''}
-
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:24px 0;background:${CREAM};border-radius:10px;">
-      ${filleulsHtml}
+    <!-- Etapes -->
+    <div style="font-family:${SERIF};font-size:11px;letter-spacing:3px;color:${GOLD};text-transform:uppercase;font-weight:700;margin:26px 0 10px 0;">Les prochaines étapes</div>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 8px 0;">
+      <tr>
+        <td width="30" valign="top" style="padding:6px 0;font-family:${TITLE_F};font-size:18px;color:${GOLD};">1.</td>
+        <td style="padding:6px 0;font-size:14px;">${escapeHtml(conseiller)} appelle ${n > 1 ? 'vos filleuls' : 'votre filleul'} sous 48&nbsp;h pour un premier échange, <strong>sans aucun engagement</strong>.</td>
+      </tr>
+      <tr>
+        <td valign="top" style="padding:6px 0;font-family:${TITLE_F};font-size:18px;color:${GOLD};">2.</td>
+        <td style="padding:6px 0;font-size:14px;">Vous êtes tenu informé de l'avancement à chaque étape clé.</td>
+      </tr>
+      <tr>
+        <td valign="top" style="padding:6px 0;font-family:${TITLE_F};font-size:18px;color:${GOLD};">3.</td>
+        <td style="padding:6px 0;font-size:14px;">Dès la première souscription d'un filleul, <strong>votre prime est versée</strong>${masked ? ' sur votre compte' : ''}.</td>
+      </tr>
     </table>
 
-    <div style="background:${NAVY};color:#fff;padding:20px 24px;border-radius:10px;text-align:center;margin:24px 0;">
-      <div style="font-family:Georgia,serif;font-size:11px;letter-spacing:3px;color:${GOLD_L};text-transform:uppercase;margin-bottom:6px;">Votre potentiel total</div>
-      <div style="font-family:'Playfair Display',Georgia,serif;font-size:36px;font-weight:700;color:${GOLD_L};">${total.toLocaleString('fr-FR')} €</div>
-      <div style="font-size:13px;color:#cfd9ec;margin-top:6px;font-style:italic;">selon les filleuls qui souscrivent — plafond 15 000 € / an</div>
-    </div>
+    <!-- Prime -->
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="${NAVY}" style="background:${NAVY};border-radius:12px;margin:26px 0;">
+      <tr>
+        <td style="padding:26px 28px;text-align:center;">
+          <div style="font-family:${SERIF};font-size:11px;letter-spacing:3px;color:${GOLD_L};text-transform:uppercase;">Prime potentielle de cette recommandation</div>
+          <div style="font-family:${TITLE_F};font-size:40px;color:${GOLD_L};margin-top:8px;">${Number(total || 0).toLocaleString('fr-FR')}&nbsp;€</div>
+          <div style="font-size:12px;color:#aebad2;font-style:italic;margin-top:8px;">versée pour chaque filleul qui devient client</div>
+          ${masked ? `<div style="font-size:12px;color:#aebad2;margin-top:14px;padding-top:14px;border-top:1px solid #33415e;">Versement sur votre compte <span style="font-family:'Courier New',monospace;color:#ffffff;">${escapeHtml(masked)}</span></div>` : ''}
+        </td>
+      </tr>
+    </table>
 
-    <p style="text-align:center;margin:30px 0;">
-      <a href="https://paris-conseils-parrain.netlify.app/parrainage.html"
-         style="display:inline-block;background:${GOLD};color:${NAVY_D};padding:14px 30px;text-decoration:none;border-radius:8px;font-family:Georgia,serif;letter-spacing:2px;font-size:12px;text-transform:uppercase;font-weight:700;">
-        ★ Recommander un nouveau filleul
-      </a>
-    </p>
+    <!-- Paliers -->
+    <div style="font-family:${SERIF};font-size:11px;letter-spacing:3px;color:${GOLD};text-transform:uppercase;font-weight:700;margin:26px 0 10px 0;">Le barème du programme</div>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border:1px solid ${LINE};border-radius:10px;background:#ffffff;">
+      <tr>
+        <td style="padding:13px 20px;border-bottom:1px solid ${LINE};font-size:14px;">Filleuls 1 et 2</td>
+        <td align="right" style="padding:13px 20px;border-bottom:1px solid ${LINE};font-family:${TITLE_F};font-size:16px;color:${NAVY_D};white-space:nowrap;"><strong>500&nbsp;€</strong> chacun</td>
+      </tr>
+      <tr>
+        <td bgcolor="${GOLD_BG}" style="padding:13px 20px;border-bottom:1px solid ${LINE};font-size:14px;background:${GOLD_BG};">Dès le 3<sup>e</sup> filleul <span style="color:${MUTED};font-style:italic;">(effet rétroactif sur les deux premiers)</span></td>
+        <td bgcolor="${GOLD_BG}" align="right" style="padding:13px 20px;border-bottom:1px solid ${LINE};font-family:${TITLE_F};font-size:16px;color:${NAVY_D};background:${GOLD_BG};white-space:nowrap;"><strong>1&nbsp;500&nbsp;€</strong> chacun</td>
+      </tr>
+      <tr>
+        <td style="padding:13px 20px;font-size:14px;">Plafond annuel <span style="color:${MUTED};font-style:italic;">(10 filleuls)</span></td>
+        <td align="right" style="padding:13px 20px;font-family:${TITLE_F};font-size:16px;color:${NAVY_D};white-space:nowrap;"><strong>15&nbsp;000&nbsp;€</strong></td>
+      </tr>
+    </table>
 
-    <p style="font-style:italic;color:${MUTED};border-left:2px solid ${GOLD};padding:6px 0 6px 16px;margin:24px 0;">
-      « Le savoir est la seule matière qui s'accroît quand on la partage. »<br>
-      <span style="font-size:12px;">— Socrate</span>
-    </p>
+    ${button(SITE_URL, 'Recommander un autre proche')}
 
-    <p>Merci de votre confiance,<br>
-    L'équipe Paris Conseils</p>`;
+    <p style="margin:24px 0 0 0;">Bien cordialement,<br>
+    <strong>${escapeHtml(conseiller)}</strong><br>
+    <span style="color:${MUTED};font-size:13px;">Paris Conseils — Ingénierie financière &amp; optimisation fiscale</span></p>`;
 
   return baseShell({
-    title: 'Recommandation bien reçue',
-    eyebrow: 'Accusé de réception',
-    subtitle: `${filleuls.length} proche${filleuls.length>1?'s recommandés':' recommandé'} · conseiller ${escapeHtml(conseiller)}`,
+    title: 'Votre recommandation est bien enregistrée',
+    preheader: `${n} filleul${n > 1 ? 's' : ''} transmis à ${conseiller} — premier contact sous 48 h.`,
+    eyebrow: 'Confirmation de parrainage',
+    heading: 'Votre recommandation est bien enregistrée',
+    subtitle: `${n} filleul${n > 1 ? 's' : ''} · suivi par ${escapeHtml(conseiller)}`,
     body
   });
 }
 
 // ============================================================================
-// EMAIL 2 — CONSEILLER (notification opérationnelle)
+// EMAIL 2 — CONSEILLER (fiche opérationnelle)
 // ============================================================================
-function emailConseiller({ parrain, conseiller, filleuls }) {
-  const filleulsHtml = filleuls.map((f, i) => `
-    <tr><td style="padding:18px 20px;border-bottom:1px solid #f0eee6;font-family:Georgia,serif;">
-      <div style="font-family:'Playfair Display',Georgia,serif;font-size:17px;color:${NAVY_D};font-weight:400;">
-        Filleul ${i+1} · ${escapeHtml(f.prenom)} ${escapeHtml(f.nom)}
-      </div>
-      <table cellpadding="2" cellspacing="0" border="0" style="margin-top:8px;font-size:13px;color:${INK};">
-        ${f.email   ? `<tr><td style="color:${MUTED};padding-right:14px;">Email</td><td><a href="mailto:${escapeHtml(f.email)}" style="color:${NAVY};">${escapeHtml(f.email)}</a></td></tr>` : ''}
-        ${f.tel     ? `<tr><td style="color:${MUTED};padding-right:14px;">Téléphone</td><td><a href="tel:${escapeHtml(f.tel)}" style="color:${NAVY};">${escapeHtml(f.tel)}</a></td></tr>` : ''}
-        ${f.message ? `<tr><td style="color:${MUTED};padding-right:14px;vertical-align:top;">Projet</td><td><em>${escapeHtml(f.message)}</em></td></tr>` : ''}
-      </table>
-    </td></tr>`).join('');
+function emailConseiller({ parrain, conseiller, filleuls, iban }) {
+  const n = filleuls.length;
+  const telRaw = String(parrain.tel || '').replace(/\s+/g, '');
 
   const body = `
-    <p>Bonjour <strong>${escapeHtml(conseiller)}</strong>,</p>
+    <p style="margin:0 0 16px 0;">Bonjour ${escapeHtml(conseiller)},</p>
 
-    <p>Vous venez de recevoir un nouveau parrainage de la part de
-    <strong>${escapeHtml(parrain.prenom)} ${escapeHtml(parrain.nom)}</strong> &mdash;
-    <a href="mailto:${escapeHtml(parrain.email)}" style="color:${NAVY};">${escapeHtml(parrain.email)}</a>
-    ${parrain.tel ? `· <a href="tel:${escapeHtml(parrain.tel)}" style="color:${NAVY};">${escapeHtml(parrain.tel)}</a>` : ''}.</p>
+    <p style="margin:0 0 16px 0;">Un nouveau parrainage vient d'arriver&nbsp;: <strong>${n} filleul${n > 1 ? 's' : ''}</strong> à contacter
+    <strong>sous 48&nbsp;heures</strong>. La fiche complète est ci-dessous — tout est cliquable.</p>
 
-    <p>Merci de contacter chacun des filleuls ci-dessous <strong>sous 48 heures</strong> :</p>
-
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:20px 0;background:${CREAM};border-radius:10px;">
-      ${filleulsHtml}
+    <!-- Fiche parrain -->
+    <div style="font-family:${SERIF};font-size:11px;letter-spacing:3px;color:${GOLD};text-transform:uppercase;font-weight:700;margin:26px 0 10px 0;">Le parrain</div>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="${NAVY}" style="background:${NAVY};border-radius:12px;">
+      <tr>
+        <td style="padding:22px 26px;">
+          <div style="font-family:${TITLE_F};font-size:20px;color:#ffffff;">${escapeHtml(parrain.prenom)} ${escapeHtml(parrain.nom)}</div>
+          <div style="font-size:13px;line-height:2;margin-top:8px;">
+            <span style="color:#8b97b3;">✉&nbsp;</span><a href="mailto:${escapeHtml(parrain.email)}" style="color:${GOLD_L};text-decoration:none;">${escapeHtml(parrain.email)}</a><br>
+            ${parrain.tel ? `<span style="color:#8b97b3;">☎&nbsp;</span><a href="tel:${escapeHtml(telRaw)}" style="color:${GOLD_L};text-decoration:none;">${escapeHtml(parrain.tel)}</a><br>` : ''}
+            ${iban
+              ? `<span style="color:#8b97b3;">IBAN prime&nbsp;:&nbsp;</span><span style="font-family:'Courier New',monospace;color:#ffffff;font-size:13px;">${escapeHtml(formatIban(iban))}</span>`
+              : `<span style="color:#8b97b3;font-style:italic;">IBAN non fourni — à demander avant le versement de la prime.</span>`}
+          </div>
+        </td>
+      </tr>
     </table>
 
-    <div style="background:#fff8d0;border-left:3px solid ${GOLD};padding:14px 18px;border-radius:6px;margin:24px 0;font-size:14px;">
-      <strong style="color:${NAVY_D};">Prochaine étape</strong><br>
-      Ouvrir le dashboard ICA &rarr; onglet <em>Parrainage</em> pour suivre, mettre à jour le statut et déclencher la prime du parrain dès souscription.
-    </div>
+    <!-- Filleuls -->
+    <div style="font-family:${SERIF};font-size:11px;letter-spacing:3px;color:${GOLD};text-transform:uppercase;font-weight:700;margin:28px 0 10px 0;">Filleul${n > 1 ? 's' : ''} à contacter</div>
+    ${filleulsCard(filleuls, { withActions: true })}
 
-    <p style="margin-top:30px;">
-      <a href="https://visionary-croquembouche-672f9b.netlify.app/equipe.html"
-         style="display:inline-block;background:${NAVY};color:#fff;padding:14px 28px;text-decoration:none;border-radius:8px;font-family:Georgia,serif;letter-spacing:2px;font-size:12px;text-transform:uppercase;">
-        Ouvrir le dashboard
-      </a>
-    </p>`;
+    <!-- Checklist -->
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="${GOLD_BG}" style="background:${GOLD_BG};border-left:4px solid ${GOLD};border-radius:8px;margin:4px 0 8px 0;">
+      <tr>
+        <td style="padding:18px 22px;font-size:14px;line-height:2;">
+          <strong style="color:${NAVY_D};">À faire</strong><br>
+          ☐&nbsp; Appeler chaque filleul <strong>sous 48&nbsp;h</strong> (mentionner ${escapeHtml(parrain.prenom)} ${escapeHtml(parrain.nom)})<br>
+          ☐&nbsp; Mettre à jour le statut dans le dashboard, onglet <em>Parrainage</em><br>
+          ☐&nbsp; Déclencher la prime du parrain dès la première souscription
+        </td>
+      </tr>
+    </table>
 
+    ${button(DASHBOARD_URL, 'Ouvrir le dashboard', { bg: NAVY, color: '#ffffff' })}
+
+    <p style="margin:0;color:${MUTED};font-size:13px;font-style:italic;text-align:center;">Répondre à cet email écrit directement au parrain.</p>`;
+
+  const filleulNames = filleuls.map(f => `${f.prenom} ${f.nom}`.trim()).join(', ');
   return baseShell({
     title: 'Nouveau parrainage à traiter',
-    eyebrow: 'Notification conseiller',
-    subtitle: `${filleuls.length} filleul${filleuls.length>1?'s':''} · à contacter sous 48 h`,
+    preheader: `${parrain.prenom} ${parrain.nom} recommande ${filleulNames} — premier contact sous 48 h.`,
+    eyebrow: 'Action requise · sous 48 h',
+    heading: 'Nouveau parrainage à traiter',
+    subtitle: `${escapeHtml(parrain.prenom)} ${escapeHtml(parrain.nom)} → ${n} filleul${n > 1 ? 's' : ''}`,
     body
   });
 }
 
 // ============================================================================
-// EMAIL 3 — FILLEUL (annonce élégante)
-// v200 — Conseiller mentionné explicitement : Corentin Curtet / David Pereira /
-// Nicolas Moreau ou « un conseiller Paris Conseils » si aucun n'a été choisi.
+// EMAIL 3 — FILLEUL (annonce élégante, aucune mention d'argent)
 // ============================================================================
 function emailFilleul({ parrain, conseiller, filleul }) {
-  // Normalisation : si pas de conseiller spécifique, message générique
   const cleanCons = (conseiller || '').toString().trim();
-  const conseillerName = cleanCons.toLowerCase();
-  const hasSpecific = conseillerName && conseillerName !== 'paris conseils' && conseillerName !== 'paris-conseils';
-  // Mappage des identifiants vers noms affichables
+  const key = cleanCons.toLowerCase();
+  const hasSpecific = key && key !== 'paris conseils' && key !== 'paris-conseils';
   const map = {
-    'pereira':  'David Pereira',
-    'moreau':   'Nicolas Moreau',
-    'curtet':   'Corentin Curtet',
-    'curtet corentin': 'Corentin Curtet',
-    'david pereira':   'David Pereira',
-    'nicolas moreau':  'Nicolas Moreau',
-    'corentin curtet': 'Corentin Curtet'
+    'pereira': 'David Pereira',   'david pereira': 'David Pereira',
+    'moreau': 'Nicolas Moreau',   'nicolas moreau': 'Nicolas Moreau',
+    'curtet': 'Corentin Curtet',  'corentin curtet': 'Corentin Curtet', 'curtet corentin': 'Corentin Curtet'
   };
-  const conseillerDisplay = hasSpecific
-    ? (map[conseillerName] || cleanCons)
-    : 'Un conseiller Paris Conseils';
-  const contactPhrase = hasSpecific
-    ? `<strong>${escapeHtml(conseillerDisplay)}</strong> prendra contact avec vous sous 48 heures.`
-    : `<strong>${escapeHtml(conseillerDisplay)}</strong> vous contactera dans les meilleurs délais.`;
+  const conseillerDisplay = hasSpecific ? (map[key] || cleanCons) : 'Un conseiller Paris Conseils';
+  const initials = conseillerDisplay.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
   const body = `
-    <p>Bonjour ${escapeHtml(filleul.prenom)},</p>
+    <p style="margin:0 0 16px 0;">Bonjour ${escapeHtml(filleul.prenom)},</p>
 
-    <p><strong>${escapeHtml(parrain.prenom)} ${escapeHtml(parrain.nom)}</strong> vous a recommandé auprès de Paris Conseils,
-    cabinet d'<em>ingénierie financière et d'optimisation fiscale</em>.</p>
+    <p style="margin:0 0 16px 0;"><strong>${escapeHtml(parrain.prenom)} ${escapeHtml(parrain.nom)}</strong> a souhaité vous
+    recommander auprès de Paris Conseils, cabinet d'<em>ingénierie financière et d'optimisation fiscale</em>.</p>
 
-    <p>Un proche qui prend le temps de vous recommander, c'est rarement anodin. Notre rôle est d'apporter à chacun
-    de nos clients un <strong>accompagnement sur-mesure</strong>, dans la plus stricte confidentialité.</p>
+    <p style="margin:0 0 16px 0;">Quand un proche prend le temps de vous recommander, c'est rarement anodin. Notre métier est
+    d'apporter à chacun de nos clients un <strong>accompagnement sur-mesure</strong> — retraite, fiscalité, immobilier,
+    transmission — dans la plus stricte confidentialité.</p>
 
-    <div style="background:${CREAM};border-radius:10px;padding:24px;margin:28px 0;text-align:center;">
-      <div style="font-family:Georgia,serif;font-size:10px;letter-spacing:4px;color:${GOLD};text-transform:uppercase;margin-bottom:10px;">Votre interlocuteur</div>
-      <div style="font-family:'Playfair Display',Georgia,serif;font-size:22px;color:${NAVY_D};">${escapeHtml(conseillerDisplay)}</div>
-      <div style="font-size:13px;color:${MUTED};margin-top:8px;font-style:italic;">${hasSpecific ? 'prendra contact avec vous sous 48 heures' : 'vous contactera dans les meilleurs délais'}</div>
-    </div>
+    <!-- Interlocuteur -->
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="${CREAM}" style="background:${CREAM};border:1px solid ${LINE};border-radius:12px;margin:28px 0;">
+      <tr>
+        <td style="padding:26px;text-align:center;">
+          <div style="font-family:${SERIF};font-size:10px;letter-spacing:4px;color:${GOLD};text-transform:uppercase;font-weight:700;">Votre interlocuteur</div>
+          <div style="width:52px;height:52px;line-height:52px;border-radius:50%;background:${NAVY};color:${GOLD_L};font-family:${TITLE_F};font-size:20px;text-align:center;margin:14px auto 10px auto;">${escapeHtml(initials)}</div>
+          <div style="font-family:${TITLE_F};font-size:22px;color:${NAVY_D};">${escapeHtml(conseillerDisplay)}</div>
+          <div style="font-size:13px;color:${MUTED};font-style:italic;margin-top:6px;">${hasSpecific ? 'prendra contact avec vous sous 48 heures' : 'vous contactera dans les meilleurs délais'}</div>
+        </td>
+      </tr>
+    </table>
 
-    <p>${contactPhrase} Cette première conversation est <strong>sans engagement</strong>. Elle sert avant tout à comprendre votre situation,
-    vos objectifs, et à voir comment nous pouvons éventuellement vous être utile.</p>
+    <p style="margin:0 0 16px 0;">Cette première conversation est <strong>sans engagement</strong> et n'a qu'un objectif&nbsp;:
+    comprendre votre situation et vos objectifs, puis voir — en toute transparence — si nous pouvons vous être utile.</p>
 
-    <p style="font-style:italic;color:${MUTED};border-left:2px solid ${GOLD};padding:6px 0 6px 16px;margin:24px 0;">
-      « Le savoir est la seule matière qui s'accroît quand on la partage. »<br>
-      <span style="font-size:12px;">— Socrate</span>
-    </p>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:26px 0;">
+      <tr>
+        <td width="3" bgcolor="${GOLD}" style="background:${GOLD};border-radius:2px;font-size:0;">&nbsp;</td>
+        <td style="padding:4px 0 4px 18px;font-style:italic;color:${MUTED};font-size:14px;line-height:1.7;">
+          « Le savoir est la seule matière qui s'accroît quand on la partage. »<br>
+          <span style="font-size:12px;">— Socrate</span>
+        </td>
+      </tr>
+    </table>
 
-    <p>Si vous préférez ne pas être contacté, répondez simplement à cet email — nous respecterons votre choix immédiatement.</p>
+    <p style="margin:0 0 16px 0;color:${MUTED};font-size:13px;">Si vous préférez ne pas être contacté, répondez simplement à
+    cet email — nous respecterons votre choix immédiatement.</p>
 
-    <p>À très bientôt,<br>
-    L'équipe Paris Conseils</p>`;
+    <p style="margin:24px 0 0 0;">À très bientôt,<br>
+    <strong>L'équipe Paris Conseils</strong></p>`;
 
   return baseShell({
-    title: `${escapeHtml(parrain.prenom)} vous recommande Paris Conseils`,
+    title: `${parrain.prenom} vous recommande Paris Conseils`,
+    preheader: `${parrain.prenom} ${parrain.nom} vous recommande auprès de notre cabinet — premier échange sans engagement.`,
     eyebrow: 'Une recommandation pour vous',
-    subtitle: `Accompagnement confidentiel · ingénierie patrimoniale`,
+    heading: `${escapeHtml(parrain.prenom)} vous recommande<br>Paris Conseils`,
+    subtitle: 'Accompagnement confidentiel · ingénierie patrimoniale',
     body
   });
 }
 
-module.exports = { emailParrain, emailConseiller, emailFilleul };
+module.exports = { emailParrain, emailConseiller, emailFilleul, maskIban, formatIban };

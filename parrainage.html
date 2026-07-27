@@ -1184,7 +1184,7 @@
       var pDashboard = fetch('/.netlify/functions/parrainage-relay', {
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ parrain: parrain, conseiller: consName, filleuls: filleuls })
+        body: JSON.stringify({ parrain: parrain, conseiller: consName, filleuls: filleuls, iban: iban })
       }).then(function(r){
         return r.json().then(function(j){ return { ok: r.ok && j.ok, body: j }; });
       }).catch(function(e){ return { ok:false, body:{error:e.message} }; });

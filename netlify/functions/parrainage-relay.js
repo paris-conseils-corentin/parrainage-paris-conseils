@@ -3,22 +3,39 @@
 // Pour CHAQUE soumission, on :
 //   1) POSTe un parrainageAdd par filleul au dashboard ICA (Google Apps Script)
 //   2) Envoie 3 emails via Resend :
-//        - au parrain  (accusé de réception)
-//        - au conseiller assigné (notification opérationnelle)
+//        - au parrain  (confirmation soignée)
+//        - au conseiller assigné (fiche opérationnelle avec IBAN)
 //        - à chaque filleul (annonce élégante)
 //
-// Variables d'environnement requises (à définir dans Netlify > Site settings > Environment variables) :
+// Les deux volets sont INDÉPENDANTS : si la config mail manque, le dashboard
+// est quand même alimenté (et inversement). Chaque volet remonte son statut
+// précis dans la réponse pour diagnostiquer depuis les logs Netlify.
+//
+// Variables d'environnement requises (Netlify > Site settings > Environment variables) :
+//   — Dashboard —
 //   PC_DASHBOARD_API_URL   URL Apps Script complète (script.google.com/macros/s/.../exec)
 //   PC_DASHBOARD_USER      identifiant dashboard (ex: parrainage-bot@parisconseils.fr)
 //   PC_DASHBOARD_PASS      mot de passe associé
+//   — Emails —
 //   RESEND_API_KEY         clé API Resend (re_xxx)
 //   MAIL_FROM              expéditeur (ex: "Paris Conseils <parrainage@parisconseils.fr>")
 //                          - le domaine doit être vérifié dans Resend
 //   MAIL_CC_OPS            (optionnel) BCC opérationnel pour archiver chaque notification
 //   CONSEILLERS_JSON       (optionnel) JSON {"nom-conseiller": "email@parisconseils.fr"}
-//                          Sinon, l'email conseiller fallback vers contact@parisconseils.fr
+//                          - complète/écrase l'annuaire intégré ci-dessous
 
 const { emailParrain, emailConseiller, emailFilleul } = require('./emails');
+
+// Annuaire intégré : même sans CONSEILLERS_JSON, chaque conseiller reçoit
+// sa notification (fallback ultime : contact@parisconseils.fr).
+const CONSEILLERS_DEFAUT = {
+  'corentin curtet': 'curtet@parisconseils.fr',
+  'curtet':          'curtet@parisconseils.fr',
+  'david pereira':   'pereira@parisconseils.fr',
+  'pereira':         'pereira@parisconseils.fr',
+  'nicolas moreau':  'moreau@parisconseils.fr',
+  'moreau':          'moreau@parisconseils.fr'
+};
 
 // v200 — Cumul par nombre de filleuls confirmés sur l'année (fenêtre 12 mois glissante)
 // Règle : 500 €/filleul pour les 2 premiers, puis 1 500 €/filleul dès le 3e
@@ -32,23 +49,7 @@ function cumulAt(n) {
   return 15000;
 }
 
-// Palier label pour les mails
-function palierLabel(n) {
-  if (n <= 0)  return '';
-  if (n === 1) return 'Première pierre';
-  if (n === 2) return 'Seconde pierre';
-  if (n === 3) return 'Jackpot rétroactif';
-  if (n <= 5)  return 'Constellation en formation';
-  if (n <= 9)  return 'Top parrain';
-  return 'Sommet doré';
-}
-
-// True si ce parrainage déclenche la rétroactivité (3e filleul atteint)
-function isJackpotTrigger(prevCount, newCount) {
-  return prevCount < 3 && newCount >= 3;
-}
-
-async function postDashboard(env, parrain, conseiller, filleuls) {
+async function postDashboard(env, parrain, conseiller, filleuls, iban) {
   const out = [];
   for (let i = 0; i < filleuls.length; i++) {
     const f = filleuls[i] || {};
@@ -62,7 +63,8 @@ async function postDashboard(env, parrain, conseiller, filleuls) {
       filleulEmail:  (f.email  || '').trim(),
       notes:         [conseiller ? ('Conseiller souhaité : ' + conseiller) : '',
                       (f.message || '').trim(),
-                      f.tel ? 'Tél filleul : ' + f.tel : '']
+                      f.tel ? 'Tél filleul : ' + f.tel : '',
+                      iban  ? 'IBAN parrain : ' + iban : '']
                        .filter(Boolean).join(' | '),
       sendEmail:     false,  // on gère nous-mêmes l'email via Resend
       consentRGPD:   true,
@@ -102,15 +104,16 @@ async function sendEmail({ apiKey, from, to, subject, html, replyTo, bcc }) {
 }
 
 function resolveConseillerEmail(env, conseillerName) {
+  const key = (conseillerName || '').toLowerCase().trim();
   try {
     if (env.CONSEILLERS_JSON) {
       const map = JSON.parse(env.CONSEILLERS_JSON);
-      // Cherche par nom exact, puis par sous-chaîne insensible à la casse
       if (map[conseillerName]) return map[conseillerName];
-      const key = Object.keys(map).find(k => k.toLowerCase() === (conseillerName||'').toLowerCase());
-      if (key) return map[key];
+      const k = Object.keys(map).find(k2 => k2.toLowerCase() === key);
+      if (k) return map[k];
     }
   } catch (e) { /* ignore */ }
+  if (CONSEILLERS_DEFAUT[key]) return CONSEILLERS_DEFAUT[key];
   return env.MAIL_CONTACT || 'contact@parisconseils.fr';
 }
 
@@ -120,12 +123,13 @@ exports.handler = async (event) => {
   }
 
   const env = process.env;
-  const missing = ['PC_DASHBOARD_API_URL','PC_DASHBOARD_USER','PC_DASHBOARD_PASS','RESEND_API_KEY','MAIL_FROM']
-                    .filter(k => !env[k]);
-  if (missing.length) {
+  const missingDash = ['PC_DASHBOARD_API_URL', 'PC_DASHBOARD_USER', 'PC_DASHBOARD_PASS'].filter(k => !env[k]);
+  const missingMail = ['RESEND_API_KEY', 'MAIL_FROM'].filter(k => !env[k]);
+
+  if (missingDash.length && missingMail.length) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ ok: false, error: 'Server not configured', missingEnv: missing })
+      body: JSON.stringify({ ok: false, error: 'Server not configured', missingEnv: [...missingDash, ...missingMail] })
     };
   }
 
@@ -138,65 +142,72 @@ exports.handler = async (event) => {
 
   const parrain    = payload.parrain    || {};
   const conseiller = (payload.conseiller || '').toString().trim() || 'Paris Conseils';
+  const iban       = (payload.iban || '').toString().trim();
   const filleuls   = Array.isArray(payload.filleuls) ? payload.filleuls.filter(f => f && (f.nom || f.prenom)) : [];
 
   if (!filleuls.length || !(parrain.email || parrain.nom)) {
     return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'Données incomplètes (parrain + au moins 1 filleul requis)' }) };
   }
 
-  // 1) Dashboard
-  const dashboardResults = await postDashboard(env, parrain, conseiller, filleuls);
+  // 1) Dashboard (si configuré)
+  const dashboardResults = missingDash.length
+    ? []
+    : await postDashboard(env, parrain, conseiller, filleuls, iban);
 
-  // 2) Emails
-  const conseillerEmail = resolveConseillerEmail(env, conseiller);
-  const total = cumulAt(filleuls.length);
-  const bcc = env.MAIL_CC_OPS || null;
+  // 2) Emails (si configurés)
+  let mailResults = [];
+  if (!missingMail.length) {
+    const conseillerEmail = resolveConseillerEmail(env, conseiller);
+    const total = cumulAt(filleuls.length);
+    const bcc = env.MAIL_CC_OPS || null;
 
-  const mailJobs = [];
+    const mailJobs = [];
 
-  // Email parrain
-  if (parrain.email) {
-    mailJobs.push(sendEmail({
-      apiKey: env.RESEND_API_KEY,
-      from: env.MAIL_FROM,
-      to: parrain.email,
-      subject: `Merci ${parrain.prenom || ''} — votre recommandation est bien reçue`,
-      html: emailParrain({ parrain, conseiller, filleuls, total }),
-      replyTo: conseillerEmail,
-      bcc
-    }).then(r => ({ kind:'parrain', to: parrain.email, ...r })));
-  }
-
-  // Email conseiller
-  mailJobs.push(sendEmail({
-    apiKey: env.RESEND_API_KEY,
-    from: env.MAIL_FROM,
-    to: conseillerEmail,
-    subject: `Nouveau parrainage — ${parrain.prenom || ''} ${parrain.nom || ''} (${filleuls.length} filleul${filleuls.length>1?'s':''})`,
-    html: emailConseiller({ parrain, conseiller, filleuls }),
-    replyTo: parrain.email || undefined,
-    bcc
-  }).then(r => ({ kind:'conseiller', to: conseillerEmail, ...r })));
-
-  // Email filleul (un par filleul ayant un email)
-  for (const f of filleuls) {
-    if (f.email) {
+    // Email parrain
+    if (parrain.email) {
       mailJobs.push(sendEmail({
         apiKey: env.RESEND_API_KEY,
         from: env.MAIL_FROM,
-        to: f.email,
-        subject: `${parrain.prenom || 'Un proche'} vous recommande Paris Conseils`,
-        html: emailFilleul({ parrain, conseiller, filleul: f }),
+        to: parrain.email,
+        subject: `Votre recommandation est bien enregistrée${parrain.prenom ? ' — merci ' + parrain.prenom : ''}`,
+        html: emailParrain({ parrain, conseiller, filleuls, total, iban }),
         replyTo: conseillerEmail,
         bcc
-      }).then(r => ({ kind:'filleul', to: f.email, ...r })));
+      }).then(r => ({ kind: 'parrain', to: parrain.email, ...r })));
     }
+
+    // Email conseiller
+    const filleulNames = filleuls.map(f => (f.prenom + ' ' + (f.nom || '')).trim()).filter(Boolean).join(', ');
+    mailJobs.push(sendEmail({
+      apiKey: env.RESEND_API_KEY,
+      from: env.MAIL_FROM,
+      to: conseillerEmail,
+      subject: `Nouveau parrainage à traiter — ${parrain.prenom || ''} ${parrain.nom || ''} → ${filleulNames}`,
+      html: emailConseiller({ parrain, conseiller, filleuls, iban }),
+      replyTo: parrain.email || undefined,
+      bcc
+    }).then(r => ({ kind: 'conseiller', to: conseillerEmail, ...r })));
+
+    // Email filleul (un par filleul ayant un email)
+    for (const f of filleuls) {
+      if (f.email) {
+        mailJobs.push(sendEmail({
+          apiKey: env.RESEND_API_KEY,
+          from: env.MAIL_FROM,
+          to: f.email,
+          subject: `${parrain.prenom || 'Un proche'} vous recommande Paris Conseils`,
+          html: emailFilleul({ parrain, conseiller, filleul: f }),
+          replyTo: conseillerEmail,
+          bcc
+        }).then(r => ({ kind: 'filleul', to: f.email, ...r })));
+      }
+    }
+
+    mailResults = await Promise.all(mailJobs);
   }
 
-  const mailResults = await Promise.all(mailJobs);
-
-  const allMailsOk = mailResults.every(m => m.ok);
-  const allDashOk  = dashboardResults.every(d => d.ok);
+  const allMailsOk = !missingMail.length && mailResults.every(m => m.ok);
+  const allDashOk  = !missingDash.length && dashboardResults.every(d => d.ok);
   const overallOk  = allMailsOk && allDashOk;
 
   return {
@@ -204,8 +215,12 @@ exports.handler = async (event) => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       ok: overallOk,
-      dashboard: { ok: allDashOk, count: dashboardResults.length, results: dashboardResults },
-      mails:     { ok: allMailsOk, count: mailResults.length, results: mailResults }
+      dashboard: missingDash.length
+        ? { ok: false, skipped: true, missingEnv: missingDash }
+        : { ok: allDashOk, count: dashboardResults.length, results: dashboardResults },
+      mails: missingMail.length
+        ? { ok: false, skipped: true, missingEnv: missingMail }
+        : { ok: allMailsOk, count: mailResults.length, results: mailResults }
     })
   };
 };
