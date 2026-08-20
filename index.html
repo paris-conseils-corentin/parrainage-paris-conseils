@@ -358,6 +358,28 @@
       .slogan-band .inner{font-size:20px;}
       .pacte-quote{font-size:26px;}
     }
+    /* ===== Étoiles Euromillions (paliers) ===== */
+    .euro-stars{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin:20px 0 30px;align-items:start;}
+    .euro-star{text-align:center;position:relative;padding:14px 8px 18px;transition:transform .25s;}
+    .euro-star:hover{transform:translateY(-6px);}
+    .euro-star .es-svg{width:110px;height:110px;display:block;margin:0 auto 14px;filter:drop-shadow(0 6px 18px rgba(201,169,97,.35));}
+    .euro-star .es-label{font-family:Inter,sans-serif;font-size:10px;letter-spacing:2px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:6px;}
+    .euro-star .es-amount{font-family:'Cormorant Garamond',Georgia,serif;font-size:30px;color:var(--pc-navy);font-weight:600;letter-spacing:-.5px;line-height:1.05;}
+    .euro-star .es-desc{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5;font-family:'Cormorant Garamond',serif;font-style:italic;padding:0 4px;}
+    .euro-star.major .es-svg,.euro-star.sommet .es-svg{width:135px;height:135px;filter:drop-shadow(0 8px 26px rgba(201,169,97,.6));}
+    .euro-star.major .es-amount,.euro-star.sommet .es-amount{font-size:36px;color:var(--pc-gold-d);}
+    .euro-star.major .es-label,.euro-star.sommet .es-label{color:var(--pc-gold-d);letter-spacing:2.5px;}
+    @media (max-width:900px){
+      .euro-stars{grid-template-columns:repeat(5,1fr);gap:6px;}
+      .euro-star{padding:10px 4px;}
+      .euro-star .es-svg{width:64px;height:64px;margin-bottom:8px;}
+      .euro-star.major .es-svg,.euro-star.sommet .es-svg{width:78px;height:78px;}
+      .euro-star .es-amount{font-size:16px;}
+      .euro-star.major .es-amount,.euro-star.sommet .es-amount{font-size:18px;}
+      .euro-star .es-label{font-size:8px;letter-spacing:1px;}
+      .euro-star .es-desc{font-size:10px;line-height:1.35;}
+    }
+
   </style>
 </head>
 <body>
@@ -433,39 +455,29 @@
       Chaque dossier finalisé est récompensé.
     </p>
 
-    <div class="tiers">
-      <div class="tier">
-        <div class="rang-icon">1</div>
-        <div class="rang-label">1ER FILLEUL</div>
-        <div class="amount">500 €</div>
-        <div class="desc">Versés au dossier finalisé</div>
-      </div>
-      <div class="tier best">
-        <div class="rang-icon">2</div>
-        <div class="rang-label">2E FILLEUL</div>
-        <div class="amount">750 €</div>
-        <div class="desc">Prime bonifiée</div>
-      </div>
-      <div class="tier">
-        <div class="rang-icon">3</div>
-        <div class="rang-label">3E FILLEUL</div>
-        <div class="amount">1 000 €</div>
-        <div class="desc">Prime maximale unitaire</div>
-      </div>
-    </div>
+    <svg width="0" height="0" style="position:absolute;">
+      <defs>
+        <radialGradient id="euroGold" cx="35%" cy="30%" r="80%">
+          <stop offset="0%" stop-color="#fff8d0"/>
+          <stop offset="35%" stop-color="#f5d778"/>
+          <stop offset="70%" stop-color="#d4ac4e"/>
+          <stop offset="100%" stop-color="#8a6818"/>
+        </radialGradient>
+        <radialGradient id="euroGoldMajor" cx="35%" cy="30%" r="80%">
+          <stop offset="0%" stop-color="#fffbe0"/>
+          <stop offset="30%" stop-color="#ffe28a"/>
+          <stop offset="70%" stop-color="#e8bc4a"/>
+          <stop offset="100%" stop-color="#7a5a10"/>
+        </radialGradient>
+      </defs>
+    </svg>
 
-    <div class="mega-tiers">
-      <div class="mega five">
-        <div class="count"><strong>5</strong> contacts confirmés</div>
-        <div class="big">5 000<sup>€</sup></div>
-        <div class="small">de primes cumulées versées par virement</div>
-      </div>
-      <div class="mega ten">
-        <div class="ribbon">Top parrain</div>
-        <div class="count"><strong>10</strong> contacts confirmés</div>
-        <div class="big">15 000<sup>€</sup></div>
-        <div class="small">de primes cumulées <em>+ cadeaux bonus<sup>*</sup></em></div>
-      </div>
+    <div class="euro-stars">
+      <div class="euro-star"><svg class="es-svg" viewBox="0 0 100 100"><polygon points="50,6 61.8,38.2 96,38.2 68.1,58.4 78.9,90.6 50,70.8 21.1,90.6 31.9,58.4 4,38.2 38.2,38.2" fill="url(#euroGold)" stroke="#8a6818" stroke-width="1.2" stroke-linejoin="round"/><text x="50" y="63" text-anchor="middle" font-family="'Cormorant Garamond',Georgia,serif" font-size="42" font-weight="700" fill="#0a1e3f">1</text></svg><div class="es-label">1<sup>er</sup> filleul</div><div class="es-amount">500 &euro;</div><div class="es-desc">Vers&eacute;s au dossier finalis&eacute;</div></div>
+      <div class="euro-star"><svg class="es-svg" viewBox="0 0 100 100"><polygon points="50,6 61.8,38.2 96,38.2 68.1,58.4 78.9,90.6 50,70.8 21.1,90.6 31.9,58.4 4,38.2 38.2,38.2" fill="url(#euroGold)" stroke="#8a6818" stroke-width="1.2" stroke-linejoin="round"/><text x="50" y="63" text-anchor="middle" font-family="'Cormorant Garamond',Georgia,serif" font-size="42" font-weight="700" fill="#0a1e3f">2</text></svg><div class="es-label">2<sup>e</sup> filleul</div><div class="es-amount">1 000 &euro;</div><div class="es-desc">Cumul apr&egrave;s 2 dossiers</div></div>
+      <div class="euro-star major"><svg class="es-svg" viewBox="0 0 100 100"><polygon points="50,6 61.8,38.2 96,38.2 68.1,58.4 78.9,90.6 50,70.8 21.1,90.6 31.9,58.4 4,38.2 38.2,38.2" fill="url(#euroGoldMajor)" stroke="#7a5a10" stroke-width="1.4" stroke-linejoin="round"/><text x="50" y="63" text-anchor="middle" font-family="'Cormorant Garamond',Georgia,serif" font-size="42" font-weight="700" fill="#0a1e3f">3</text></svg><div class="es-label">Palier majeur</div><div class="es-amount">4 500 &euro;</div><div class="es-desc"><strong style="color:var(--pc-gold-d);">Effet r&eacute;troactif</strong> : les 2 premiers passent &agrave; 1 500 &euro;</div></div>
+      <div class="euro-star"><svg class="es-svg" viewBox="0 0 100 100"><polygon points="50,6 61.8,38.2 96,38.2 68.1,58.4 78.9,90.6 50,70.8 21.1,90.6 31.9,58.4 4,38.2 38.2,38.2" fill="url(#euroGold)" stroke="#8a6818" stroke-width="1.2" stroke-linejoin="round"/><text x="50" y="63" text-anchor="middle" font-family="'Cormorant Garamond',Georgia,serif" font-size="42" font-weight="700" fill="#0a1e3f">5</text></svg><div class="es-label">5 filleuls</div><div class="es-amount">7 500 &euro;</div><div class="es-desc">Cumul interm&eacute;diaire vers&eacute; par virement</div></div>
+      <div class="euro-star sommet"><svg class="es-svg" viewBox="0 0 100 100"><polygon points="50,6 61.8,38.2 96,38.2 68.1,58.4 78.9,90.6 50,70.8 21.1,90.6 31.9,58.4 4,38.2 38.2,38.2" fill="url(#euroGoldMajor)" stroke="#7a5a10" stroke-width="1.4" stroke-linejoin="round"/><text x="50" y="63" text-anchor="middle" font-family="'Cormorant Garamond',Georgia,serif" font-size="38" font-weight="700" fill="#0a1e3f">10</text></svg><div class="es-label">Sommet &middot; top parrain</div><div class="es-amount">15 000 &euro;</div><div class="es-desc">+ cadeaux bonus<sup>*</sup></div></div>
     </div>
 
     <p class="bonus-note">
