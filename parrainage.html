@@ -1188,6 +1188,9 @@
       }
       new MutationObserver(update).observe(list, {childList: true});
       update();
+      setTimeout(update, 100);
+      setTimeout(update, 500);
+      setTimeout(update, 1500);
     })();
 
   </script>
