@@ -388,7 +388,18 @@
       .slogan-band .inner{font-size:20px;}
       .pacte-quote{font-size:26px;}
     }
-undefined
+    /* ===== Mini etoiles dorees dans le dashboard sticky ===== */
+    .dash-mini-stars{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:20px 8px 14px;
+      background:rgba(255,255,255,.04);border-radius:12px;margin:14px 0 4px;}
+    .dms-item{text-align:center;transition:transform .3s;padding:6px 2px;}
+    .dms-star{font-size:28px;color:#3a4560;transition:color .6s,transform .6s,text-shadow .6s;line-height:1;display:inline-block;}
+    .dms-item.major .dms-star,.dms-item.sommet .dms-star{font-size:36px;}
+    .dms-item.lit .dms-star{color:var(--pc-gold);text-shadow:0 0 12px rgba(232,210,138,.85),0 0 24px rgba(255,224,140,.4);transform:scale(1.1);}
+    .dms-item.major.lit .dms-star,.dms-item.sommet.lit .dms-star{text-shadow:0 0 16px rgba(255,224,140,.95),0 0 32px rgba(240,208,119,.7);transform:scale(1.15);}
+    .dms-amt{font-family:'Cormorant Garamond',serif;font-size:11px;color:#7a8aa8;margin-top:6px;transition:color .5s;font-style:italic;line-height:1.2;}
+    .dms-item.lit .dms-amt{color:var(--pc-gold-l);font-weight:600;font-style:normal;}
+
+
   </style>
 </head>
 <body>
@@ -706,7 +717,17 @@ undefined
             <span>0 €</span><span>15 000 €</span>
           </div>
 
-          undefined
+          
+
+          <div class="dash-pyr-mini">
+            <div class="dash-mini-stars">
+              <div class="dms-item" data-threshold="1"><div class="dms-star">&#9733;</div><div class="dms-amt">500 &euro;</div></div>
+              <div class="dms-item" data-threshold="2"><div class="dms-star">&#9733;</div><div class="dms-amt">1 000 &euro;</div></div>
+              <div class="dms-item major" data-threshold="3"><div class="dms-star">&#9733;</div><div class="dms-amt">4 500 &euro;</div></div>
+              <div class="dms-item" data-threshold="5"><div class="dms-star">&#9733;</div><div class="dms-amt">7 500 &euro;</div></div>
+              <div class="dms-item sommet" data-threshold="10"><div class="dms-star">&#9733;</div><div class="dms-amt">15 000 &euro;</div></div>
+            </div>
+          </div>
 
           <div class="dash-label">Gratitude</div>
           <div id="dash-smiles" class="dash-grat"></div>
@@ -1150,7 +1171,25 @@ undefined
       });
     });
   })();
-  undefined
+  
+  
+    // ===== Mini etoiles dorees: animation dynamique =====
+    (function(){
+      const list = document.getElementById('filleuls-list');
+      if (!list) return;
+      const items = document.querySelectorAll('.dms-item');
+      if (!items.length) return;
+      function update(){
+        const n = list.querySelectorAll('.filleul-block').length;
+        items.forEach(it => {
+          const th = parseInt(it.dataset.threshold, 10);
+          if (n >= th) it.classList.add('lit'); else it.classList.remove('lit');
+        });
+      }
+      new MutationObserver(update).observe(list, {childList: true});
+      update();
+    })();
+
   </script>
 
 </body>
