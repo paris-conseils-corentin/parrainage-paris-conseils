@@ -370,6 +370,7 @@
       .euro-star .es-label{font-size:8px;letter-spacing:1px;}
       .euro-star .es-desc{font-size:10px;line-height:1.35;}
     }
+undefined
 
   </style>
 </head>
@@ -629,90 +630,7 @@
             <span>0 €</span><span>15 000 €</span>
           </div>
 
-          <div class="dash-pyr-mini">
-            <svg viewBox="0 0 380 290" style="width:96%;height:auto;display:block;">
-              <defs>
-                <linearGradient id="pcMiniGoldFront" gradientUnits="userSpaceOnUse" x1="190" y1="35" x2="190" y2="270">
-                  <stop offset="0%"  stop-color="#fff8d0"/>
-                  <stop offset="30%" stop-color="#f0d077"/>
-                  <stop offset="60%" stop-color="#c9a542"/>
-                  <stop offset="100%" stop-color="#7a5a10"/>
-                </linearGradient>
-                <linearGradient id="pcMiniNavy" gradientUnits="userSpaceOnUse" x1="190" y1="35" x2="190" y2="270">
-                  <stop offset="0%"  stop-color="#2a4f80"/>
-                  <stop offset="55%" stop-color="#1f3a5f"/>
-                  <stop offset="100%" stop-color="#0a1729"/>
-                </linearGradient>
-                <linearGradient id="pcGoldShine" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%"   stop-color="#fff" stop-opacity="0"/>
-                  <stop offset="50%"  stop-color="#fff" stop-opacity="0.35"/>
-                  <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
-                </linearGradient>
-                <radialGradient id="pcMiniHalo" cx="50%" cy="50%" r="60%">
-                  <stop offset="0%"   stop-color="#fff3c4" stop-opacity="0.6"/>
-                  <stop offset="100%" stop-color="#c9a961" stop-opacity="0"/>
-                </radialGradient>
-                <filter id="pcMiniDrop" x="-20%" y="-20%" width="140%" height="160%">
-                  <feGaussianBlur in="SourceAlpha" stdDeviation="5"/>
-                  <feOffset dx="2" dy="8"/>
-                  <feComponentTransfer><feFuncA type="linear" slope="0.55"/></feComponentTransfer>
-                  <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
-                </filter>
-              </defs>
-
-              <!-- Halo respirant derrière l'apex -->
-              <ellipse cx="190" cy="55" rx="105" ry="80" fill="url(#pcMiniHalo)">
-                <animate attributeName="opacity" values="0.55;1;0.55" dur="3.2s" repeatCount="indefinite"/>
-              </ellipse>
-
-              <!-- Pyramide 2D propre, 4 paliers — pas de 3D bancale -->
-              <g filter="url(#pcMiniDrop)">
-                <polygon id="ms1" class="tier-stone"
-                         points="50,265 330,265 297,210 83,210"
-                         fill="url(#pcMiniNavy)" stroke="#c9a961" stroke-width="0.6" stroke-opacity="0.45"/>
-                <polygon id="ms2" class="tier-stone"
-                         points="83,210 297,210 263,155 117,155"
-                         fill="url(#pcMiniNavy)" stroke="#c9a961" stroke-width="0.6" stroke-opacity="0.45"/>
-                <polygon id="ms3" class="tier-stone"
-                         points="117,155 263,155 236,110 144,110"
-                         fill="url(#pcMiniNavy)" stroke="#c9a961" stroke-width="0.6" stroke-opacity="0.45"/>
-                <polygon id="ms4" class="tier-stone"
-                         points="144,110 236,110 190,35"
-                         fill="url(#pcMiniNavy)" stroke="#c9a961" stroke-width="0.6" stroke-opacity="0.45"/>
-              </g>
-
-              <!-- Reflet ciselé en haut de chaque palier (subtle highlight) -->
-              <polygon points="83,210 297,210 293,213 87,213" fill="#fff" opacity="0.08"/>
-              <polygon points="117,155 263,155 260,158 120,158" fill="#fff" opacity="0.08"/>
-              <polygon points="144,110 236,110 234,113 146,113" fill="#fff" opacity="0.08"/>
-
-              <!-- Filets dorés bien visibles entre paliers -->
-              <line x1="83" y1="210" x2="297" y2="210" stroke="#c9a961" stroke-width="1.1" opacity="0.85"/>
-              <line x1="117" y1="155" x2="263" y2="155" stroke="#c9a961" stroke-width="1" opacity="0.85"/>
-              <line x1="144" y1="110" x2="236" y2="110" stroke="#c9a961" stroke-width="0.9" opacity="0.85"/>
-
-              <!-- Chiffres — Playfair 700, bien centrés, marqués -->
-              <g font-family="'Cormorant Garamond',Georgia,serif" font-weight="700" text-anchor="middle" letter-spacing="-0.3">
-                <text id="mt1" class="tier-text" x="190" y="244" font-size="26" fill="#e8d28a">500 €</text>
-                <text id="mt2" class="tier-text" x="190" y="189" font-size="22" fill="#e8d28a">2 250 €</text>
-                <text id="mt3" class="tier-text" x="190" y="137" font-size="17" fill="#e8d28a">5 000 €</text>
-                <text id="mt4" class="tier-text" x="190" y="92" font-size="12" fill="#e8d28a">15 000 €</text>
-              </g>
-
-              <!-- Apex : étoile plus généreuse + double pulse -->
-              <g transform="translate(190,25)">
-                <circle r="11" fill="#fff8d0" opacity="0.12">
-                  <animate attributeName="r" values="8;16;8" dur="3s" repeatCount="indefinite"/>
-                  <animate attributeName="opacity" values="0.05;0.22;0.05" dur="3s" repeatCount="indefinite"/>
-                </circle>
-                <path d="M0,-13 L3,-3 L13,0 L3,3 L0,13 L-3,3 L-13,0 L-3,-3 Z"
-                      fill="url(#pcMiniGoldFront)" stroke="#5b430a" stroke-width="0.5"/>
-                <circle r="2.2" fill="#fff8d0">
-                  <animate attributeName="r" values="1.8;3.2;1.8" dur="2.6s" repeatCount="indefinite"/>
-                </circle>
-              </g>
-            </svg>
-          </div>
+          undefined
 
           <div class="dash-label">Gratitude</div>
           <div id="dash-smiles" class="dash-grat"></div>
@@ -1074,6 +992,7 @@
         });
     });
   })();
+  undefined
   </script>
 
 </body>
