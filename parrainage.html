@@ -388,6 +388,7 @@
       .slogan-band .inner{font-size:20px;}
       .pacte-quote{font-size:26px;}
     }
+undefined
   </style>
 </head>
 <body>
@@ -705,133 +706,7 @@
             <span>0 €</span><span>15 000 €</span>
           </div>
 
-          <div class="dash-pyr-mini">
-            <!-- ===== Constellation des 10 étoiles : ciel navy, étoiles qui s'allument ===== -->
-            <svg viewBox="0 0 380 290" style="width:100%;height:auto;display:block;border-radius:14px;">
-              <defs>
-                <radialGradient id="pcSky" cx="50%" cy="60%" r="75%">
-                  <stop offset="0%"   stop-color="#16315c"/>
-                  <stop offset="60%"  stop-color="#0c1e3a"/>
-                  <stop offset="100%" stop-color="#06122a"/>
-                </radialGradient>
-                <linearGradient id="pcGoldStar" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%"   stop-color="#fff6c2"/>
-                  <stop offset="45%"  stop-color="#f5d57a"/>
-                  <stop offset="100%" stop-color="#c79a3a"/>
-                </linearGradient>
-                <linearGradient id="pcSilverStar" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%"   stop-color="#eef4ff"/>
-                  <stop offset="100%" stop-color="#b8c4dc"/>
-                </linearGradient>
-                <linearGradient id="pcGoldLink" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%"   stop-color="#c9a542" stop-opacity="0.2"/>
-                  <stop offset="50%"  stop-color="#f0d077" stop-opacity="0.95"/>
-                  <stop offset="100%" stop-color="#c9a542" stop-opacity="0.2"/>
-                </linearGradient>
-                <radialGradient id="pcHalo" cx="50%" cy="50%" r="60%">
-                  <stop offset="0%"   stop-color="#fff3c4" stop-opacity="0.55"/>
-                  <stop offset="70%"  stop-color="#c9a961" stop-opacity="0.10"/>
-                  <stop offset="100%" stop-color="#c9a961" stop-opacity="0"/>
-                </radialGradient>
-              </defs>
-
-              <!-- Ciel -->
-              <rect x="0" y="0" width="380" height="290" rx="14" fill="url(#pcSky)"/>
-
-              <!-- Poussière d'étoiles décoratives -->
-              <g fill="#ffffff">
-                <circle cx="22"  cy="42"  r="0.6" opacity=".5"/>
-                <circle cx="55"  cy="78"  r="0.5" opacity=".4"/>
-                <circle cx="98"  cy="40"  r="0.7" opacity=".55"/>
-                <circle cx="155" cy="68"  r="0.5" opacity=".45"/>
-                <circle cx="220" cy="32"  r="0.7" opacity=".6"/>
-                <circle cx="284" cy="58"  r="0.5" opacity=".5"/>
-                <circle cx="338" cy="22"  r="0.6" opacity=".5"/>
-                <circle cx="42"  cy="200" r="0.5" opacity=".4"/>
-                <circle cx="118" cy="248" r="0.7" opacity=".5"/>
-                <circle cx="200" cy="260" r="0.5" opacity=".4"/>
-                <circle cx="290" cy="248" r="0.5" opacity=".45"/>
-                <circle cx="352" cy="200" r="0.6" opacity=".5"/>
-              </g>
-
-              <!-- Lignes reliant les étoiles (s'allument progressivement) -->
-              <g>
-                <line id="cl1" class="star-link" x1="38"  y1="240" x2="78"  y2="222"/>
-                <line id="cl2" class="star-link" x1="78"  y1="222" x2="120" y2="198"/>
-                <line id="cl3" class="star-link" x1="120" y1="198" x2="162" y2="170"/>
-                <line id="cl4" class="star-link" x1="162" y1="170" x2="205" y2="142"/>
-                <line id="cl5" class="star-link" x1="205" y1="142" x2="240" y2="118"/>
-                <line id="cl6" class="star-link" x1="240" y1="118" x2="270" y2="96"/>
-                <line id="cl7" class="star-link" x1="270" y1="96"  x2="297" y2="77"/>
-                <line id="cl8" class="star-link" x1="297" y1="77"  x2="322" y2="60"/>
-                <line id="cl9" class="star-link" x1="322" y1="60"  x2="348" y2="40"/>
-              </g>
-
-              <!-- Étoiles palier (1, 3, 5, 10) — grandes + dorées + halo -->
-              <!-- Étoile #1 — Palier I (500 €) -->
-              <g transform="translate(38,240)">
-                <circle id="ch1" class="star-halo" r="14" fill="url(#pcHalo)" opacity="0"/>
-                <path id="cs1" class="star-base star-tier dim"
-                      d="M0,-11 L2.7,-3.4 L11,-3.4 L4.4,1.3 L7,9 L0,4.4 L-7,9 L-4.4,1.3 L-11,-3.4 L-2.7,-3.4 Z"/>
-              </g>
-              <text id="cv1" class="star-label" x="38" y="265" font-size="11">500 €</text>
-
-              <!-- Étoile #3 — Palier II (2 250 €) -->
-              <g transform="translate(120,198)">
-                <circle id="ch3" class="star-halo" r="14" fill="url(#pcHalo)" opacity="0"/>
-                <path id="cs3" class="star-base star-tier dim"
-                      d="M0,-11 L2.7,-3.4 L11,-3.4 L4.4,1.3 L7,9 L0,4.4 L-7,9 L-4.4,1.3 L-11,-3.4 L-2.7,-3.4 Z"/>
-              </g>
-              <text id="cv3" class="star-label" x="120" y="223" font-size="11">4 500 €</text>
-
-              <!-- Étoile #5 — Palier III (5 000 €) -->
-              <g transform="translate(205,142)">
-                <circle id="ch5" class="star-halo" r="15" fill="url(#pcHalo)" opacity="0"/>
-                <path id="cs5" class="star-base star-tier dim"
-                      d="M0,-12 L3,-3.7 L12,-3.7 L4.8,1.4 L7.6,10 L0,4.8 L-7.6,10 L-4.8,1.4 L-12,-3.7 L-3,-3.7 Z"/>
-              </g>
-              <text id="cv5" class="star-label" x="205" y="168" font-size="11">7 500 €</text>
-
-              <!-- Étoile #10 — Sommet (15 000 €) - la plus grande -->
-              <g transform="translate(348,40)">
-                <circle id="ch10" class="star-halo" r="20" fill="url(#pcHalo)" opacity="0"/>
-                <path id="cs10" class="star-base star-tier dim"
-                      d="M0,-15 L3.7,-4.6 L15,-4.6 L6,1.8 L9.5,12.5 L0,6 L-9.5,12.5 L-6,1.8 L-15,-4.6 L-3.7,-4.6 Z"/>
-              </g>
-              <text id="cv10" class="star-label" x="348" y="20" font-size="11">15 000 €</text>
-
-              <!-- Étoiles intermédiaires (2,4,6,7,8,9) — petites, argentées -->
-              <g transform="translate(78,222)">
-                <path id="cs2" class="star-base dim"
-                      d="M0,-7 L1.7,-2.2 L7,-2.2 L2.8,0.8 L4.4,5.7 L0,2.8 L-4.4,5.7 L-2.8,0.8 L-7,-2.2 L-1.7,-2.2 Z"/>
-              </g>
-              <g transform="translate(162,170)">
-                <path id="cs4" class="star-base dim"
-                      d="M0,-7 L1.7,-2.2 L7,-2.2 L2.8,0.8 L4.4,5.7 L0,2.8 L-4.4,5.7 L-2.8,0.8 L-7,-2.2 L-1.7,-2.2 Z"/>
-              </g>
-              <g transform="translate(240,118)">
-                <path id="cs6" class="star-base dim"
-                      d="M0,-7 L1.7,-2.2 L7,-2.2 L2.8,0.8 L4.4,5.7 L0,2.8 L-4.4,5.7 L-2.8,0.8 L-7,-2.2 L-1.7,-2.2 Z"/>
-              </g>
-              <g transform="translate(270,96)">
-                <path id="cs7" class="star-base dim"
-                      d="M0,-7 L1.7,-2.2 L7,-2.2 L2.8,0.8 L4.4,5.7 L0,2.8 L-4.4,5.7 L-2.8,0.8 L-7,-2.2 L-1.7,-2.2 Z"/>
-              </g>
-              <g transform="translate(297,77)">
-                <path id="cs8" class="star-base dim"
-                      d="M0,-7 L1.7,-2.2 L7,-2.2 L2.8,0.8 L4.4,5.7 L0,2.8 L-4.4,5.7 L-2.8,0.8 L-7,-2.2 L-1.7,-2.2 Z"/>
-              </g>
-              <g transform="translate(322,60)">
-                <path id="cs9" class="star-base dim"
-                      d="M0,-7 L1.7,-2.2 L7,-2.2 L2.8,0.8 L4.4,5.7 L0,2.8 L-4.4,5.7 L-2.8,0.8 L-7,-2.2 L-1.7,-2.2 Z"/>
-              </g>
-
-              <!-- Légende discrète en pied -->
-              <text x="190" y="282" text-anchor="middle"
-                    font-family="'Inter',system-ui,sans-serif" font-size="8" letter-spacing="3"
-                    fill="#7a8aa8" opacity="0.7">CONSTELLATION DE LA RECONNAISSANCE</text>
-            </svg>
-          </div>
+          undefined
 
           <div class="dash-label">Gratitude</div>
           <div id="dash-smiles" class="dash-grat"></div>
@@ -1275,6 +1150,7 @@
       });
     });
   })();
+  undefined
   </script>
 
 </body>
