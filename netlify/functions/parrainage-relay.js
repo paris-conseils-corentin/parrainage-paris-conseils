@@ -45,150 +45,207 @@ function getSmtpTransporter() {
 }
 
 // =====================================================================
-// TEMPLATES HTML INLINE
+// TEMPLATES HTML — palette EXACTE du dashboard rip.parisconseils.fr
+// v240 (24/08/2026) : Inter/Helvetica, palette CSS :root du dashboard RIP.
+//   --navy #0a1e3f  --navy-2 #142d5a  --gold #b8860b  --gold-soft #d4a94a
+//   --gold-tint #faf5e6  --bg #f7f8fb  --ink #0f172a  --ink-2 #334155
+//   --muted #64748b  --line #e2e8f0  --success #059669  --success-soft #d1fae5
+// Logo :  https://rip.parisconseils.fr/static/logo-blanc.png (fond navy)
 // =====================================================================
-const NAVY = '#1a2842', NAVY_D = '#0c1a35';
-const GOLD = '#c9a542', GOLD_L = '#f0d077';
-const CREAM = '#fbf7ec', INK = '#1a1a1a', MUTED = '#6b7280';
-const LOGO_URL = process.env.MAIL_LOGO_URL || 'https://paris-conseils-parrain.netlify.app/logo-paris-conseils.png';
+const RIP_NAVY   = '#0a1e3f';
+const RIP_NAVY2  = '#142d5a';
+const RIP_GOLD   = '#b8860b';
+const RIP_GOLDS  = '#d4a94a';
+const RIP_GOLDT  = '#faf5e6';
+const RIP_BG     = '#f7f5f0';   // gradient-start du dashboard
+const RIP_BG2    = '#f2f4f8';   // gradient-end
+const RIP_INK    = '#0f172a';
+const RIP_INK2   = '#334155';
+const RIP_MUTED  = '#64748b';
+const RIP_LINE   = '#e2e8f0';
+const RIP_SUCC   = '#059669';
+const RIP_SUCCS  = '#d1fae5';
+const RIP_LOGO   = process.env.MAIL_LOGO_URL || 'https://rip.parisconseils.fr/static/logo-blanc.png';
 
 const escapeHtml = (s) => String(s||'').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 
-function starsRow(nLit) {
-  let html = '<div style="text-align:center;font-size:28px;letter-spacing:6px;line-height:1;margin:14px 0;">';
-  for (let i = 0; i < 10; i++) {
-    const color = i < nLit ? GOLD : '#cbd2de';
-    html += `<span style="color:${color};">${i < nLit ? '★' : '☆'}</span>`;
-  }
-  return html + '</div>';
-}
-
-// HEADER BLANC pour que le logo (texte noir + swoosh bleu) soit parfaitement lisible
+// Squelette style dashboard rip.parisconseils.fr : header navy avec logo blanc,
+// filet doré, cards blanches, footer navy sobre.
 function baseShell(opts) {
-  return `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>${opts.title}</title></head>
-<body style="margin:0;padding:0;background:${CREAM};font-family:Georgia,'Times New Roman',serif;color:${INK};">
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:${CREAM};padding:40px 16px;">
+  const title    = opts && opts.title    ? opts.title    : 'Paris Conseils';
+  const eyebrow  = opts && opts.eyebrow  ? opts.eyebrow  : '';
+  const subtitle = opts && opts.subtitle ? opts.subtitle : '';
+  const body     = opts && opts.body     ? opts.body     : '';
+  return `<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title></head>
+<body style="margin:0;padding:0;background:${RIP_BG};font-family:Inter,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;color:${RIP_INK};font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:${RIP_BG};padding:32px 12px;">
     <tr><td align="center">
-      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width:600px;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 6px 30px rgba(12,26,53,0.08);">
-        <tr><td style="background:#ffffff;padding:36px 40px 28px 40px;text-align:center;">
-          <img src="${LOGO_URL}" alt="Paris Conseils — Ingénierie financière & optimisation fiscale" width="280" height="auto" style="display:inline-block;max-width:280px;height:auto;border:0;outline:none;text-decoration:none;">
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="640" style="max-width:640px;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 8px 30px rgba(10,30,63,0.08);border:1px solid ${RIP_LINE};">
+        <!-- HEADER NAVY (comme rip.parisconseils.fr/dashboard) -->
+        <tr><td style="background:${RIP_NAVY};padding:24px 32px;">
+          <img src="${RIP_LOGO}" alt="Paris Conseils — Ingénierie financière & optimisation fiscale" width="260" height="88" style="display:block;height:88px;width:auto;border:0;outline:none;text-decoration:none;">
         </td></tr>
-        <tr><td style="height:3px;background:${GOLD};line-height:0;font-size:0;">&nbsp;</td></tr>
-        <tr><td style="padding:28px 40px 0 40px;text-align:center;">
-          <div style="font-family:Georgia,serif;font-size:10px;letter-spacing:5px;color:${GOLD};text-transform:uppercase;">${opts.eyebrow}</div>
-        </td></tr>
-        <tr><td style="padding:14px 40px 8px 40px;text-align:center;">
-          <h1 style="font-family:'Playfair Display',Georgia,serif;font-size:28px;font-weight:400;color:${NAVY_D};margin:0;line-height:1.2;">${opts.title}</h1>
-        </td></tr>
-        ${opts.subtitle ? `<tr><td style="padding:0 40px 20px 40px;text-align:center;">
-          <div style="font-family:Georgia,serif;font-style:italic;font-size:15px;color:${MUTED};">${opts.subtitle}</div>
+        <!-- Filet doré -->
+        <tr><td style="height:3px;background:${RIP_GOLD};line-height:0;font-size:0;">&nbsp;</td></tr>
+        ${eyebrow ? `<tr><td style="padding:26px 34px 0 34px;">
+          <div style="font-size:11px;letter-spacing:2.5px;color:${RIP_GOLD};font-weight:700;text-transform:uppercase;">${escapeHtml(eyebrow)}</div>
         </td></tr>` : ''}
-        <tr><td style="padding:10px 40px 30px 40px;font-family:Georgia,serif;font-size:15px;line-height:1.7;color:${INK};">${opts.body}</td></tr>
-        <tr><td style="background:${CREAM};padding:24px 40px;text-align:center;font-family:Georgia,serif;font-size:12px;color:${MUTED};border-top:1px solid #eee;">
-          <div style="margin-bottom:8px;">Paris Conseils — Ingénierie financière &amp; optimisation fiscale</div>
-          <div>Confidentialité absolue · Secret professionnel</div>
-          <div style="margin-top:14px;">
-            <a href="https://paris-conseils-parrain.netlify.app" style="color:${NAVY};text-decoration:none;">paris-conseils-parrain.netlify.app</a>
-            &nbsp;·&nbsp;
-            <a href="mailto:contact@parisconseils.fr" style="color:${NAVY};text-decoration:none;">contact@parisconseils.fr</a>
-          </div>
+        <tr><td style="padding:${eyebrow?'8':'26'}px 34px 0 34px;">
+          <h1 style="font-family:'Cormorant Garamond',Georgia,serif;font-size:30px;font-weight:500;color:${RIP_NAVY};line-height:1.2;margin:0;">${escapeHtml(title)}</h1>
+        </td></tr>
+        ${subtitle ? `<tr><td style="padding:6px 34px 0 34px;">
+          <div style="font-size:14px;color:${RIP_MUTED};">${escapeHtml(subtitle)}</div>
+        </td></tr>` : ''}
+        <tr><td style="padding:22px 34px 30px 34px;font-size:15px;line-height:1.6;color:${RIP_INK};">${body}</td></tr>
+        <tr><td style="background:${RIP_NAVY};padding:22px 34px;text-align:center;font-size:12px;color:#c9d0dc;">
+          <div style="margin-bottom:6px;color:${RIP_GOLDS};letter-spacing:1.5px;">Paris Conseils &middot; Ingénierie financière & optimisation fiscale</div>
+          <div style="color:#94a0b8;">Confidentialité absolue &middot; Secret professionnel</div>
         </td></tr>
       </table>
+      <div style="max-width:640px;padding:16px 12px 0;color:${RIP_MUTED};font-family:Inter,Helvetica,Arial,sans-serif;font-size:11px;text-align:center;">
+        <a href="https://parrainage.parisconseils.fr" style="color:${RIP_MUTED};text-decoration:none;">parrainage.parisconseils.fr</a>
+        &nbsp;&middot;&nbsp;
+        <a href="mailto:contact@parisconseils.fr" style="color:${RIP_MUTED};text-decoration:none;">contact@parisconseils.fr</a>
+      </div>
     </td></tr>
   </table>
 </body></html>`;
 }
 
-// v200r — Bloc explicatif des paliers, personnalisé selon l'étape du parrain
+// starsRow : ligne d'étoiles Euromillions (dorées / grises) style dashboard.
+function starsRow(nLit) {
+  const n = Math.max(0, Math.min(10, nLit|0));
+  let html = '<div style="text-align:center;font-size:22px;letter-spacing:6px;line-height:1;margin:12px 0;">';
+  for (let i = 0; i < 10; i++) {
+    const color = i < n ? RIP_GOLD : '#cbd5e1';
+    html += '<span style="color:'+color+';">'+(i < n ? '&#9733;' : '&#9734;')+'</span>';
+  }
+  return html + '</div>';
+}
+
+// v240 — Bloc explicatif des paliers, style card dashboard (fond doré très clair)
 function blocExplicationPaliers(nbFilleulsApres) {
   const n = Math.max(0, Math.min(10, nbFilleulsApres|0));
   let titreEtape, corps;
   if (n === 0) {
     titreEtape = 'Bienvenue dans le programme';
-    corps = `<p style="margin:0 0 10px;">Vous n'avez encore transmis <strong>aucun filleul</strong>. Voici comment ça fonctionne :</p>
-      <ul style="margin:0;padding-left:18px;line-height:1.7;">
-        <li><strong>1<sup>er</sup> filleul</strong> qui valide une opération : vous recevez <strong>500 €</strong></li>
-        <li><strong>2<sup>e</sup> filleul</strong> qui valide : vous recevez <strong>+500 €</strong> (1 000 € cumulés)</li>
-        <li><strong>3<sup>e</sup> filleul</strong> qui valide : <strong>1 500 €</strong> + <strong>rétroactivité de 1 000 € chacun</strong> sur vos 2 premiers (qui passent à 1 500 € chacun), soit <strong>1 500 + 1 500 + 1 500 = 4 500 €</strong> de cumul</li>
-        <li><strong>À partir du 4<sup>e</sup></strong> et jusqu'au 10<sup>e</sup> : <strong>+ 1 500 €</strong> par filleul supplémentaire</li>
-        <li><strong>Plafond annuel</strong> : 10 filleuls = <strong>15 000 €</strong></li>
+    corps = `Vous n'avez encore transmis <b>aucun filleul</b>. Voici comment ça fonctionne :
+      <ul style="margin:8px 0 4px 0;padding-left:20px;line-height:1.7;">
+        <li><b>1<sup>er</sup> filleul</b> qui valide : <b>500 EUR</b></li>
+        <li><b>2<sup>e</sup> filleul</b> qui valide : <b>+500 EUR</b> (1 000 EUR cumulés)</li>
+        <li><b>3<sup>e</sup> filleul</b> qui valide : <b>1 500 EUR</b> + <b>rétroactivité de 1 000 EUR chacun</b> sur vos 2 premiers, soit <b>4 500 EUR</b> de cumul</li>
+        <li>Du <b>4<sup>e</sup> au 10<sup>e</sup></b> : <b>+ 1 500 EUR</b> par filleul supplémentaire</li>
+        <li><b>Plafond annuel</b> : 10 filleuls = <b>15 000 EUR</b></li>
       </ul>`;
   } else if (n === 1) {
     titreEtape = `Vous avez transmis 1 filleul`;
-    corps = `<p style="margin:0 0 10px;">Si ce filleul valide une opération, vous recevez <strong>500 €</strong>. Voici la suite :</p>
-      <ul style="margin:0;padding-left:18px;line-height:1.7;">
-        <li><strong>2<sup>e</sup> filleul</strong> qui valide : <strong>+500 €</strong> (1 000 € cumulés)</li>
-        <li><strong>3<sup>e</sup> filleul</strong> qui valide : <strong>1 500 €</strong> + <strong>rétroactivité de 1 000 € chacun</strong> sur vos 2 premiers (qui passent à 1 500 € chacun), soit <strong>1 500 + 1 500 + 1 500 = 4 500 €</strong> d'un coup</li>
-        <li><strong>Du 4<sup>e</sup> au 10<sup>e</sup></strong> : <strong>+ 1 500 €</strong> par filleul supplémentaire</li>
-        <li><strong>Plafond annuel</strong> : 10 filleuls = <strong>15 000 €</strong></li>
+    corps = `Si ce filleul valide, vous recevez <b>500 EUR</b>. La suite :
+      <ul style="margin:8px 0 4px 0;padding-left:20px;line-height:1.7;">
+        <li><b>2<sup>e</sup> filleul</b> : <b>+500 EUR</b> (1 000 EUR cumulés)</li>
+        <li><b>3<sup>e</sup> filleul</b> : <b>1 500 EUR</b> + rétroactivité 1 000 EUR chacun, soit <b>4 500 EUR</b> d'un coup</li>
+        <li>Du <b>4<sup>e</sup> au 10<sup>e</sup></b> : <b>+ 1 500 EUR</b> par filleul</li>
+        <li><b>Plafond annuel</b> : 15 000 EUR</li>
       </ul>`;
   } else if (n === 2) {
     titreEtape = `Vous avez transmis 2 filleuls`;
-    corps = `<p style="margin:0 0 10px;">Si ces 2 filleuls valident une opération, vous touchez déjà <strong>1 000 €</strong> (500 € chacun).
-      <strong>Un 3<sup>e</sup> filleul change la donne</strong> :</p>
-      <ul style="margin:0;padding-left:18px;line-height:1.7;">
-        <li>Vous touchez <strong>1 500 €</strong> sur le 3<sup>e</sup></li>
-        <li>+ <strong>rétroactivité de 1 000 € chacun</strong> sur vos 2 premiers — ils passent à <strong>1 500 € chacun</strong></li>
-        <li>Soit <strong>1 500 + 1 500 + 1 500 = 4 500 €</strong> au 3<sup>e</sup> filleul validé</li>
-        <li>Puis <strong>+ 1 500 €</strong> par filleul supplémentaire jusqu'au 10<sup>e</sup> (plafond <strong>15 000 €</strong>)</li>
+    corps = `Si ces 2 filleuls valident, vous touchez déjà <b>1 000 EUR</b>. Un 3<sup>e</sup> filleul change la donne :
+      <ul style="margin:8px 0 4px 0;padding-left:20px;line-height:1.7;">
+        <li>Vous touchez <b>1 500 EUR</b> sur le 3<sup>e</sup></li>
+        <li>+ rétroactivité de <b>1 000 EUR chacun</b> sur vos 2 premiers (qui passent à 1 500 EUR chacun)</li>
+        <li>Soit <b>4 500 EUR</b> au 3<sup>e</sup> filleul validé</li>
+        <li>Puis <b>+ 1 500 EUR</b> par filleul supplémentaire (plafond 15 000 EUR)</li>
       </ul>`;
   } else {
-    const totalActuel = 1500 * n; // v200av-fix : 1500€/filleul à partir du 3e (rétro 1500 chacun pour 1er+2e)
+    const totalActuel = 1500 * n;
     titreEtape = `Vous avez transmis ${n} filleuls`;
-    corps = `<p style="margin:0 0 10px;">Avec ${n} filleuls validés, vous êtes à <strong>${totalActuel.toLocaleString('fr-FR')} €</strong>
-      (rétroactivité du 3<sup>e</sup> appliquée : vos 2 premiers sont à 1 500 € chacun, puis 1 500 € par filleul à partir du 3<sup>e</sup>).</p>
-      <ul style="margin:0;padding-left:18px;line-height:1.7;">
-        ${n < 10 ? `<li>Chaque filleul supplémentaire qui valide une opération : <strong>+ 1 500 €</strong></li>
-        <li><strong>Plafond annuel</strong> : 10 filleuls = <strong>15 000 €</strong> (il vous reste ${10 - n} filleul${10-n>1?'s':''} possible${10-n>1?'s':''})</li>` :
-        `<li>Vous avez atteint le <strong>plafond annuel de 15 000 €</strong>. Bravo !</li>`}
+    corps = `Avec ${n} filleuls validés, vous êtes à <b>${totalActuel.toLocaleString('fr-FR')} EUR</b> (rétroactivité appliquée : vos 2 premiers sont à 1 500 EUR chacun, puis 1 500 EUR par filleul dès le 3<sup>e</sup>).
+      <ul style="margin:8px 0 4px 0;padding-left:20px;line-height:1.7;">
+        ${n < 10
+          ? `<li>Chaque filleul supplémentaire qui valide : <b>+ 1 500 EUR</b></li><li><b>Plafond annuel</b> : 15 000 EUR (il vous reste ${10 - n} filleul${10-n>1?'s':''} possible${10-n>1?'s':''})</li>`
+          : `<li>Vous avez atteint le <b>plafond annuel de 15 000 EUR</b>. Bravo !</li>`}
       </ul>`;
   }
-  return `<div style="background:#fdf6e3;border:1px solid ${GOLD};border-left:4px solid ${GOLD};border-radius:10px;padding:18px 22px;margin:22px 0;">
-      <div style="font-family:Georgia,serif;font-size:10px;letter-spacing:3px;color:#8a6818;text-transform:uppercase;font-weight:700;margin-bottom:8px;">📍 Où en êtes-vous ? · ${escapeHtml(titreEtape)}</div>
-      <div style="font-family:Georgia,serif;font-size:14px;color:${NAVY_D};">${corps}</div>
-      <div style="margin-top:14px;padding-top:12px;border-top:1px dashed ${GOLD};font-size:12px;color:${MUTED};text-align:center;">
-        ⏳ Programme valable jusqu'au <strong style="color:${NAVY_D};">31 décembre 2026</strong> — chaque année repart à zéro le 1<sup>er</sup> janvier.
-      </div>
-    </div>`;
+  return `<div style="background:${RIP_GOLDT};border:1px solid ${RIP_GOLDS};border-radius:12px;padding:18px 22px;margin:20px 0;">
+    <div style="font-size:11px;letter-spacing:2.5px;color:${RIP_GOLD};font-weight:700;text-transform:uppercase;margin-bottom:8px;">Où en êtes-vous ? · ${escapeHtml(titreEtape)}</div>
+    <div style="font-size:14px;color:${RIP_INK2};">${corps}</div>
+    <div style="margin-top:12px;padding-top:10px;border-top:1px dashed ${RIP_GOLDS};font-size:12px;color:${RIP_MUTED};text-align:center;">
+      Programme valable jusqu'au <b style="color:${RIP_NAVY};">31 décembre 2026</b> — chaque année repart à zéro le 1<sup>er</sup> janvier.
+    </div>
+  </div>`;
 }
 
 function emailParrain({ parrain, conseiller, filleuls, total, nbFilleulsConfirmes }) {
   const nbConfirmes = (typeof nbFilleulsConfirmes === 'number') ? nbFilleulsConfirmes : 0;
   const nbApresAjout = nbConfirmes + filleuls.length;
   const triggersRetro = nbConfirmes < 3 && nbApresAjout >= 3;
-  const stars = starsRow(Math.min(nbApresAjout, 10));
-  // v200aa — Nom complet du conseiller pour affichage
   const conseillerNom = conseillerComplet(conseiller);
-  const filleulsHtml = filleuls.map((f, i) => `<tr><td style="padding:14px 18px;border-bottom:1px solid #f0eee6;font-family:Georgia,serif;">
-      <div style="font-family:'Playfair Display',Georgia,serif;font-size:16px;color:${NAVY_D};">${i+1}. ${escapeHtml(f.prenom)} ${escapeHtml(f.nom)}</div>
-      ${f.email ? `<div style="font-size:13px;color:${MUTED};margin-top:3px;">✉ ${escapeHtml(f.email)}</div>` : ''}
-      ${f.tel   ? `<div style="font-size:13px;color:${MUTED};margin-top:3px;">☎ ${escapeHtml(f.tel)}</div>` : ''}
-    </td></tr>`).join('');
-  const body = `<p>Bonjour ${escapeHtml(parrain.prenom)},</p>
-    <p>Nous avons bien reçu votre recommandation. <strong>${filleuls.length} proche${filleuls.length>1?'s ont':' a'} été transmis</strong> à votre conseiller <strong>${escapeHtml(conseillerNom)}</strong>, qui prendra contact avec chacun sous <strong>48 heures</strong>.</p>
-    <div style="background:linear-gradient(135deg,${NAVY} 0%,${NAVY_D} 100%);border-radius:14px;padding:24px 20px;margin:24px 0;text-align:center;">
-      <div style="font-family:Georgia,serif;font-size:10px;letter-spacing:4px;color:${GOLD_L};text-transform:uppercase;margin-bottom:4px;">Votre constellation</div>
-      ${stars}
-      <div style="font-family:'Playfair Display',Georgia,serif;font-size:16px;color:${GOLD_L};font-style:italic;margin-top:4px;">${Math.min(nbApresAjout,10)} étoile${nbApresAjout>1?'s':''} sur 10</div>
-    </div>
-    ${triggersRetro ? `<div style="background:#fdf6e3;border:1px solid ${GOLD};border-left:4px solid ${GOLD};border-radius:10px;padding:18px 22px;margin:22px 0;">
-      <div style="font-family:Georgia,serif;font-size:10px;letter-spacing:3px;color:#8a6818;text-transform:uppercase;font-weight:700;margin-bottom:6px;">★ ★ ★ Effet rétroactif déclenché</div>
-      <div style="font-family:'Playfair Display',Georgia,serif;font-size:18px;color:${NAVY_D};line-height:1.4;">Avec ce 3<sup>e</sup> filleul, vos 2 premiers parrainages passent rétroactivement à <strong>1 000 €</strong> chacun. Vous gagnez un complément de <strong>1 000 €</strong>.</div>
-    </div>` : ''}
-    ${blocExplicationPaliers(nbApresAjout)}
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:24px 0;background:${CREAM};border-radius:10px;">${filleulsHtml}</table>
-    <div style="background:${NAVY};color:#fff;padding:20px 24px;border-radius:10px;text-align:center;margin:24px 0;">
-      <div style="font-family:Georgia,serif;font-size:11px;letter-spacing:3px;color:${GOLD_L};text-transform:uppercase;margin-bottom:6px;">Votre potentiel total</div>
-      <div style="font-family:'Playfair Display',Georgia,serif;font-size:36px;font-weight:700;color:${GOLD_L};">${total.toLocaleString('fr-FR')} €</div>
-      <div style="font-size:13px;color:#cfd9ec;margin-top:6px;font-style:italic;">selon les filleuls qui souscrivent — plafond 15 000 € / an</div>
-    </div>
-    <p style="text-align:center;margin:30px 0;">
-      <a href="https://paris-conseils-parrain.netlify.app/parrainage.html" style="display:inline-block;background:${GOLD};color:${NAVY_D};padding:14px 30px;text-decoration:none;border-radius:8px;font-family:Georgia,serif;letter-spacing:2px;font-size:12px;text-transform:uppercase;font-weight:700;">★ Recommander un nouveau filleul</a>
-    </p>
-    <p style="font-style:italic;color:${MUTED};border-left:2px solid ${GOLD};padding:6px 0 6px 16px;margin:24px 0;">« Le savoir est la seule matière qui s'accroît quand on la partage. »<br><span style="font-size:12px;">— Socrate</span></p>
-    <p>Merci de votre confiance,<br>L'équipe Paris Conseils</p>`;
-  return baseShell({ title: 'Recommandation bien reçue', eyebrow: 'Accusé de réception',
-    subtitle: `${filleuls.length} proche${filleuls.length>1?'s recommandés':' recommandé'} · conseiller ${escapeHtml(conseillerNom)}`, body });
+  const nb = filleuls.length;
+
+  const filleulsAutorises = filleuls.map(f =>
+    `  <li style="margin:4px 0;"><b>${escapeHtml(f.prenom)} ${escapeHtml(f.nom)}</b></li>`
+  ).join('\n');
+
+  const filleulsDetails = filleuls.map((f, i) => {
+    const details = [];
+    if (f.email) details.push(escapeHtml(f.email));
+    if (f.tel)   details.push(escapeHtml(f.tel));
+    const suffix = details.length ? `<div style="font-size:13px;color:${RIP_MUTED};margin-top:2px;">${details.join(' &middot; ')}</div>` : '';
+    return `<tr><td style="padding:12px 0;border-bottom:1px solid ${RIP_LINE};">
+      <div style="font-weight:600;color:${RIP_NAVY};font-size:15px;">${i+1}. ${escapeHtml(f.prenom)} ${escapeHtml(f.nom)}</div>${suffix}
+    </td></tr>`;
+  }).join('');
+
+  const retroBlock = triggersRetro
+    ? `<div style="background:${RIP_GOLDT};border:1px solid ${RIP_GOLDS};border-left:4px solid ${RIP_GOLD};border-radius:10px;padding:16px 20px;margin:20px 0;">
+        <div style="font-size:11px;letter-spacing:2px;color:${RIP_GOLD};font-weight:700;text-transform:uppercase;margin-bottom:6px;">Effet rétroactif déclenché</div>
+        <div style="font-size:15px;color:${RIP_NAVY};line-height:1.5;">Avec ce 3<sup>e</sup> filleul, vos 2 premières recommandations passent rétroactivement à <b>1&nbsp;500&nbsp;EUR chacune</b> (complément de 2&nbsp;000&nbsp;EUR).</div>
+      </div>`
+    : '';
+
+  const body = `
+<p style="margin:0 0 14px;">Bonjour ${escapeHtml(parrain.prenom)},</p>
+<p style="margin:0 0 18px;">Nous avons bien reçu votre recommandation. <b>${nb} proche${nb>1?'s ont':' a'} été transmis</b> à votre conseiller <b>${escapeHtml(conseillerNom)}</b>, qui prendra contact avec chacun sous <b>48 heures</b>.</p>
+
+<div style="background:${RIP_BG};border:1px solid ${RIP_LINE};border-radius:12px;padding:18px 22px;margin:18px 0;">
+  <div style="font-size:11px;letter-spacing:2.5px;color:${RIP_GOLD};font-weight:700;text-transform:uppercase;margin-bottom:10px;">Personnes recommandées</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${filleulsDetails}</table>
+</div>
+
+<div style="background:${RIP_GOLDT};border:1px solid ${RIP_GOLDS};border-radius:12px;padding:18px 22px;margin:18px 0;">
+  <div style="font-size:11px;letter-spacing:2.5px;color:${RIP_GOLD};font-weight:700;text-transform:uppercase;margin-bottom:8px;">Autorisation RGPD</div>
+  <div style="font-size:14px;color:${RIP_INK2};line-height:1.5;">En soumettant ce formulaire, vous avez donné votre autorisation explicite à Paris Conseils pour contacter :
+    <ul style="margin:8px 0 4px 0;padding-left:20px;">${filleulsAutorises}</ul>
+  </div>
+  <div style="font-size:12px;color:${RIP_MUTED};margin-top:10px;">Conforme RGPD. Retrait possible à tout moment à <a href="mailto:contact@parisconseils.fr" style="color:${RIP_NAVY};text-decoration:none;">contact@parisconseils.fr</a>.</div>
+</div>
+
+<div style="background:${RIP_NAVY};border-radius:12px;padding:20px 22px;margin:20px 0;text-align:center;">
+  <div style="font-size:11px;letter-spacing:2.5px;color:${RIP_GOLDS};font-weight:700;text-transform:uppercase;margin-bottom:4px;">Votre progression</div>
+  ${starsRow(Math.min(nbApresAjout,10))}
+  <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:${RIP_GOLDS};margin-top:4px;">${Math.min(nbApresAjout,10)} filleul${nbApresAjout>1?'s':''} sur 10</div>
+</div>
+${retroBlock}
+${blocExplicationPaliers(nbApresAjout)}
+
+<div style="background:${RIP_NAVY};border-radius:12px;padding:22px 24px;margin:20px 0;text-align:center;">
+  <div style="font-size:11px;letter-spacing:2.5px;color:${RIP_GOLDS};font-weight:700;text-transform:uppercase;margin-bottom:6px;">Votre potentiel total</div>
+  <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:34px;font-weight:600;color:${RIP_GOLDS};line-height:1;">${total.toLocaleString('fr-FR')}&nbsp;EUR</div>
+  <div style="font-size:12px;color:#cdd5e5;margin-top:6px;font-style:italic;">selon les filleuls qui souscrivent · plafond 15 000 EUR / an</div>
+</div>
+
+<p style="text-align:center;margin:26px 0;">
+  <a href="https://parrainage.parisconseils.fr/parrainage.html" style="display:inline-block;background:${RIP_NAVY};color:#fff;padding:14px 30px;text-decoration:none;border-radius:10px;font-weight:600;font-size:14px;letter-spacing:1px;">Recommander un nouveau filleul</a>
+</p>
+
+<p style="margin:20px 0 0;">Merci de votre confiance,<br><b style="color:${RIP_NAVY};">L'équipe Paris Conseils</b></p>`;
+
+  return baseShell({
+    title: `Recommandation bien reçue, merci ${escapeHtml(parrain.prenom)}`,
+    eyebrow: `Parrainage · ${nb} filleul${nb>1?'s':''} transmis à ${escapeHtml(conseillerNom)}`,
+    subtitle: `Conseiller ${escapeHtml(conseillerNom)} · contact sous 48 h`,
+    body
+  });
 }
 
 // v200aa — Helpers pour transformer le slug conseiller en prénom / nom complet
@@ -217,27 +274,35 @@ function conseillerComplet(value) {
 // Le conseiller doit aller sur le dashboard pour voir les détails et marquer comme contacté.
 function emailConseiller({ parrain, conseiller, filleuls }) {
   const prenomCons = conseillerPrenom(conseiller) || 'cher conseiller';
-  const nbFilleuls = filleuls.length;
-  const body = `<p>Bonjour <strong>${escapeHtml(prenomCons)}</strong>,</p>
-    <p>Vous venez de recevoir <strong>${nbFilleuls} nouveau${nbFilleuls>1?'x':''} parrainage${nbFilleuls>1?'s':''}</strong> à traiter.</p>
-    <div style="background:#fff8d0;border:1px solid ${GOLD};border-left:4px solid ${GOLD};border-radius:10px;padding:20px 24px;margin:24px 0;">
-      <div style="font-family:Georgia,serif;font-size:11px;letter-spacing:3px;color:#8a6818;text-transform:uppercase;font-weight:700;margin-bottom:8px;">★ Prochaine étape</div>
-      <div style="font-family:'Playfair Display',Georgia,serif;font-size:18px;color:${NAVY_D};line-height:1.5;">
-        Connectez-vous au <strong>dashboard équipe</strong> pour consulter les détails (nom, email, téléphone, projet) de vos filleuls
-        et <strong>contacter chacun sous 48 heures</strong>.
-      </div>
-    </div>
-    <p style="text-align:center;margin:30px 0;">
-      <a href="https://paris-conseils-dashboard.netlify.app/equipe.html" style="display:inline-block;background:${NAVY};color:#fff;padding:16px 32px;text-decoration:none;border-radius:8px;font-family:Georgia,serif;letter-spacing:2px;font-size:13px;text-transform:uppercase;font-weight:700;">Ouvrir le dashboard →</a>
-    </p>
-    <p style="font-size:12px;color:${MUTED};font-style:italic;border-left:2px solid ${GOLD};padding:6px 0 6px 16px;margin:20px 0;">
-      Pour des raisons de confidentialité (RGPD) et de sécurité, les coordonnées des filleuls
-      ne sont pas dans cet email. Connectez-vous au dashboard équipe avec votre identifiant
-      conseiller pour les consulter et les marquer comme contactés.
-    </p>
-    <p>Merci de votre réactivité,<br>L'équipe Paris Conseils</p>`;
-  return baseShell({ title: 'Nouveau parrainage à traiter', eyebrow: 'Notification conseiller',
-    subtitle: `${nbFilleuls} filleul${nbFilleuls>1?'s':''} · à traiter sous 48 h via le dashboard`, body });
+  const nb = filleuls.length;
+  const contactBits = [];
+  if (parrain.email) contactBits.push(`<a href="mailto:${escapeHtml(parrain.email)}" style="color:${RIP_NAVY};">${escapeHtml(parrain.email)}</a>`);
+  if (parrain.tel)   contactBits.push(`<a href="tel:${escapeHtml(parrain.tel)}" style="color:${RIP_NAVY};">${escapeHtml(parrain.tel)}</a>`);
+  const contactSuffix = contactBits.length ? ` (${contactBits.join(' &middot; ')})` : '';
+
+  const body = `
+<p style="margin:0 0 14px;">Bonjour <b>${escapeHtml(prenomCons)}</b>,</p>
+<p style="margin:0 0 18px;">Nouvelle recommandation de <b>${escapeHtml(parrain.prenom)} ${escapeHtml(parrain.nom)}</b>${contactSuffix}.</p>
+
+<div style="background:${RIP_GOLDT};border:1px solid ${RIP_GOLDS};border-left:4px solid ${RIP_GOLD};border-radius:12px;padding:18px 22px;margin:18px 0;">
+  <div style="font-size:11px;letter-spacing:2.5px;color:${RIP_GOLD};font-weight:700;text-transform:uppercase;margin-bottom:8px;">À traiter sous 48 h</div>
+  <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:26px;font-weight:600;color:${RIP_NAVY};line-height:1.25;">${nb} nouveau${nb>1?'x':''} filleul${nb>1?'s':''} à contacter</div>
+  <div style="font-size:13px;color:${RIP_MUTED};margin-top:10px;line-height:1.55;">Pour des raisons de confidentialité (RGPD), les coordonnées des filleuls ne sont pas dans cet email. Connectez-vous au dashboard équipe pour consulter les détails complets et marquer chaque filleul comme contacté.</div>
+</div>
+
+<p style="text-align:center;margin:24px 0;">
+  <a href="https://paris-conseils-dashboard.netlify.app/equipe.html" style="display:inline-block;background:${RIP_NAVY};color:#fff;padding:14px 30px;text-decoration:none;border-radius:10px;font-weight:600;font-size:14px;letter-spacing:1px;">Ouvrir le dashboard équipe</a>
+</p>
+
+<p style="margin:18px 0 0;font-size:13px;color:${RIP_MUTED};font-style:italic;text-align:center;">Le dashboard vous montre nom, email, téléphone, projet et statut de chaque filleul.</p>
+
+<p style="margin:22px 0 0;">Merci de votre réactivité,<br><b style="color:${RIP_NAVY};">L'équipe Paris Conseils</b></p>`;
+  return baseShell({
+    title: 'Nouveau parrainage à traiter',
+    eyebrow: `Notification conseiller · ${nb} filleul${nb>1?'s':''}`,
+    subtitle: 'À traiter sous 48 h via le dashboard équipe',
+    body
+  });
 }
 
 function emailFilleul({ parrain, conseiller, filleul }) {
@@ -247,19 +312,59 @@ function emailFilleul({ parrain, conseiller, filleul }) {
   const map = { 'pereira':'David Pereira','moreau':'Nicolas Moreau','curtet':'Corentin Curtet',
     'david pereira':'David Pereira','nicolas moreau':'Nicolas Moreau','corentin curtet':'Corentin Curtet' };
   const conseillerDisplay = hasSpecific ? (map[lc] || cleanCons) : 'Un conseiller Paris Conseils';
-  const body = `<p>Bonjour ${escapeHtml(filleul.prenom)},</p>
-    <p><strong>${escapeHtml(parrain.prenom)} ${escapeHtml(parrain.nom)}</strong> vous a recommandé auprès de Paris Conseils, cabinet d'<em>ingénierie financière et d'optimisation fiscale</em>.</p>
-    <p>Un proche qui prend le temps de vous recommander, c'est rarement anodin. Notre rôle est d'apporter à chacun de nos clients un <strong>accompagnement sur-mesure</strong>, dans la plus stricte confidentialité.</p>
-    <div style="background:${CREAM};border-radius:10px;padding:24px;margin:28px 0;text-align:center;">
-      <div style="font-family:Georgia,serif;font-size:10px;letter-spacing:4px;color:${GOLD};text-transform:uppercase;margin-bottom:10px;">Votre interlocuteur</div>
-      <div style="font-family:'Playfair Display',Georgia,serif;font-size:22px;color:${NAVY_D};">${escapeHtml(conseillerDisplay)}</div>
-      <div style="font-size:13px;color:${MUTED};margin-top:8px;font-style:italic;">${hasSpecific ? 'prendra contact avec vous sous 48 heures' : 'vous contactera dans les meilleurs délais'}</div>
-    </div>
-    <p>Cette première conversation est <strong>sans engagement</strong>. Elle sert avant tout à comprendre votre situation, vos objectifs.</p>
-    <p>Si vous préférez ne pas être contacté, répondez simplement à cet email — nous respecterons votre choix immédiatement.</p>
-    <p>À très bientôt,<br>L'équipe Paris Conseils</p>`;
-  return baseShell({ title: `${escapeHtml(parrain.prenom)} vous recommande Paris Conseils`,
-    eyebrow: 'Une recommandation pour vous', subtitle: 'Accompagnement confidentiel · ingénierie patrimoniale', body });
+  const slug = lc.indexOf('pereira')!==-1 || lc.indexOf('david')!==-1 ? 'david'
+             : lc.indexOf('moreau')!==-1  || lc.indexOf('nicolas')!==-1 ? 'nicolas'
+             : lc.indexOf('curtet')!==-1  || lc.indexOf('corentin')!==-1 ? 'corentin'
+             : null;
+  const contactPhrase = hasSpecific
+    ? `<b>${escapeHtml(conseillerDisplay)}</b> prendra contact avec vous sous 48&nbsp;heures.`
+    : `<b>${escapeHtml(conseillerDisplay)}</b> vous contactera dans les meilleurs d&eacute;lais.`;
+
+  const rdvLine = slug
+    ? `\n<p><b>Prendre rendez-vous en 1 clic</b> : choisissez le cr&eacute;neau qui vous arrange sur l'agenda de ${escapeHtml(conseillerDisplay)}. RDV t&eacute;l&eacute;phonique ou visio Google Meet, 30&nbsp;min, sans engagement.<br>
+&raquo; <a href="https://parrainage.parisconseils.fr/rdv-${slug}.html"><b>Prendre rendez-vous</b></a></p>`
+    : '';
+
+  const rdvBlock = slug
+    ? `<div style="background:${RIP_NAVY};border-radius:12px;padding:22px 24px;margin:20px 0;text-align:center;">
+        <div style="font-size:11px;letter-spacing:2.5px;color:${RIP_GOLDS};font-weight:700;text-transform:uppercase;margin-bottom:10px;">Prenez rendez-vous en 1 clic</div>
+        <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:22px;color:#fff;font-weight:600;line-height:1.3;margin-bottom:8px;">Faites connaissance avec ${escapeHtml(conseillerDisplay)}</div>
+        <div style="font-size:14px;color:#cdd5e5;margin-bottom:18px;line-height:1.5;">Choisissez le créneau qui vous arrange sur son agenda.<br>RDV téléphonique ou visio Google Meet · 30 min · sans engagement.</div>
+        <a href="https://parrainage.parisconseils.fr/rdv-${slug}.html" style="display:inline-block;background:${RIP_GOLDS};color:${RIP_NAVY};padding:14px 30px;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;letter-spacing:1px;">Prendre rendez-vous</a>
+      </div>`
+    : '';
+
+  const body = `
+<p style="margin:0 0 14px;">Bonjour ${escapeHtml(filleul.prenom)},</p>
+<p style="margin:0 0 14px;"><b>${escapeHtml(parrain.prenom)} ${escapeHtml(parrain.nom)}</b> vous a recommandé auprès de Paris Conseils, cabinet d'<i>ingénierie financière et d'optimisation fiscale</i>.</p>
+<p style="margin:0 0 18px;">Un proche qui prend le temps de vous recommander, c'est rarement anodin. Notre rôle est d'apporter à chacun de nos clients un <b>accompagnement sur-mesure</b>, dans la plus stricte confidentialité.</p>
+
+<div style="background:${RIP_BG};border:1px solid ${RIP_LINE};border-radius:12px;padding:20px 24px;margin:18px 0;text-align:center;">
+  <div style="font-size:11px;letter-spacing:2.5px;color:${RIP_GOLD};font-weight:700;text-transform:uppercase;margin-bottom:8px;">Votre interlocuteur</div>
+  <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:26px;color:${RIP_NAVY};font-weight:600;">${escapeHtml(conseillerDisplay)}</div>
+  <div style="font-size:13px;color:${RIP_MUTED};margin-top:6px;font-style:italic;">${hasSpecific ? 'prendra contact avec vous sous 48 heures' : 'vous contactera dans les meilleurs délais'}</div>
+</div>
+
+${rdvBlock}
+
+<div style="background:${RIP_GOLDT};border:1.5px solid ${RIP_GOLD};border-radius:12px;padding:22px 24px;margin:20px 0;text-align:center;">
+  <div style="font-size:11px;letter-spacing:2.5px;color:${RIP_GOLD};font-weight:700;text-transform:uppercase;margin-bottom:10px;">Bonus offert par la maison</div>
+  <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:22px;color:${RIP_NAVY};font-weight:600;line-height:1.3;margin-bottom:8px;">Curieux de connaître <i style="color:${RIP_GOLD};">votre note patrimoniale</i> ?</div>
+  <div style="font-size:14px;color:${RIP_INK2};margin-bottom:18px;line-height:1.5;">Faites votre évaluation Paris Conseils en <b>5 minutes</b>. Gratuit, sans engagement, conforme RGPD.<br>Vous recevez votre note pilier par pilier, directement par email.</div>
+  <a href="https://rip.parisconseils.fr/faire-mon-rip" style="display:inline-block;background:${RIP_NAVY};color:#fff;padding:14px 30px;text-decoration:none;border-radius:10px;font-weight:600;font-size:14px;letter-spacing:1px;">Faire mon évaluation</a>
+</div>
+
+<p style="margin:20px 0 14px;">${contactPhrase} Cette première conversation est <b>sans engagement</b>. Elle sert avant tout à comprendre votre situation, vos objectifs, et à voir comment nous pouvons éventuellement vous être utile.</p>
+
+<p style="margin:20px 0 0;font-size:13px;color:${RIP_MUTED};">Si vous préférez ne pas être contacté, répondez simplement à cet email — nous respecterons votre choix immédiatement.</p>
+
+<p style="margin:16px 0 0;">À très bientôt,<br><b style="color:${RIP_NAVY};">L'équipe Paris Conseils</b></p>`;
+  return baseShell({
+    title: `${escapeHtml(parrain.prenom)} vous recommande Paris Conseils`,
+    eyebrow: 'Une recommandation pour vous',
+    subtitle: 'Accompagnement confidentiel · ingénierie patrimoniale',
+    body
+  });
 }
 
 // v200h — Stockage persistant via Netlify Blobs
@@ -466,28 +571,37 @@ function resolveConseillerEmail(env, conseillerName) {
 
 // v200m — Mail de rappel J+45 pour relancer le parrain
 function emailRappelParrain({ parrain, conseiller, nbConfirmes, currentTotal, nextTierLabel, nextTierExtra, joursDepuis }) {
-  const stars = starsRow(Math.min(nbConfirmes, 10));
-  const body = `<p>Bonjour ${escapeHtml(parrain.prenom)},</p>
-    <p>Cela fait <strong>${joursDepuis} jours</strong> que votre premier proche est passé chez Paris Conseils via votre recommandation.
-    Voici où vous en êtes :</p>
-    <div style="background:linear-gradient(135deg,${NAVY} 0%,${NAVY_D} 100%);border-radius:14px;padding:24px 20px;margin:24px 0;text-align:center;">
-      <div style="font-family:Georgia,serif;font-size:10px;letter-spacing:4px;color:${GOLD_L};text-transform:uppercase;margin-bottom:4px;">Votre constellation actuelle</div>
-      ${stars}
-      <div style="font-family:'Playfair Display',Georgia,serif;font-size:16px;color:${GOLD_L};font-style:italic;margin-top:4px;">${nbConfirmes} étoile${nbConfirmes>1?'s':''} sur 10 · ${currentTotal.toLocaleString('fr-FR')} € accumulés</div>
-    </div>
-    ${nextTierLabel ? `<div style="background:#fdf6e3;border:1px solid ${GOLD};border-left:4px solid ${GOLD};border-radius:10px;padding:18px 22px;margin:22px 0;">
-      <div style="font-family:Georgia,serif;font-size:10px;letter-spacing:3px;color:#8a6818;text-transform:uppercase;font-weight:700;margin-bottom:6px;">⭐ Prochain palier</div>
-      <div style="font-family:'Playfair Display',Georgia,serif;font-size:18px;color:${NAVY_D};line-height:1.4;">${nextTierLabel} pour atteindre <strong>${nextTierExtra}</strong>.</div>
-    </div>` : ''}
-    ${blocExplicationPaliers(nbConfirmes)}
-    <p>Un proche en tête à qui parler de Paris Conseils ? C'est le bon moment de le partager — quelques minutes suffisent pour ajouter une recommandation.</p>
-    <p style="text-align:center;margin:30px 0;">
-      <a href="https://paris-conseils-parrain.netlify.app/parrainage.html" style="display:inline-block;background:${GOLD};color:${NAVY_D};padding:14px 30px;text-decoration:none;border-radius:8px;font-family:Georgia,serif;letter-spacing:2px;font-size:12px;text-transform:uppercase;font-weight:700;">★ Recommander un nouveau filleul</a>
-    </p>
-    <p style="font-style:italic;color:${MUTED};border-left:2px solid ${GOLD};padding:6px 0 6px 16px;margin:24px 0;">« Le savoir est la seule matière qui s'accroît quand on la partage. »<br><span style="font-size:12px;">— Socrate</span></p>
-    <p>Au plaisir d'accueillir un nouveau proche,<br>L'équipe Paris Conseils${conseiller ? ` — ${escapeHtml(conseiller)}` : ''}</p>`;
-  return baseShell({ title: 'Continuez votre constellation', eyebrow: 'Rappel · vos paliers',
-    subtitle: `${nbConfirmes} étoile${nbConfirmes>1?'s':''} déjà allumée${nbConfirmes>1?'s':''} · ${currentTotal.toLocaleString('fr-FR')} € à percevoir`, body });
+  const nextBlock = nextTierLabel
+    ? `<div style="background:${RIP_GOLDT};border:1px solid ${RIP_GOLDS};border-left:4px solid ${RIP_GOLD};border-radius:12px;padding:16px 20px;margin:18px 0;">
+        <div style="font-size:11px;letter-spacing:2.5px;color:${RIP_GOLD};font-weight:700;text-transform:uppercase;margin-bottom:6px;">Prochain palier</div>
+        <div style="font-size:15px;color:${RIP_NAVY};line-height:1.5;">${nextTierLabel} pour atteindre <b>${nextTierExtra}</b>.</div>
+      </div>`
+    : '';
+  const body = `
+<p style="margin:0 0 14px;">Bonjour ${escapeHtml(parrain.prenom)},</p>
+<p style="margin:0 0 18px;">Cela fait <b>${joursDepuis} jours</b> que votre premier proche est passé chez Paris Conseils via votre recommandation. Voici où vous en êtes :</p>
+
+<div style="background:${RIP_NAVY};border-radius:12px;padding:20px 22px;margin:18px 0;text-align:center;">
+  <div style="font-size:11px;letter-spacing:2.5px;color:${RIP_GOLDS};font-weight:700;text-transform:uppercase;margin-bottom:4px;">Votre progression actuelle</div>
+  ${starsRow(Math.min(nbConfirmes,10))}
+  <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:${RIP_GOLDS};margin-top:4px;">${nbConfirmes} filleul${nbConfirmes>1?'s':''} sur 10 · ${currentTotal.toLocaleString('fr-FR')} EUR accumulés</div>
+</div>
+${nextBlock}
+${blocExplicationPaliers(nbConfirmes)}
+
+<p style="margin:18px 0;">Un proche en tête à qui parler de Paris Conseils ? C'est le bon moment de le partager — quelques minutes suffisent pour ajouter une recommandation.</p>
+
+<p style="text-align:center;margin:24px 0;">
+  <a href="https://parrainage.parisconseils.fr/parrainage.html" style="display:inline-block;background:${RIP_NAVY};color:#fff;padding:14px 30px;text-decoration:none;border-radius:10px;font-weight:600;font-size:14px;letter-spacing:1px;">Recommander un nouveau filleul</a>
+</p>
+
+<p style="margin:20px 0 0;">Au plaisir d'accueillir un nouveau proche,<br><b style="color:${RIP_NAVY};">L'équipe Paris Conseils${conseiller ? ` — ${escapeHtml(conseiller)}` : ''}</b></p>`;
+  return baseShell({
+    title: 'Continuez votre constellation',
+    eyebrow: 'Rappel · vos paliers',
+    subtitle: `${nbConfirmes} étoile${nbConfirmes>1?'s':''} déjà allumée${nbConfirmes>1?'s':''} · ${currentTotal.toLocaleString('fr-FR')} EUR`,
+    body
+  });
 }
 
 // v200m — Endpoint /rappels : à appeler par un cron externe (ex: cron-job.org) chaque jour
