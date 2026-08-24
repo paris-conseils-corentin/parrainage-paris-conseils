@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Espace pro · Parrainage Paris Conseils</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #0a1e3f; --navy-2: #142d5a;
+  --gold: #b8860b; --gold-soft: #d4a94a; --gold-tint: #faf5e6;
+  --bg: #f7f5f0; --bg-2: #f2f4f8;
+  --ink: #0f172a; --ink-2: #334155; --muted: #64748b;
+  --line: #e2e8f0; --line-soft: #eef1f5;
+  --success: #059669; --success-soft: #d1fae5;
+  --danger: #dc2626; --danger-soft: #fee2e2;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: linear-gradient(var(--bg) 0%, var(--bg-2) 260px, var(--bg-2) 100%); font-family: Inter, -apple-system, "Segoe UI", sans-serif; color: var(--ink); font-size: 15px; line-height: 1.55; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+a { color: var(--navy); }
+.app-header { background: var(--navy); border-bottom: 3px solid var(--gold); }
+.app-header-inner { max-width: 1200px; margin: 0 auto; padding: 18px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.brand-logo { height: 72px; width: auto; display: block; }
+.header-right { display: flex; align-items: center; gap: 16px; color: #fff; font-size: 14px; }
+.pill { background: rgba(212,169,74,0.2); color: var(--gold-soft); padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+.container { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+h1 { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 34px; font-weight: 500; color: var(--navy); margin: 0 0 8px; }
+h2 { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 22px; font-weight: 500; color: var(--navy); margin: 0 0 12px; }
+.subtitle { color: var(--muted); margin-bottom: 24px; }
+.card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 12px rgba(10,30,63,0.04); }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 800px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } .grid-2 { grid-template-columns: 1fr; } }
+.stat { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
+.stat-label { font-size: 11px; color: var(--gold); font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
+.stat-val { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 34px; font-weight: 600; color: var(--navy); line-height: 1; }
+.stat-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+label { display: block; font-size: 12px; font-weight: 600; color: var(--ink-2); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+input, select, textarea { width: 100%; font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); background: #fff; }
+input:focus, select:focus, textarea:focus { border-color: var(--gold); outline: 2px solid var(--gold-tint); }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 22px; font: inherit; font-weight: 600; border: 1px solid var(--navy); border-radius: 10px; cursor: pointer; text-decoration: none; background: var(--navy); color: #fff; transition: opacity .15s; }
+.btn:hover { opacity: .9; }
+.btn-secondary { background: #fff; color: var(--navy); }
+.btn-danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+.msg { padding: 10px 14px; border-radius: 10px; margin: 10px 0; font-size: 14px; }
+.msg-err { background: var(--danger-soft); color: #7f1d1d; border: 1px solid #fecaca; }
+.msg-ok  { background: var(--success-soft); color: #064e3b; border: 1px solid #a7f3d0; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th { text-align: left; padding: 10px 12px; font-size: 11px; letter-spacing: 1.5px; color: var(--gold); font-weight: 700; text-transform: uppercase; border-bottom: 2px solid var(--gold); }
+td { padding: 12px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+tr:hover td { background: var(--bg); }
+.chip { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+.chip-new { background: var(--success-soft); color: #064e3b; }
+.chip-contacted { background: var(--gold-tint); color: var(--gold); }
+.hint { color: var(--muted); font-size: 12px; }
+.right { text-align: right; }
+#login-screen { max-width: 480px; margin: 80px auto; }
+#login-screen .card { padding: 32px; }
+#app { display: none; }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="app-header-inner">
+    <img class="brand-logo" src="https://rip.parisconseils.fr/static/logo-blanc.png" alt="Paris Conseils">
+    <div class="header-right">
+      <span id="whoami" class="pill" style="display:none;"></span>
+      <button id="logoutBtn" class="btn btn-secondary" style="display:none;" onclick="doLogout()">Déconnexion</button>
+    </div>
+  </div>
+</header>
+
+<!-- ========== LOGIN ========== -->
+<section id="login-screen" class="container">
+  <div class="card">
+    <h1>Espace pro</h1>
+    <p class="subtitle">Connectez-vous avec vos identifiants <strong>rip.parisconseils.fr</strong>.</p>
+    <form id="loginForm" onsubmit="return doLogin(event)">
+      <div style="margin-bottom:14px;">
+        <label for="login-user">Identifiant</label>
+        <input id="login-user" type="text" autocomplete="username" required autofocus>
+      </div>
+      <div style="margin-bottom:18px;">
+        <label for="login-pass">Mot de passe</label>
+        <input id="login-pass" type="password" autocomplete="current-password" required>
+      </div>
+      <div id="login-msg"></div>
+      <button type="submit" class="btn" style="width:100%;">Se connecter</button>
+    </form>
+    <p class="hint" style="margin-top:16px;text-align:center;">Session : 12 heures. Aucune donnée client n'est stockée hors du dashboard.</p>
+  </div>
+</section>
+
+<!-- ========== APP ========== -->
+<section id="app" class="container">
+  <h1 id="app-title">Tableau de bord parrainage</h1>
+  <p class="subtitle" id="app-subtitle"></p>
+
+  <div class="grid-4">
+    <div class="stat"><div class="stat-label">Parrainages</div><div class="stat-val" id="s-parrainages">—</div><div class="stat-sub">soumissions reçues</div></div>
+    <div class="stat"><div class="stat-label">Filleuls transmis</div><div class="stat-val" id="s-filleuls">—</div><div class="stat-sub">tous statuts</div></div>
+    <div class="stat"><div class="stat-label">Parrains uniques</div><div class="stat-val" id="s-parrains">—</div><div class="stat-sub">contacts distincts</div></div>
+    <div class="stat"><div class="stat-label">Potentiel cumulé</div><div class="stat-val" id="s-potentiel">—</div><div class="stat-sub">si tous souscrivent</div></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h2>Ajouter un parrainage manuellement</h2>
+      <p class="hint" style="margin:0 0 16px;">Utilisez ce formulaire pour transmettre une recommandation reçue par téléphone ou en RDV. Les mêmes emails automatiques seront envoyés (parrain + conseiller + filleul).</p>
+      <form id="addForm" onsubmit="return doAdd(event)">
+        <h3 style="font-size:12px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin:12px 0 6px;">Le parrain</h3>
+        <div class="row">
+          <div><label>Prénom *</label><input id="p-prenom" required></div>
+          <div><label>Nom *</label><input id="p-nom" required></div>
+        </div>
+        <div class="row">
+          <div><label>Email</label><input id="p-email" type="email"></div>
+          <div><label>Téléphone</label><input id="p-tel"></div>
+        </div>
+        <h3 style="font-size:12px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin:16px 0 6px;">Le filleul</h3>
+        <div class="row">
+          <div><label>Prénom *</label><input id="f-prenom" required></div>
+          <div><label>Nom *</label><input id="f-nom" required></div>
+        </div>
+        <div class="row">
+          <div><label>Email</label><input id="f-email" type="email"></div>
+          <div><label>Téléphone</label><input id="f-tel"></div>
+        </div>
+        <div style="margin-bottom:14px;"><label>Message éventuel</label><textarea id="f-message" rows="2"></textarea></div>
+        <div style="margin-bottom:14px;">
+          <label>Conseiller attribué</label>
+          <select id="conseiller-select">
+            <option value="Corentin Curtet">Corentin Curtet</option>
+            <option value="David Pereira">David Pereira</option>
+            <option value="Nicolas Moreau">Nicolas Moreau</option>
+          </select>
+          <div class="hint" style="margin-top:4px;" id="conseiller-hint"></div>
+        </div>
+        <div id="add-msg"></div>
+        <button class="btn" type="submit" style="width:100%;">Transmettre le parrainage</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Parrains uniques</h2>
+      <div style="max-height:520px;overflow:auto;">
+        <table id="tbl-parrains"><thead><tr><th>Nom</th><th>Contact</th><th class="right">Filleuls</th></tr></thead><tbody></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:20px;">
+    <h2>Filleuls transmis</h2>
+    <div style="overflow-x:auto;">
+      <table id="tbl-filleuls"><thead><tr><th>Filleul</th><th>Parrain</th><th>Conseiller</th><th>Date</th><th>Statut</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+
+  <p style="text-align:center;color:var(--muted);font-size:12px;margin:32px 0;">
+    <a href="/parrainage.html" style="color:var(--muted);text-decoration:none;">← Retour au site public</a>
+  </p>
+</section>
+
+<script>
+const API = '/.netlify/functions';
+const TOKEN_KEY = 'pc_pro_token';
+const USER_KEY  = 'pc_pro_user';
+
+function getToken() { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch(_) { return ''; } }
+function getUser()  { try { return JSON.parse(localStorage.getItem(USER_KEY) || 'null'); } catch(_) { return null; } }
+function setSession(token, user) {
+  try { localStorage.setItem(TOKEN_KEY, token); localStorage.setItem(USER_KEY, JSON.stringify(user)); } catch(_) {}
+}
+function clearSession() {
+  try { localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(USER_KEY); } catch(_) {}
+}
+function msg(elId, kind, text) {
+  document.getElementById(elId).innerHTML = text ? `<div class="msg msg-${kind}">${text}</div>` : '';
+}
+function esc(s) { return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtDate(iso) { try { return new Date(iso).toLocaleDateString('fr-FR', {day:'2-digit',month:'short',year:'numeric'}); } catch(_){ return iso||'—'; } }
+
+async function doLogin(e) {
+  e.preventDefault();
+  msg('login-msg', 'err', '');
+  const login = document.getElementById('login-user').value.trim();
+  const password = document.getElementById('login-pass').value;
+  try {
+    const r = await fetch(`${API}/pro-login`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({login, password}) });
+    const j = await r.json();
+    if (!j.ok) { msg('login-msg', 'err', esc(j.error || 'Identifiants invalides')); return false; }
+    setSession(j.token, j.user);
+    showApp(j.user);
+  } catch (err) {
+    msg('login-msg', 'err', 'Erreur réseau : ' + esc(err.message));
+  }
+  return false;
+}
+function doLogout() {
+  clearSession();
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'block';
+  document.getElementById('whoami').style.display = 'none';
+  document.getElementById('logoutBtn').style.display = 'none';
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+}
+
+function showApp(user) {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  const who = document.getElementById('whoami');
+  who.style.display = '';
+  who.textContent = (user.c || user.u) + (user.r === 'admin' ? ' · admin' : '');
+  document.getElementById('logoutBtn').style.display = '';
+  document.getElementById('app-subtitle').textContent = user.r === 'admin'
+    ? 'Vue admin — tous les parrainages du programme.'
+    : `Vos parrainages assignés à ${user.c || user.u}.`;
+
+  // Pré-sélectionne le conseiller = user (conseiller normal ne peut ajouter que pour lui)
+  const sel = document.getElementById('conseiller-select');
+  const label = user.c || user.u || '';
+  for (const opt of sel.options) {
+    if (opt.value.toLowerCase().includes(label.toLowerCase()) || label.toLowerCase().includes(opt.value.toLowerCase())) {
+      sel.value = opt.value;
+      break;
+    }
+  }
+  if (user.r !== 'admin') {
+    sel.disabled = true;
+    document.getElementById('conseiller-hint').textContent = 'Vous ne pouvez transmettre que pour votre propre attribution.';
+  } else {
+    document.getElementById('conseiller-hint').textContent = 'Admin : vous pouvez transmettre au nom de n\'importe quel conseiller.';
+  }
+
+  loadData();
+}
+
+async function loadData() {
+  try {
+    const r = await fetch(`${API}/parrainages-list`, { headers: { 'Authorization': 'Bearer ' + getToken() } });
+    if (r.status === 401) { doLogout(); msg('login-msg','err','Session expirée, reconnectez-vous.'); return; }
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || 'load failed');
+    renderData(j.records || []);
+  } catch (err) {
+    document.querySelector('#tbl-filleuls tbody').innerHTML = `<tr><td colspan="5" style="color:var(--danger);">Erreur : ${esc(err.message)}</td></tr>`;
+  }
+}
+
+function renderData(records) {
+  // Stats
+  let nbFilleuls = 0, potentiel = 0;
+  const parrainsMap = new Map();
+  for (const rec of records) {
+    const fs = rec.filleuls || [];
+    nbFilleuls += fs.length;
+    potentiel += (rec.cumulPotentiel || 0);
+    const key = ((rec.parrain && rec.parrain.email) || (rec.parrain && (rec.parrain.prenom + ' ' + rec.parrain.nom))).toLowerCase();
+    const existing = parrainsMap.get(key) || { parrain: rec.parrain, nbFilleuls: 0, latest: rec.createdAt };
+    existing.nbFilleuls += fs.length;
+    if ((rec.createdAt || '') > (existing.latest || '')) existing.latest = rec.createdAt;
+    parrainsMap.set(key, existing);
+  }
+  document.getElementById('s-parrainages').textContent = records.length;
+  document.getElementById('s-filleuls').textContent = nbFilleuls;
+  document.getElementById('s-parrains').textContent = parrainsMap.size;
+  document.getElementById('s-potentiel').textContent = potentiel.toLocaleString('fr-FR') + ' €';
+
+  // Table parrains
+  const trsP = [];
+  for (const [_, p] of parrainsMap) {
+    const pr = p.parrain || {};
+    const bits = [];
+    if (pr.email) bits.push(`<a href="mailto:${esc(pr.email)}">${esc(pr.email)}</a>`);
+    if (pr.tel)   bits.push(`<a href="tel:${esc(pr.tel)}">${esc(pr.tel)}</a>`);
+    trsP.push(`<tr><td><strong>${esc(pr.prenom||'')} ${esc(pr.nom||'')}</strong><br><span class="hint">${fmtDate(p.latest)}</span></td><td>${bits.join('<br>')}</td><td class="right"><strong>${p.nbFilleuls}</strong></td></tr>`);
+  }
+  document.querySelector('#tbl-parrains tbody').innerHTML = trsP.join('') || '<tr><td colspan="3" class="hint">Aucun parrain pour l\'instant.</td></tr>';
+
+  // Table filleuls
+  const trsF = [];
+  for (const rec of records) {
+    for (const f of (rec.filleuls || [])) {
+      const contacted = f.contactedAt ? '<span class="chip chip-contacted">Contacté</span>' : '<span class="chip chip-new">Nouveau</span>';
+      const contactBits = [];
+      if (f.email) contactBits.push(`<a href="mailto:${esc(f.email)}">${esc(f.email)}</a>`);
+      if (f.tel)   contactBits.push(`<a href="tel:${esc(f.tel)}">${esc(f.tel)}</a>`);
+      trsF.push(`<tr>
+        <td><strong>${esc(f.prenom||'')} ${esc(f.nom||'')}</strong>${contactBits.length ? '<br><span class="hint">'+contactBits.join(' · ')+'</span>' : ''}</td>
+        <td>${esc((rec.parrain&&rec.parrain.prenom)||'')} ${esc((rec.parrain&&rec.parrain.nom)||'')}</td>
+        <td>${esc(rec.conseiller||'—')}</td>
+        <td>${fmtDate(rec.createdAt)}</td>
+        <td>${contacted}</td>
+      </tr>`);
+    }
+  }
+  document.querySelector('#tbl-filleuls tbody').innerHTML = trsF.join('') || '<tr><td colspan="5" class="hint">Aucun filleul pour l\'instant.</td></tr>';
+}
+
+async function doAdd(e) {
+  e.preventDefault();
+  msg('add-msg','err','');
+  const payload = {
+    parrain: {
+      prenom: document.getElementById('p-prenom').value,
+      nom:    document.getElementById('p-nom').value,
+      email:  document.getElementById('p-email').value,
+      tel:    document.getElementById('p-tel').value
+    },
+    conseiller: document.getElementById('conseiller-select').value,
+    filleuls: [{
+      prenom:  document.getElementById('f-prenom').value,
+      nom:     document.getElementById('f-nom').value,
+      email:   document.getElementById('f-email').value,
+      tel:     document.getElementById('f-tel').value,
+      message: document.getElementById('f-message').value
+    }]
+  };
+  try {
+    const r = await fetch(`${API}/parrainage-relay`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+      body: JSON.stringify(payload)
+    });
+    const j = await r.json();
+    if (!j.ok) { msg('add-msg','err', esc(j.error || 'Erreur envoi')); return false; }
+    msg('add-msg','ok', `Parrainage enregistré (id ${esc((j.parrainageId||'').slice(0,8))}…). Emails envoyés.`);
+    document.getElementById('addForm').reset();
+    loadData();
+  } catch (err) {
+    msg('add-msg','err', 'Erreur réseau : ' + esc(err.message));
+  }
+  return false;
+}
+
+// Bootstrap : si token en localStorage, essayer de charger direct
+(function init() {
+  const token = getToken();
+  const user = getUser();
+  if (token && user && user.e && user.e > Math.floor(Date.now()/1000)) {
+    showApp(user);
+  }
+})();
+</script>
+</body>
+</html>
