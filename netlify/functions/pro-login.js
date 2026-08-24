@@ -47,6 +47,19 @@ function verifyToken(token, secret) {
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
+
+  // v250f - Debug endpoint : GET ?debug=env
+  if (event.httpMethod === 'GET' && (event.queryStringParameters || {}).debug === 'env') {
+    const keys = Object.keys(process.env);
+    const proKeys = keys.filter(k => k.startsWith('PRO_') || k.startsWith('RIP_'));
+    return { statusCode: 200, headers: CORS, body: JSON.stringify({
+      envKeyCount: keys.length,
+      proKeys,
+      proJwtSecretLen: (process.env.PRO_JWT_SECRET || '').length,
+      nodeVersion: process.version
+    }) };
+  }
+
   if (event.httpMethod !== 'POST') return { statusCode: 405, headers: CORS, body: JSON.stringify({ ok: false, error: 'Method Not Allowed' }) };
 
   const secret = process.env.PRO_JWT_SECRET;
