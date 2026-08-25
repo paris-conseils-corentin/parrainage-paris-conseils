@@ -1,4 +1,5 @@
 # Configuration Netlify — site parrainage Paris Conseils
+# v250i — bump for PRO_PASS_* env vars injection
 
 [build]
   publish = "."
