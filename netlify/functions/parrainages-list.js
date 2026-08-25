@@ -19,6 +19,21 @@
 const { getStore } = require('@netlify/blobs');
 const { verifyToken } = require('./pro-login');
 
+// v250k — Helper robuste pour ouvrir un Blob store : essaie d'abord siteID+token
+// explicites (indispensable quand le contexte auto n'est pas injecté par Netlify),
+// puis retombe sur le contexte auto. Copie du pattern utilisé dans parrainage-relay.js.
+function getBlobStore(name) {
+  const siteID = process.env.NETLIFY_SITE_ID || process.env.SITE_ID;
+  const token  = process.env.NETLIFY_BLOBS_TOKEN
+              || process.env.NETLIFY_FUNCTIONS_TOKEN
+              || process.env.NETLIFY_AUTH_TOKEN
+              || process.env.NETLIFY_API_TOKEN;
+  if (siteID && token) {
+    return getStore({ name, siteID, token, consistency: 'strong' });
+  }
+  return getStore(name);
+}
+
 const ALLOWED_ORIGINS = [
   'https://parrainage.parisconseils.fr',
   'https://parisconseils-parrainage.fr',
@@ -53,46 +68,36 @@ exports.handler = async (event) => {
   const proSecret  = process.env.PRO_JWT_SECRET || '';
 
   let authOk = false;
-  let effectiveConseillerFilter = null; // null = admin/no forced filter
+  let effectiveConseillerFilter = null;
   let authKind = 'none';
 
-  // (1) Admin token
   if (adminToken && bearer === adminToken) {
     authOk = true;
     authKind = 'admin-token';
   }
 
-  // (2) Pro JWT
   if (!authOk && proSecret && bearer) {
     const payload = verifyToken(bearer, proSecret);
     if (payload) {
       authOk = true;
       authKind = 'pro-jwt-' + (payload.r || 'conseiller');
       if (payload.r !== 'admin') {
-        // Force filter on the conseiller's own label — ignore ?conseiller= from client
         effectiveConseillerFilter = (payload.c || payload.u || '').toString().toLowerCase().trim();
       }
     }
   }
 
   if (!authOk) {
-    return {
-      statusCode: 401,
-      headers: { ...cors, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ok: false, error: 'Unauthorized' })
-    };
+    return { statusCode: 401, headers: { ...cors, 'Content-Type': 'application/json' }, body: JSON.stringify({ ok: false, error: 'Unauthorized' }) };
   }
 
-  // Filtre conseiller (query param) — ignoré si conseiller non-admin
   const params = event.queryStringParameters || {};
   const rawFilter = (params.conseiller || '').toString().toLowerCase().trim();
-  const conseillerFilter = (effectiveConseillerFilter !== null)
-    ? effectiveConseillerFilter
-    : rawFilter;
+  const conseillerFilter = (effectiveConseillerFilter !== null) ? effectiveConseillerFilter : rawFilter;
   const isAdminView = !conseillerFilter || conseillerFilter === '*' || conseillerFilter === 'admin';
 
   try {
-    const store = getStore('parrainages');
+    const store = getBlobStore('parrainages');
     const listing = await store.list();
     const records = [];
     for (const blob of (listing.blobs || [])) {
@@ -105,17 +110,8 @@ exports.handler = async (event) => {
       records.push(r);
     }
     records.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
-
-    return {
-      statusCode: 200,
-      headers: { ...cors, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ok: true, count: records.length, authKind, records })
-    };
+    return { statusCode: 200, headers: { ...cors, 'Content-Type': 'application/json' }, body: JSON.stringify({ ok: true, count: records.length, authKind, records }) };
   } catch (err) {
-    return {
-      statusCode: 500,
-      headers: { ...cors, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ok: false, error: err.message })
-    };
+    return { statusCode: 500, headers: { ...cors, 'Content-Type': 'application/json' }, body: JSON.stringify({ ok: false, error: err.message }) };
   }
 };
