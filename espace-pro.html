@@ -181,7 +181,19 @@ tr:hover td { background: var(--pc-bg); }
   <div class="grid-2">
     <div class="card">
       <h2>Ajouter un parrainage manuellement</h2>
-      <p class="hint" style="margin:0 0 16px;">Utilisez ce formulaire pour transmettre une recommandation reçue par téléphone ou en RDV. Les mêmes emails automatiques seront envoyés (parrain + conseiller + filleul).</p>
+      <p class="hint" style="margin:0 0 12px;">Utilisez ce formulaire pour transmettre une recommandation reçue par téléphone ou en RDV. Vous choisissez ci-dessous qui reçoit un mail.</p>
+
+      <!-- v264 — Coller une note pour auto-remplissage -->
+      <div style="background:var(--pc-gold-tint);border:1px solid var(--pc-gold-soft);border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+        <label style="font-size:11px;color:var(--pc-gold);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;">Coller une note (SMS, mail, notes vocales…)</label>
+        <textarea id="paste-note" rows="4" placeholder="Ex: Thierry Koue m'a recommandé sa soeur Solange Koue, ksbeauty92@gmail.com, 06 88 56 14 07" style="margin-top:6px;background:#fff;"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button type="button" class="btn btn-secondary" style="flex:1;padding:8px 14px;font-size:13px;" onclick="parseNote()">✨ Auto-remplir les champs</button>
+          <button type="button" class="btn btn-secondary" style="padding:8px 14px;font-size:13px;" onclick="document.getElementById('paste-note').value='';">Vider</button>
+        </div>
+        <div class="hint" style="margin-top:6px;">Le parser extrait emails, téléphones (FR) et devine les noms. Vérifiez toujours avant d'envoyer.</div>
+      </div>
+
       <form id="addForm" onsubmit="return doAdd(event)">
         <h3 style="font-size:12px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin:12px 0 6px;">Le parrain</h3>
         <div class="row">
@@ -211,6 +223,26 @@ tr:hover td { background: var(--pc-bg); }
           </select>
           <div class="hint" style="margin-top:4px;" id="conseiller-hint"></div>
         </div>
+        <!-- v264 — Choix des mails à envoyer -->
+        <div style="background:var(--pc-bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+          <label style="font-size:11px;color:var(--pc-ink);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">Envoi des mails</label>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px;">
+            <label style="text-transform:none;letter-spacing:normal;font-weight:normal;font-size:14px;color:var(--pc-heading);cursor:pointer;">
+              <input type="radio" name="emailMode" value="parrain-only" checked style="width:auto;margin-right:8px;vertical-align:middle;">
+              <b>Parrain seul</b> — le filleul a déjà été contacté par téléphone (défaut)
+            </label>
+            <label style="text-transform:none;letter-spacing:normal;font-weight:normal;font-size:14px;color:var(--pc-heading);cursor:pointer;">
+              <input type="radio" name="emailMode" value="both" style="width:auto;margin-right:8px;vertical-align:middle;">
+              <b>Parrain + filleul</b> — prévient aussi le filleul de votre futur appel
+            </label>
+            <label style="text-transform:none;letter-spacing:normal;font-weight:normal;font-size:14px;color:var(--pc-heading);cursor:pointer;">
+              <input type="radio" name="emailMode" value="none" style="width:auto;margin-right:8px;vertical-align:middle;">
+              <b>Silencieux</b> — enregistre en base sans envoi d'aucun mail
+            </label>
+          </div>
+          <div class="hint" style="margin-top:6px;">Le conseiller (vous) reçoit toujours une notification interne.</div>
+        </div>
+
         <div id="add-msg"></div>
         <button class="btn" type="submit" style="width:100%;">Transmettre le parrainage</button>
       </form>
@@ -578,9 +610,74 @@ async function doDelete(id, parrainName) {
   } catch (err) { alert('Erreur réseau : ' + err.message); }
 }
 
+// v264 — Parser de notes libres : extrait emails, téléphones FR, noms
+function parseNote() {
+  const raw = (document.getElementById('paste-note').value || '').trim();
+  if (!raw) { alert('Collez d\'abord une note dans le champ ci-dessus.'); return; }
+  // Regex utilitaires
+  const reEmail = /[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}/gi;
+  const reTel   = /(?:\+33[\s.\-]?|0)[1-9](?:[\s.\-]?\d{2}){4}/g;
+  // Noms : séquence de 2 mots ou plus commençant par majuscule (ou tout majuscule)
+  const reName  = /\b([A-ZÉÈÊÀÂÎÔÛÇ][a-zàâäéèêëïîôöùûüç'\-]{1,}(?:[\s\-][A-@ÉÈÊÀÂÎÔÛÇ][a-zàâäéèêëïîôöùûüç'\-]{1,})+)\b/g;
+
+  const emails = [...new Set((raw.match(reEmail)||[]).map(s=>s.toLowerCase()))];
+  const tels   = [...new Set((raw.match(reTel)||[]).map(s=>s.replace(/\s+/g,' ').trim()))];
+  // Détection sections "parrain"/"filleul"
+  const lower = raw.toLowerCase();
+  const idxP = lower.search(/parrain\s*[:\-]/);
+  const idxF = lower.search(/filleul\s*[:\-]/);
+  let parrainBlock = raw, filleulBlock = '';
+  if (idxP >= 0 && idxF >= 0) {
+    if (idxP < idxF) { parrainBlock = raw.slice(idxP, idxF); filleulBlock = raw.slice(idxF); }
+    else             { filleulBlock = raw.slice(idxF, idxP); parrainBlock = raw.slice(idxP); }
+  }
+  function pickFrom(block) {
+    const em = (block.match(reEmail)||[]).map(s=>s.toLowerCase());
+    const te = (block.match(reTel)||[]).map(s=>s.replace(/\s+/g,' ').trim());
+    const nm = (block.match(reName)||[]);
+    return { email: em[0]||'', tel: te[0]||'', name: nm[0]||'' };
+  }
+  let parrainInfo, filleulInfo;
+  if (filleulBlock) {
+    parrainInfo = pickFrom(parrainBlock);
+    filleulInfo = pickFrom(filleulBlock);
+  } else {
+    // Heuristique : premier email/tel/nom = parrain, deuxième = filleul
+    const names = raw.match(reName) || [];
+    parrainInfo = { email: emails[0]||'', tel: tels[0]||'', name: names[0]||'' };
+    filleulInfo = { email: emails[1]||'', tel: tels[1]||'', name: names[1]||'' };
+  }
+  function splitName(n) {
+    if (!n) return {prenom:'', nom:''};
+    const parts = n.trim().split(/\s+/);
+    if (parts.length === 1) return {prenom: parts[0], nom: ''};
+    return { prenom: parts[0], nom: parts.slice(1).join(' ') };
+  }
+  const pN = splitName(parrainInfo.name);
+  const fN = splitName(filleulInfo.name);
+  // Remplit UNIQUEMENT les champs vides (pas d'écrasement)
+  function fillIf(id, val) { const el = document.getElementById(id); if (el && !el.value && val) el.value = val; }
+  fillIf('p-prenom', pN.prenom);
+  fillIf('p-nom',    pN.nom);
+  fillIf('p-email',  parrainInfo.email);
+  fillIf('p-tel',    parrainInfo.tel);
+  fillIf('f-prenom', fN.prenom);
+  fillIf('f-nom',    fN.nom);
+  fillIf('f-email',  filleulInfo.email);
+  fillIf('f-tel',    filleulInfo.tel);
+  // Résumé
+  const found = [];
+  if (parrainInfo.name || parrainInfo.email) found.push(`Parrain : ${parrainInfo.name||'?'} ${parrainInfo.email?'· '+parrainInfo.email:''}`);
+  if (filleulInfo.name || filleulInfo.email) found.push(`Filleul : ${filleulInfo.name||'?'} ${filleulInfo.email?'· '+filleulInfo.email:''}`);
+  msg('add-msg','ok', `✨ Extrait : ${esc(found.join(' — ') || 'rien de reconnaissable, remplissez à la main.')} — vérifiez les champs avant d'envoyer.`);
+}
+
 async function doAdd(e) {
   e.preventDefault();
   msg('add-msg','err','');
+  // v264 — mode d'envoi mail (admin uniquement, sinon 'both' historique)
+  const emailModeEl = document.querySelector('input[name="emailMode"]:checked');
+  const emailMode = emailModeEl ? emailModeEl.value : 'both';
   const payload = {
     parrain: {
       prenom: document.getElementById('p-prenom').value,
@@ -589,6 +686,7 @@ async function doAdd(e) {
       tel:    document.getElementById('p-tel').value
     },
     conseiller: document.getElementById('conseiller-select').value,
+    emailMode, // v264
     filleuls: [{
       prenom:  document.getElementById('f-prenom').value,
       nom:     document.getElementById('f-nom').value,
@@ -597,6 +695,13 @@ async function doAdd(e) {
       message: document.getElementById('f-message').value
     }]
   };
+  // Confirmation adaptée au mode
+  const confirmTxt = {
+    'parrain-only': `Envoyer un mail UNIQUEMENT au parrain (${payload.parrain.prenom} ${payload.parrain.nom}) ? Le filleul ne sera pas notifié.`,
+    'both':         `Envoyer un mail au parrain ET au filleul (${payload.filleuls[0].prenom} ${payload.filleuls[0].nom}) ?`,
+    'none':         `Enregistrer en base SANS envoyer aucun mail au client ?`
+  }[emailMode];
+  if (!confirm(confirmTxt)) { msg('add-msg','err','Annulé.'); return false; }
   try {
     const r = await fetch(`${API}/parrainage-relay`, {
       method: 'POST',
@@ -605,8 +710,10 @@ async function doAdd(e) {
     });
     const j = await r.json();
     if (!j.ok) { msg('add-msg','err', esc(j.error || 'Erreur envoi')); return false; }
-    msg('add-msg','ok', `Parrainage enregistré (id ${esc((j.parrainageId||'').slice(0,8))}…). Emails envoyés.`);
+    const modeLabel = { 'parrain-only':'Mail envoyé au parrain uniquement.', 'both':'Mails envoyés (parrain + filleul).', 'none':'Aucun mail envoyé (silencieux).' }[emailMode];
+    msg('add-msg','ok', `Parrainage enregistré (id ${esc((j.parrainageId||'').slice(0,8))}…). ${modeLabel}`);
     document.getElementById('addForm').reset();
+    document.getElementById('paste-note').value = '';
     loadData();
   } catch (err) {
     msg('add-msg','err', 'Erreur réseau : ' + esc(err.message));
