@@ -88,8 +88,8 @@ tr:hover td { background: var(--pc-bg); }
     <p class="subtitle">Connectez-vous avec vos identifiants <strong>rip.parisconseils.fr</strong>.</p>
     <form id="loginForm" onsubmit="return doLogin(event)">
       <div style="margin-bottom:14px;">
-        <label for="login-user">Identifiant</label>
-        <input id="login-user" type="text" autocomplete="username" required autofocus>
+        <label for="login-user">Email professionnel</label>
+        <input id="login-user" type="email" inputmode="email" autocapitalize="off" spellcheck="false" placeholder="prenom@parisconseils.fr" autocomplete="username" required autofocus>
       </div>
       <div style="margin-bottom:18px;">
         <label for="login-pass">Mot de passe</label>
@@ -113,10 +113,10 @@ tr:hover td { background: var(--pc-bg); }
       <button onclick="closeForgot()" style="border:none;background:none;font-size:26px;cursor:pointer;color:var(--pc-ink);line-height:1;">×</button>
     </div>
     <form onsubmit="return doForgot(event)" style="padding:22px 24px;">
-      <p style="margin:0 0 16px;color:var(--pc-ink);font-size:14px;">Indiquez votre <b>email professionnel</b> ou votre identifiant (curtet / pereira / moreau). Vous recevrez un mot de passe temporaire par mail.</p>
+      <p style="margin:0 0 16px;color:var(--pc-ink);font-size:14px;">Indiquez votre <b>email professionnel</b> (curtet@parisconseils.fr, pereira@parisconseils.fr, moreau@parisconseils.fr). Vous recevrez un mot de passe temporaire par mail.</p>
       <div style="margin-bottom:16px;">
-        <label for="forgot-email">Email ou identifiant</label>
-        <input id="forgot-email" type="text" required autofocus>
+        <label for="forgot-email">Email professionnel</label>
+        <input id="forgot-email" type="email" inputmode="email" autocapitalize="off" spellcheck="false" placeholder="prenom@parisconseils.fr" required autofocus>
       </div>
       <div id="forgot-msg"></div>
       <div style="display:flex;gap:10px;">
