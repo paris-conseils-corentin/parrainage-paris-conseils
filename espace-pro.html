@@ -157,7 +157,7 @@ tr:hover td { background: var(--bg); }
   <div class="card" style="margin-top:20px;">
     <h2>Filleuls transmis</h2>
     <div style="overflow-x:auto;">
-      <table id="tbl-filleuls"><thead><tr><th>Filleul</th><th>Parrain</th><th>Conseiller</th><th>Date</th><th>Statut</th></tr></thead><tbody></tbody></table>
+      <table id="tbl-filleuls"><thead><tr><th>Filleul</th><th>Parrain</th><th>Conseiller</th><th>Date</th><th>Statut</th><th class="admin-only" style="display:none;">Action</th></tr></thead><tbody></tbody></table>
     </div>
   </div>
 
@@ -284,6 +284,9 @@ function renderData(records) {
   document.querySelector('#tbl-parrains tbody').innerHTML = trsP.join('') || '<tr><td colspan="3" class="hint">Aucun parrain pour l\'instant.</td></tr>';
 
   // Table filleuls
+  const user = getUser() || {};
+  const isAdmin = user.r === 'admin';
+  document.querySelectorAll('.admin-only').forEach(el => el.style.display = isAdmin ? '' : 'none');
   const trsF = [];
   for (const rec of records) {
     for (const f of (rec.filleuls || [])) {
@@ -291,16 +294,35 @@ function renderData(records) {
       const contactBits = [];
       if (f.email) contactBits.push(`<a href="mailto:${esc(f.email)}">${esc(f.email)}</a>`);
       if (f.tel)   contactBits.push(`<a href="tel:${esc(f.tel)}">${esc(f.tel)}</a>`);
+      const deleteCell = isAdmin
+        ? `<td><button class="btn btn-danger" style="padding:6px 12px;font-size:12px;" onclick="doDelete('${esc(rec.id)}','${esc(rec.parrain.prenom||'')} ${esc(rec.parrain.nom||'')}')">Supprimer</button></td>`
+        : '';
       trsF.push(`<tr>
         <td><strong>${esc(f.prenom||'')} ${esc(f.nom||'')}</strong>${contactBits.length ? '<br><span class="hint">'+contactBits.join(' · ')+'</span>' : ''}</td>
         <td>${esc((rec.parrain&&rec.parrain.prenom)||'')} ${esc((rec.parrain&&rec.parrain.nom)||'')}</td>
         <td>${esc(rec.conseiller||'—')}</td>
         <td>${fmtDate(rec.createdAt)}</td>
         <td>${contacted}</td>
+        ${deleteCell}
       </tr>`);
     }
   }
-  document.querySelector('#tbl-filleuls tbody').innerHTML = trsF.join('') || '<tr><td colspan="5" class="hint">Aucun filleul pour l\'instant.</td></tr>';
+  const cols = isAdmin ? 6 : 5;
+  document.querySelector('#tbl-filleuls tbody').innerHTML = trsF.join('') || `<tr><td colspan="${cols}" class="hint">Aucun filleul pour l'instant.</td></tr>`;
+}
+
+async function doDelete(id, parrainName) {
+  if (!confirm(`Supprimer définitivement le parrainage de ${parrainName} ?\nAucun email ne sera envoyé, les données sont juste retirées de la base.`)) return;
+  try {
+    const r = await fetch(`${API}/parrainage-relay?action=delete`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json', 'Authorization':'Bearer ' + getToken()},
+      body: JSON.stringify({id})
+    });
+    const j = await r.json();
+    if (!j.ok) { alert('Erreur : ' + (j.error || 'inconnue')); return; }
+    loadData();
+  } catch (err) { alert('Erreur réseau : ' + err.message); }
 }
 
 async function doAdd(e) {
