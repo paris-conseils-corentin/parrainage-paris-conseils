@@ -782,6 +782,48 @@ async function handleMarkContacted(event) {
   }
 }
 
+// v263 - Update filleul status (admin only via JWT ou admin token).
+async function handleSetStatus(event) {
+  const adminToken = process.env.PARRAINAGE_ADMIN_TOKEN || '';
+  const proSecret  = process.env.PRO_JWT_SECRET || '';
+  const authHdr = event.headers.authorization || event.headers.Authorization || '';
+  const bearer = authHdr.startsWith('Bearer ') ? authHdr.slice(7) : '';
+  let authOk = false, isAdmin = false;
+  if (adminToken && bearer === adminToken) { authOk = true; isAdmin = true; }
+  if (!authOk && proSecret && bearer) {
+    try {
+      const { verifyToken } = require('./pro-login');
+      const payload = verifyToken(bearer, proSecret);
+      if (payload && payload.r === 'admin') { authOk = true; isAdmin = true; }
+    } catch (_e) {}
+  }
+  if (!authOk || !isAdmin) return { statusCode: 401, body: JSON.stringify({ ok: false, error: 'Unauthorized (admin only)' }) };
+  let body;
+  try { body = JSON.parse(event.body || '{}'); } catch (e) { return { statusCode: 400, body: 'Invalid JSON' }; }
+  const { id, filleulIndex, status, note } = body;
+  if (!id) return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'Missing id' }) };
+  if (typeof filleulIndex !== 'number') return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'Missing filleulIndex' }) };
+  const ALLOWED = ['nouveau', 'contacte', 'signe', 'non-fructueux'];
+  if (!ALLOWED.includes(status)) return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'invalid status. Allowed: ' + ALLOWED.join(', ') }) };
+  try {
+    const store = getBlobStore('parrainages');
+    const record = await store.get(id, { type: 'json' });
+    if (!record) return { statusCode: 404, body: JSON.stringify({ ok: false, error: 'Not found' }) };
+    const filleuls = record.filleuls || [];
+    if (filleulIndex < 0 || filleulIndex >= filleuls.length) return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'Invalid filleulIndex' }) };
+    const f = filleuls[filleulIndex];
+    f.status = status;
+    f.status_updated_at = new Date().toISOString();
+    if (note !== undefined) f.status_note = String(note || '').slice(0, 500);
+    if ((status === 'contacte' || status === 'signe' || status === 'non-fructueux') && !f.contactedAt) {
+      f.contactedAt = new Date().toISOString();
+    }
+    record.filleuls = filleuls;
+    await store.setJSON(record.id, record);
+    return { statusCode: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ ok: true, filleul: f }) };
+  } catch (err) { return { statusCode: 500, body: JSON.stringify({ ok: false, error: err.message }) }; }
+}
+
 async function handleDelete(event) {
   // v250l - Accepte 2 auths : PARRAINAGE_ADMIN_TOKEN OU JWT pro role=admin.
   const adminToken = process.env.PARRAINAGE_ADMIN_TOKEN || '';
@@ -874,6 +916,8 @@ const innerHandler = async (event) => {
   if (event.httpMethod === 'POST' && action === 'delete') return handleDelete(event);
   // v200x — Marquer un filleul comme contacté ou décocher
   if (event.httpMethod === 'POST' && action === 'mark-contacted') return handleMarkContacted(event);
+  // v263 - update filleul status
+  if (event.httpMethod === 'POST' && action === 'set-status') return handleSetStatus(event);
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
