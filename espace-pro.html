@@ -159,6 +159,18 @@ tr:hover td { background: var(--pc-bg); }
   <h1 id="app-title">Tableau de bord parrainage</h1>
   <p class="subtitle" id="app-subtitle"></p>
 
+  <!-- v262 - Filtre conseiller (admin only) -->
+  <div id="admin-filter" class="card" style="display:none;padding:14px 20px;margin-bottom:18px;">
+    <label for="filter-conseiller" style="display:inline-block;margin-right:14px;margin-bottom:0;vertical-align:middle;">Filtrer par conseiller</label>
+    <select id="filter-conseiller" onchange="applyFilter()" style="width:auto;min-width:260px;display:inline-block;vertical-align:middle;">
+      <option value="*">PARIS CONSEILS · Tous les parrainages</option>
+      <option value="curtet">Corentin Curtet (moi)</option>
+      <option value="pereira">David Pereira</option>
+      <option value="moreau">Nicolas Moreau</option>
+    </select>
+    <span id="filter-count" class="hint" style="margin-left:14px;vertical-align:middle;"></span>
+  </div>
+
   <div class="grid-4">
     <div class="stat"><div class="stat-label">Parrainages</div><div class="stat-val" id="s-parrainages">—</div><div class="stat-sub">soumissions reçues</div></div>
     <div class="stat"><div class="stat-label">Filleuls transmis</div><div class="stat-val" id="s-filleuls">—</div><div class="stat-sub">tous statuts</div></div>
@@ -378,10 +390,29 @@ async function loadData() {
     const j = await r.json();
     if (!j.ok) throw new Error(j.error || 'load failed');
     ALL_RECORDS = j.records || [];
-    renderData(ALL_RECORDS);
+    // v262 - Afficher le filtre conseiller si admin
+    const user = getUser() || {};
+    document.getElementById('admin-filter').style.display = (user.r === 'admin') ? '' : 'none';
+    applyFilter();
   } catch (err) {
     document.querySelector('#tbl-filleuls tbody').innerHTML = `<tr><td colspan="5" style="color:var(--danger);">Erreur : ${esc(err.message)}</td></tr>`;
   }
+}
+
+function applyFilter() {
+  const sel = document.getElementById('filter-conseiller');
+  const v = sel ? sel.value : '*';
+  let filtered = ALL_RECORDS;
+  let label = 'Tous les parrainages';
+  if (v && v !== '*') {
+    const nameMap = { curtet: 'Corentin Curtet', pereira: 'David Pereira', moreau: 'Nicolas Moreau' };
+    const target = (nameMap[v] || v).toLowerCase();
+    filtered = ALL_RECORDS.filter(r => (r.conseiller || '').toLowerCase().includes(v) || (r.conseiller || '').toLowerCase().includes(target));
+    label = `Vue "${nameMap[v] || v}" — ${filtered.length} parrainage${filtered.length > 1 ? 's' : ''}`;
+  }
+  const countEl = document.getElementById('filter-count');
+  if (countEl) countEl.textContent = (v === '*') ? `${ALL_RECORDS.length} parrainage${ALL_RECORDS.length > 1 ? 's' : ''} au total` : label;
+  renderData(filtered);
 }
 
 function openDetails(id) {
