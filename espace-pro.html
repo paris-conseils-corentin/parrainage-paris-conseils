@@ -422,18 +422,30 @@ function openDetails(id) {
   const parrainBits = [];
   if (pr.email) parrainBits.push(`✉ <a href="mailto:${esc(pr.email)}">${esc(pr.email)}</a>`);
   if (pr.tel)   parrainBits.push(`☎ <a href="tel:${esc(pr.tel)}">${esc(pr.tel)}</a>`);
+  const isAdminNow = (getUser() || {}).r === 'admin';
   const filleulsHtml = (rec.filleuls || []).map((f, i) => {
     const bits = [];
     if (f.email) bits.push(`✉ <a href="mailto:${esc(f.email)}">${esc(f.email)}</a>`);
     if (f.tel)   bits.push(`☎ <a href="tel:${esc(f.tel)}">${esc(f.tel)}</a>`);
-    const statutHtml = f.contactedAt
-      ? `<span class="chip chip-contacted">Contacté ${fmtDate(f.contactedAt)}</span>`
-      : `<span class="chip chip-new">Nouveau</span>`;
+    const currentStatus = statusOf(f);
+    const statusBadge = statusChip(currentStatus);
+    const statusSelect = isAdminNow
+      ? `<div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);">
+          <label style="font-size:10px;letter-spacing:1.5px;color:var(--pc-ink);text-transform:uppercase;font-weight:600;margin-bottom:6px;">Modifier le statut</label>
+          <select onchange="doSetStatus('${esc(rec.id)}', ${i}, this.value)" style="width:100%;padding:8px 10px;font-size:13px;">
+            <option value="nouveau" ${currentStatus==='nouveau'?'selected':''}>Nouveau (à contacter)</option>
+            <option value="contacte" ${currentStatus==='contacte'?'selected':''}>Contacté</option>
+            <option value="signe" ${currentStatus==='signe'?'selected':''}>✅ Signé / fructueux (compte pour le palier)</option>
+            <option value="non-fructueux" ${currentStatus==='non-fructueux'?'selected':''}>✗ Non fructueux (ne compte pas)</option>
+          </select>
+        </div>`
+      : '';
     return `<div style="background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:10px;">
       <div style="font-weight:600;color:var(--navy);font-size:16px;margin-bottom:6px;">Filleul ${i+1} · ${esc(f.prenom||'')} ${esc(f.nom||'')}</div>
       ${bits.length ? `<div style="font-size:13px;color:var(--ink-2);margin-bottom:6px;">${bits.join('<br>')}</div>` : ''}
       ${f.message ? `<div style="font-size:13px;color:var(--muted);font-style:italic;margin-bottom:6px;">« ${esc(f.message)} »</div>` : ''}
-      <div>${statutHtml}</div>
+      <div>${statusBadge}</div>
+      ${statusSelect}
     </div>`;
   }).join('');
   document.getElementById('modal-body').innerHTML = `
@@ -458,22 +470,56 @@ function openDetails(id) {
 function closeDetails() { document.getElementById('modal-overlay').style.display = 'none'; }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetails(); });
 
+// v263 - Statut d'un filleul (nouveau / contacte / signe / non-fructueux)
+function statusOf(f) {
+  if (f && f.status) return f.status;
+  if (f && f.contactedAt) return 'contacte';
+  return 'nouveau';
+}
+function statusChip(s) {
+  if (s === 'signe')          return '<span class="chip" style="background:#d1fae5;color:#064e3b;">✅ Signé</span>';
+  if (s === 'non-fructueux')  return '<span class="chip" style="background:#fee2e2;color:#7f1d1d;">✗ Non fructueux</span>';
+  if (s === 'contacte')       return '<span class="chip chip-contacted">Contacté</span>';
+  return '<span class="chip chip-new">Nouveau</span>';
+}
+function countsForTier(f) { return statusOf(f) !== 'non-fructueux'; }
+async function doSetStatus(id, filleulIndex, status) {
+  try {
+    const r = await fetch(`${API}/parrainage-relay?action=set-status`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json', 'Authorization':'Bearer ' + getToken()},
+      body: JSON.stringify({id, filleulIndex, status})
+    });
+    const j = await r.json();
+    if (!j.ok) { alert('Erreur : ' + (j.error || 'inconnue')); return; }
+    const rec = ALL_RECORDS.find(r => r.id === id);
+    if (rec && rec.filleuls && rec.filleuls[filleulIndex]) rec.filleuls[filleulIndex] = j.filleul;
+    applyFilter();
+    openDetails(id);
+  } catch (err) { alert('Erreur réseau : ' + err.message); }
+}
+
 function renderData(records) {
-  // Stats
-  let nbFilleuls = 0, potentiel = 0;
+  // v263 - Stats : exclut les filleuls non-fructueux des compteurs de palier.
+  let nbFilleulsCount = 0, nbFilleulsExcluded = 0, potentiel = 0;
   const parrainsMap = new Map();
+  const pcCumulAt = n => n<=0?0 : n===1?500 : n===2?1000 : n>=3&&n<=10?1500*n : 15000;
   for (const rec of records) {
     const fs = rec.filleuls || [];
-    nbFilleuls += fs.length;
-    potentiel += (rec.cumulPotentiel || 0);
+    let cntPerRec = 0;
+    for (const f of fs) {
+      if (countsForTier(f)) { nbFilleulsCount++; cntPerRec++; }
+      else nbFilleulsExcluded++;
+    }
     const key = ((rec.parrain && rec.parrain.email) || (rec.parrain && (rec.parrain.prenom + ' ' + rec.parrain.nom))).toLowerCase();
     const existing = parrainsMap.get(key) || { parrain: rec.parrain, nbFilleuls: 0, latest: rec.createdAt };
-    existing.nbFilleuls += fs.length;
+    existing.nbFilleuls += cntPerRec;
     if ((rec.createdAt || '') > (existing.latest || '')) existing.latest = rec.createdAt;
     parrainsMap.set(key, existing);
   }
+  for (const [_, p] of parrainsMap) potentiel += pcCumulAt(p.nbFilleuls);
   document.getElementById('s-parrainages').textContent = records.length;
-  document.getElementById('s-filleuls').textContent = nbFilleuls;
+  document.getElementById('s-filleuls').textContent = nbFilleulsCount + (nbFilleulsExcluded ? ` (+${nbFilleulsExcluded} non fructueux)` : '');
   document.getElementById('s-parrains').textContent = parrainsMap.size;
   document.getElementById('s-potentiel').textContent = potentiel.toLocaleString('fr-FR') + ' €';
 
@@ -496,19 +542,20 @@ function renderData(records) {
   const trsF = [];
   for (const rec of records) {
     for (const f of (rec.filleuls || [])) {
-      const contacted = f.contactedAt ? '<span class="chip chip-contacted">Contacté</span>' : '<span class="chip chip-new">Nouveau</span>';
+      const statusBadge = statusChip(statusOf(f));
       const contactBits = [];
       if (f.email) contactBits.push(`<a href="mailto:${esc(f.email)}">${esc(f.email)}</a>`);
       if (f.tel)   contactBits.push(`<a href="tel:${esc(f.tel)}">${esc(f.tel)}</a>`);
       const deleteCell = isAdmin
         ? `<td onclick="event.stopPropagation()"><button class="btn btn-danger" style="padding:6px 12px;font-size:12px;" onclick="doDelete('${esc(rec.id)}','${esc(rec.parrain.prenom||'')} ${esc(rec.parrain.nom||'')}')">Supprimer</button></td>`
         : '';
-      trsF.push(`<tr style="cursor:pointer;" onclick="openDetails('${esc(rec.id)}')" title="Cliquer pour voir tous les détails">
+      const rowDim = statusOf(f) === 'non-fructueux' ? 'opacity:.55;' : '';
+      trsF.push(`<tr style="cursor:pointer;${rowDim}" onclick="openDetails('${esc(rec.id)}')" title="Cliquer pour voir tous les détails">
         <td><strong>${esc(f.prenom||'')} ${esc(f.nom||'')}</strong>${contactBits.length ? '<br><span class="hint">'+contactBits.join(' · ')+'</span>' : ''}</td>
         <td>${esc((rec.parrain&&rec.parrain.prenom)||'')} ${esc((rec.parrain&&rec.parrain.nom)||'')}</td>
         <td>${esc(rec.conseiller||'—')}</td>
         <td>${fmtDate(rec.createdAt)}</td>
-        <td>${contacted}</td>
+        <td>${statusBadge}</td>
         ${deleteCell}
       </tr>`);
     }
