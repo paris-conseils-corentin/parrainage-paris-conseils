@@ -783,24 +783,29 @@ async function handleMarkContacted(event) {
 }
 
 async function handleDelete(event) {
-  const token = process.env.PARRAINAGE_ADMIN_TOKEN || '';
-  if (!token) return { statusCode: 500, body: JSON.stringify({ ok: false, error: 'PARRAINAGE_ADMIN_TOKEN not configured' }) };
-  const auth = event.headers.authorization || event.headers.Authorization || '';
-  if (auth !== `Bearer ${token}`) return { statusCode: 401, body: JSON.stringify({ ok: false, error: 'Unauthorized' }) };
+  // v250l - Accepte 2 auths : PARRAINAGE_ADMIN_TOKEN OU JWT pro role=admin.
+  const adminToken = process.env.PARRAINAGE_ADMIN_TOKEN || '';
+  const proSecret  = process.env.PRO_JWT_SECRET || '';
+  const authHdr = event.headers.authorization || event.headers.Authorization || '';
+  const bearer = authHdr.startsWith('Bearer ') ? authHdr.slice(7) : '';
+  let authOk = false;
+  let isAdmin = false;
+  if (adminToken && bearer === adminToken) { authOk = true; isAdmin = true; }
+  if (!authOk && proSecret && bearer) {
+    try {
+      const { verifyToken } = require('./pro-login');
+      const payload = verifyToken(bearer, proSecret);
+      if (payload && payload.r === 'admin') { authOk = true; isAdmin = true; }
+    } catch (_e) {}
+  }
+  if (!authOk || !isAdmin) return { statusCode: 401, body: JSON.stringify({ ok: false, error: 'Unauthorized (admin only)' }) };
   let body;
   try { body = JSON.parse(event.body || '{}'); } catch (e) { return { statusCode: 400, body: 'Invalid JSON' }; }
   if (!body.id) return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'Missing id' }) };
-  const params = event.queryStringParameters || {};
-  const conseillerFilter = (params.conseiller || '').toString().toLowerCase().trim();
-  const isAdminAction = !conseillerFilter || conseillerFilter === '*' || conseillerFilter === 'admin';
   try {
     const store = getBlobStore('parrainages');
     const existing = await store.get(body.id, { type: 'json' });
     if (!existing) return { statusCode: 404, body: JSON.stringify({ ok: false, error: 'Not found' }) };
-    if (!isAdminAction) {
-      const c = (existing.conseiller || '').toLowerCase();
-      if (!c.includes(conseillerFilter)) return { statusCode: 403, body: JSON.stringify({ ok: false, error: 'Forbidden' }) };
-    }
     await store.delete(body.id);
     return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ok: true, id: body.id }) };
   } catch (err) {
@@ -935,6 +940,37 @@ const innerHandler = async (event) => {
 
   if (!filleuls.length || !(parrain.email || parrain.nom)) {
     return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'Données incomplètes (parrain + au moins 1 filleul requis)' }) };
+  }
+
+  // v250l — ANTI-SPAM / ANTI-FRAUDE (rejette bots + fake data typique).
+  const spamReasons = [];
+  const KNOWN_CONSEILLERS = ['paris conseils','corentin','curtet','david','pereira','nicolas','moreau'];
+  const RISK_TLD = /\.(ru|tk|ml|ga|cf)$/i;
+  const FAKE_PHONE = /\(?\s*(202|555|800)\s*\)?\s*[-\s]?\s*555\s*[-\s]?\s*\d{4}/;
+  const conLc = conseiller.toLowerCase().trim();
+  if (!KNOWN_CONSEILLERS.some(c => conLc.includes(c) || c.includes(conLc))) spamReasons.push('conseiller inconnu');
+  if (parrain.prenom && parrain.nom && parrain.prenom.toLowerCase() === parrain.nom.toLowerCase()) spamReasons.push('parrain prenom=nom');
+  if (parrain.email && RISK_TLD.test(parrain.email)) spamReasons.push('parrain tld risque');
+  if (parrain.tel && FAKE_PHONE.test(parrain.tel)) spamReasons.push('parrain tel factice');
+  for (const f of filleuls) {
+    if (parrain.email && f.email && parrain.email === f.email) { spamReasons.push('email parrain=filleul'); break; }
+    if (parrain.prenom && parrain.nom && f.prenom && f.nom && parrain.prenom.toLowerCase() === f.prenom.toLowerCase() && parrain.nom.toLowerCase() === f.nom.toLowerCase()) { spamReasons.push('nom complet parrain=filleul'); break; }
+    if (f.prenom && f.nom && f.prenom.toLowerCase() === f.nom.toLowerCase()) { spamReasons.push('filleul prenom=nom'); break; }
+    if (f.email && RISK_TLD.test(f.email)) { spamReasons.push('filleul tld risque'); break; }
+    if (f.tel && FAKE_PHONE.test(f.tel)) { spamReasons.push('filleul tel factice'); break; }
+  }
+  if (spamReasons.length) {
+    try {
+      const spamStore = getBlobStore('parrainages-spam');
+      await spamStore.setJSON(crypto.randomUUID(), {
+        rejectedAt: new Date().toISOString(),
+        ip: event.headers['x-forwarded-for'] || event.headers['client-ip'] || null,
+        userAgent: event.headers['user-agent'] || null,
+        reasons: spamReasons,
+        parrain, conseiller, filleuls
+      });
+    } catch (_e) {}
+    return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'Soumission refusee. Contactez contact@parisconseils.fr si besoin.' }) };
   }
 
   // 1) Dashboard (best-effort, skip si non configuré)
