@@ -1056,8 +1056,18 @@ const innerHandler = async (event) => {
 
   const mailJobs = [];
 
+  // v264 — Mode d'envoi mail (admin manual add uniquement) :
+  //   'both'         (défaut historique) → parrain + conseiller + filleul(s)
+  //   'parrain-only' → parrain + conseiller SEULEMENT (filleul déjà contacté hors programme)
+  //   'none'         → conseiller seulement (silencieux côté client)
+  const rawMode = (payload && payload.emailMode) || 'both';
+  const emailMode = ['both','parrain-only','none'].includes(rawMode) ? rawMode : 'both';
+  const sendToParrain = emailMode === 'both' || emailMode === 'parrain-only';
+  const sendToFilleul = emailMode === 'both';
+  // Note : le conseiller reçoit toujours sa notif interne, quel que soit le mode.
+
   // Email parrain
-  if (parrain.email) {
+  if (parrain.email && sendToParrain) {
     mailJobs.push(sendEmail({
       apiKey: env.RESEND_API_KEY,
       from: env.MAIL_FROM,
@@ -1070,31 +1080,33 @@ const innerHandler = async (event) => {
     }).then(r => ({ kind:'parrain', to: parrain.email, ...r })));
   }
 
-  // Email conseiller
+  // Email conseiller (toujours)
   mailJobs.push(sendEmail({
     apiKey: env.RESEND_API_KEY,
     from: env.MAIL_FROM,
     to: conseillerEmail,
-    subject: `Nouveau parrainage — ${parrain.prenom || ''} ${parrain.nom || ''} (${filleuls.length} filleul${filleuls.length>1?'s':''})`,
+    subject: `Nouveau parrainage — ${parrain.prenom || ''} ${parrain.nom || ''} (${filleuls.length} filleul${filleuls.length>1?'s':''}) [mode: ${emailMode}]`,
     html: emailConseiller({ parrain, conseiller, filleuls }),
     replyTo: parrain.email || undefined,
     bcc,
     testRedirect
   }).then(r => ({ kind:'conseiller', to: conseillerEmail, ...r })));
 
-  // Email filleul (un par filleul ayant un email)
-  for (const f of filleuls) {
-    if (f.email) {
-      mailJobs.push(sendEmail({
-        apiKey: env.RESEND_API_KEY,
-        from: env.MAIL_FROM,
-        to: f.email,
-        subject: `${parrain.prenom || 'Un proche'} vous recommande Paris Conseils`,
-        html: emailFilleul({ parrain, conseiller, filleul: f }),
-        replyTo: conseillerEmail,
-        bcc,
-        testRedirect
-      }).then(r => ({ kind:'filleul', to: f.email, ...r })));
+  // Email filleul (un par filleul ayant un email) — désactivé si mode ≠ 'both'
+  if (sendToFilleul) {
+    for (const f of filleuls) {
+      if (f.email) {
+        mailJobs.push(sendEmail({
+          apiKey: env.RESEND_API_KEY,
+          from: env.MAIL_FROM,
+          to: f.email,
+          subject: `${parrain.prenom || 'Un proche'} vous recommande Paris Conseils`,
+          html: emailFilleul({ parrain, conseiller, filleul: f }),
+          replyTo: conseillerEmail,
+          bcc,
+          testRedirect
+        }).then(r => ({ kind:'filleul', to: f.email, ...r })));
+      }
     }
   }
 
