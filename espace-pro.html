@@ -618,7 +618,7 @@ function parseNote() {
   const reEmail = /[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}/gi;
   const reTel   = /(?:\+33[\s.\-]?|0)[1-9](?:[\s.\-]?\d{2}){4}/g;
   // Noms : séquence de 2 mots ou plus commençant par majuscule (ou tout majuscule)
-  const reName  = /\b([A-ZÉÈÊÀÂÎÔÛÇ][a-zàâäéèêëïîôöùûüç'\-]{1,}(?:[\s\-][A-@ÉÈÊÀÂÎÔÛÇ][a-zàâäéèêëïîôöùûüç'\-]{1,})+)\b/g;
+  const reName  = /\b([A-ZÉÈÊÀÂÎÔÛÇ][a-zàâäéèêëïîôöùûüç'\-]{1,}(?:[\s\-][A-ZÉÈÊÀÂÎÔÛÇ][a-zàâäéèêëïîôöùûüç'\-]{1,})+)\b/g;
 
   const emails = [...new Set((raw.match(reEmail)||[]).map(s=>s.toLowerCase()))];
   const tels   = [...new Set((raw.match(reTel)||[]).map(s=>s.replace(/\s+/g,' ').trim()))];
