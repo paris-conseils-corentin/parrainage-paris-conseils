@@ -77,43 +77,64 @@ function baseShell(opts) {
   const eyebrow  = opts && opts.eyebrow  ? opts.eyebrow  : '';
   const subtitle = opts && opts.subtitle ? opts.subtitle : '';
   const body     = opts && opts.body     ? opts.body     : '';
+  // v270 — Anti dark mode Apple Mail : les zones navy sont peintes via background-image (Apple Mail
+  // ne peut PAS inverser les background-image, contrairement aux background-color). Combiné à bgcolor
+  // fallback pour clients qui ne lisent pas le PNG, on garantit navy dans tous les modes.
+  const NAVY_PNG = "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQI12PgkrP/DwACBAFndrNaSAAAAABJRU5ErkJggg==')";
+  const GOLD_PNG = "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQI12O4wbnyPwAFTQKC2LnHrgAAAABJRU5ErkJggg==')";
   return `<!DOCTYPE html>
-<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light only"><title>${escapeHtml(title)}</title>
-<!-- v265 — Force couleurs claires (empêche Apple Mail dark mode d'inverser le navy en lavande) -->
-<style>
-  :root { color-scheme: light only; supported-color-schemes: light only; }
+<html lang="fr" style="color-scheme: light dark;"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
+<title>${escapeHtml(title)}</title>
+<!-- v270 — Dark mode bulletproof : background-image trick + !important overrides + text force -->
+<style type="text/css">
+  :root { color-scheme: light dark; supported-color-schemes: light dark; }
+  /* Apple Mail iOS/macOS dark mode : force les zones importantes */
   @media (prefers-color-scheme: dark) {
-    .pc-header-navy { background-color: ${RIP_NAVY} !important; }
-    .pc-navy-force { background-color: ${RIP_NAVY} !important; color: #ffffff !important; }
-    .pc-white-force { color: #ffffff !important; }
+    .pc-navy-bg, td.pc-navy-bg { background-color: ${RIP_NAVY} !important; background-image: ${NAVY_PNG} !important; }
+    .pc-gold-bg { background-color: ${RIP_GOLD} !important; background-image: ${GOLD_PNG} !important; }
+    .pc-white-card { background-color: #ffffff !important; }
+    .pc-navy-text { color: ${RIP_NAVY} !important; }
+    .pc-ink-text { color: ${RIP_INK} !important; }
+    .pc-muted-text { color: ${RIP_MUTED} !important; }
+    .pc-gold-text { color: ${RIP_GOLD} !important; }
+    .pc-white-text { color: #ffffff !important; }
+    .pc-cream-text { color: #cdd5e5 !important; }
+    .pc-gold-soft-text { color: ${RIP_GOLDS} !important; }
   }
-  /* Apple Mail (iOS/macOS) dark mode selector */
-  [data-ogsc] .pc-header-navy, [data-ogsb] .pc-header-navy { background-color: ${RIP_NAVY} !important; }
+  /* Outlook.com dark mode */
+  [data-ogsc] .pc-navy-bg, [data-ogsb] .pc-navy-bg { background-color: ${RIP_NAVY} !important; background-image: ${NAVY_PNG} !important; }
+  [data-ogsc] .pc-white-card { background-color: #ffffff !important; }
+  [data-ogsc] .pc-navy-text { color: ${RIP_NAVY} !important; }
+  [data-ogsc] .pc-ink-text { color: ${RIP_INK} !important; }
 </style>
 </head>
-<body style="margin:0;padding:0;background:${RIP_BG};font-family:Inter,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;color:${RIP_INK};font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;">
+<body class="pc-ink-text" style="margin:0;padding:0;background:${RIP_BG};font-family:Inter,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;color:${RIP_INK};font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;">
   <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:${RIP_BG};padding:32px 12px;">
     <tr><td align="center">
-      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="640" style="max-width:640px;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 8px 30px rgba(10,30,63,0.08);border:1px solid ${RIP_LINE};">
-        <!-- HEADER NAVY (v265 : classe pc-header-navy pour forcer navy en dark mode) -->
-        <tr><td class="pc-header-navy" bgcolor="${RIP_NAVY}" style="background:${RIP_NAVY};background-color:${RIP_NAVY};padding:24px 32px;text-align:center;">
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="640" class="pc-white-card" bgcolor="#ffffff" style="max-width:640px;background:#ffffff;background-color:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 8px 30px rgba(10,30,63,0.08);border:1px solid ${RIP_LINE};">
+        <!-- HEADER NAVY : background-image + bgcolor pour résister aux inversions Apple Mail -->
+        <tr><td class="pc-navy-bg" bgcolor="${RIP_NAVY}" background="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQI12PgkrP/DwACBAFndrNaSAAAAABJRU5ErkJggg==" style="background:${RIP_NAVY};background-color:${RIP_NAVY};background-image:${NAVY_PNG};background-repeat:repeat;padding:24px 32px;text-align:center;">
           <img src="${RIP_LOGO}" alt="Paris Conseils — Ingénierie financière & optimisation fiscale" width="260" height="104" style="display:block;height:auto;max-width:260px;width:100%;border:0;outline:none;text-decoration:none;margin:0 auto;">
         </td></tr>
         <!-- Filet doré -->
-        <tr><td style="height:3px;background:${RIP_GOLD};line-height:0;font-size:0;">&nbsp;</td></tr>
-        ${eyebrow ? `<tr><td style="padding:26px 34px 0 34px;">
-          <div style="font-size:11px;letter-spacing:2.5px;color:${RIP_GOLD};font-weight:700;text-transform:uppercase;">${escapeHtml(eyebrow)}</div>
+        <tr><td class="pc-gold-bg" bgcolor="${RIP_GOLD}" style="height:3px;background:${RIP_GOLD};background-color:${RIP_GOLD};background-image:${GOLD_PNG};line-height:0;font-size:0;">&nbsp;</td></tr>
+        ${eyebrow ? `<tr><td class="pc-white-card" bgcolor="#ffffff" style="background-color:#ffffff;padding:26px 34px 0 34px;">
+          <div class="pc-gold-text" style="font-size:11px;letter-spacing:2.5px;color:${RIP_GOLD};font-weight:700;text-transform:uppercase;">${escapeHtml(eyebrow)}</div>
         </td></tr>` : ''}
-        <tr><td style="padding:${eyebrow?'8':'26'}px 34px 0 34px;">
-          <h1 style="font-family:'Cormorant Garamond',Georgia,serif;font-size:30px;font-weight:500;color:${RIP_NAVY};line-height:1.2;margin:0;">${escapeHtml(title)}</h1>
+        <tr><td class="pc-white-card" bgcolor="#ffffff" style="background-color:#ffffff;padding:${eyebrow?'8':'26'}px 34px 0 34px;">
+          <h1 class="pc-navy-text" style="font-family:'Cormorant Garamond',Georgia,serif;font-size:30px;font-weight:500;color:${RIP_NAVY};line-height:1.2;margin:0;">${escapeHtml(title)}</h1>
         </td></tr>
-        ${subtitle ? `<tr><td style="padding:6px 34px 0 34px;">
-          <div style="font-size:14px;color:${RIP_MUTED};">${escapeHtml(subtitle)}</div>
+        ${subtitle ? `<tr><td class="pc-white-card" bgcolor="#ffffff" style="background-color:#ffffff;padding:6px 34px 0 34px;">
+          <div class="pc-muted-text" style="font-size:14px;color:${RIP_MUTED};">${escapeHtml(subtitle)}</div>
         </td></tr>` : ''}
-        <tr><td style="padding:22px 34px 30px 34px;font-size:15px;line-height:1.6;color:${RIP_INK};">${body}</td></tr>
-        <tr><td style="background:${RIP_NAVY};padding:22px 34px;text-align:center;font-size:12px;color:#c9d0dc;">
-          <div style="margin-bottom:6px;color:${RIP_GOLDS};letter-spacing:1.5px;">Paris Conseils &middot; Ingénierie financière & optimisation fiscale</div>
-          <div style="color:#94a0b8;">Confidentialité absolue &middot; Secret professionnel</div>
+        <tr><td class="pc-white-card pc-ink-text" bgcolor="#ffffff" style="background-color:#ffffff;padding:22px 34px 30px 34px;font-size:15px;line-height:1.6;color:${RIP_INK};">${body}</td></tr>
+        <tr><td class="pc-navy-bg" bgcolor="${RIP_NAVY}" background="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQI12PgkrP/DwACBAFndrNaSAAAAABJRU5ErkJggg==" style="background:${RIP_NAVY};background-color:${RIP_NAVY};background-image:${NAVY_PNG};background-repeat:repeat;padding:22px 34px;text-align:center;font-size:12px;color:#c9d0dc;">
+          <div class="pc-gold-soft-text" style="margin-bottom:6px;color:${RIP_GOLDS};letter-spacing:1.5px;">Paris Conseils &middot; Ingénierie financière & optimisation fiscale</div>
+          <div class="pc-cream-text" style="color:#94a0b8;">Confidentialité absolue &middot; Secret professionnel</div>
         </td></tr>
       </table>
       <div style="max-width:640px;padding:16px 12px 0;color:${RIP_MUTED};font-family:Inter,Helvetica,Arial,sans-serif;font-size:11px;text-align:center;">
@@ -339,12 +360,13 @@ function emailFilleul({ parrain, conseiller, filleul }) {
     : '';
 
   const rdvBlock = slug
-    ? `<div style="background:${RIP_NAVY};border-radius:12px;padding:22px 24px;margin:20px 0;text-align:center;">
-        <div style="font-size:11px;letter-spacing:2.5px;color:${RIP_GOLDS};font-weight:700;text-transform:uppercase;margin-bottom:10px;">Prenez rendez-vous en 1 clic</div>
-        <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:22px;color:#fff;font-weight:600;line-height:1.3;margin-bottom:8px;">Faites connaissance avec ${escapeHtml(conseillerDisplay)}</div>
-        <div style="font-size:14px;color:#cdd5e5;margin-bottom:18px;line-height:1.5;">Choisissez le créneau qui vous arrange sur son agenda.<br>RDV téléphonique ou visio Google Meet · 30 min · sans engagement.</div>
+    ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:20px 0;">
+      <tr><td class="pc-navy-bg" bgcolor="${RIP_NAVY}" background="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQI12PgkrP/DwACBAFndrNaSAAAAABJRU5ErkJggg==" style="background:${RIP_NAVY};background-color:${RIP_NAVY};background-image:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQI12PgkrP/DwACBAFndrNaSAAAAABJRU5ErkJggg==');border-radius:12px;padding:22px 24px;text-align:center;">
+        <div class="pc-gold-soft-text" style="font-size:11px;letter-spacing:2.5px;color:${RIP_GOLDS};font-weight:700;text-transform:uppercase;margin-bottom:10px;">Prenez rendez-vous en 1 clic</div>
+        <div class="pc-white-text" style="font-family:'Cormorant Garamond',Georgia,serif;font-size:22px;color:#ffffff;font-weight:600;line-height:1.3;margin-bottom:8px;">Faites connaissance avec ${escapeHtml(conseillerDisplay)}</div>
+        <div class="pc-cream-text" style="font-size:14px;color:#cdd5e5;margin-bottom:18px;line-height:1.5;">Choisissez le créneau qui vous arrange sur son agenda.<br>RDV téléphonique ou visio Google Meet · 30 min · sans engagement.</div>
         <a href="https://parrainage.parisconseils.fr/rdv-${slug}.html" style="display:inline-block;background:${RIP_GOLDS};color:${RIP_NAVY};padding:14px 30px;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;letter-spacing:1px;">Prendre rendez-vous</a>
-      </div>`
+      </td></tr></table>`
     : '';
 
   const body = `
