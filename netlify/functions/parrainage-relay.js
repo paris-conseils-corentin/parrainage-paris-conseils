@@ -19,7 +19,7 @@
 //                          Sinon, l'email conseiller fallback vers contact@parisconseils.fr
 
 // v200am — Bascule Resend → SMTP direct via parisconseils.fr
-// build-stamp: 2026-06-20-SMTP-DIRECT
+// build-stamp: 2026-09-08-v271-BILAN-CTA
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 
@@ -65,6 +65,7 @@ const RIP_MUTED  = '#64748b';
 const RIP_LINE   = '#e2e8f0';
 const RIP_SUCC   = '#059669';
 const RIP_SUCCS  = '#d1fae5';
+// v265 — Logo inline data URI PNG (5.8 KB, blanc sur fond navy). Zéro dépendance réseau : aucun email client ne bloquera le logo.
 // v269 — Retour au logo hébergé sur rip.parisconseils.fr (celui qui fonctionne parfaitement dans les mails RIP existants).
 const RIP_LOGO   = process.env.MAIL_LOGO_URL || 'https://rip.parisconseils.fr/static/logo-blanc.png';
 
@@ -381,6 +382,17 @@ function emailFilleul({ parrain, conseiller, filleul }) {
 </div>
 
 ${rdvBlock}
+
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:20px 0;">
+  <tr><td style="background:${RIP_GOLDT};border:1px solid ${RIP_GOLDS};border-radius:12px;padding:22px 24px;">
+    <div style="font-size:11px;letter-spacing:2.5px;color:${RIP_GOLD};font-weight:700;text-transform:uppercase;margin-bottom:10px;text-align:center;">Avant votre rendez-vous — optionnel</div>
+    <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:22px;color:${RIP_NAVY};font-weight:600;line-height:1.3;margin-bottom:10px;text-align:center;">Obtenez votre note patrimoniale</div>
+    <div style="font-size:14px;color:${RIP_INK2};line-height:1.6;margin-bottom:16px;text-align:center;">Notre bilan patrimonial en ligne évalue votre situation en <b>5 minutes</b> et vous restitue une note sur 100 assortie de recommandations concrètes. Confidentiel, gratuit, sans création de compte.</div>
+    <div style="text-align:center;">
+      <a href="https://rip.parisconseils.fr/" style="display:inline-block;background:${RIP_NAVY};color:#ffffff;padding:13px 28px;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;letter-spacing:0.5px;">Faire mon bilan gratuit</a>
+    </div>
+  </td></tr>
+</table>
 
 <p style="margin:20px 0 14px;">${contactPhrase} Cette première conversation est <b>sans engagement</b> et strictement confidentielle. Elle sert à comprendre votre situation, vos objectifs, et à voir de quelle manière nous pouvons vous être utile.</p>
 
@@ -810,7 +822,8 @@ async function handleMarkContacted(event) {
   }
 }
 
-// v263 - Update filleul status (admin only via JWT ou admin token).
+// v263 — Update filleul status (admin only via JWT ou admin token).
+// body: { id, filleulIndex, status: 'nouveau' | 'contacte' | 'signe' | 'non-fructueux', note?: string }
 async function handleSetStatus(event) {
   const adminToken = process.env.PARRAINAGE_ADMIN_TOKEN || '';
   const proSecret  = process.env.PRO_JWT_SECRET || '';
@@ -826,6 +839,7 @@ async function handleSetStatus(event) {
     } catch (_e) {}
   }
   if (!authOk || !isAdmin) return { statusCode: 401, body: JSON.stringify({ ok: false, error: 'Unauthorized (admin only)' }) };
+
   let body;
   try { body = JSON.parse(event.body || '{}'); } catch (e) { return { statusCode: 400, body: 'Invalid JSON' }; }
   const { id, filleulIndex, status, note } = body;
@@ -833,42 +847,57 @@ async function handleSetStatus(event) {
   if (typeof filleulIndex !== 'number') return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'Missing filleulIndex' }) };
   const ALLOWED = ['nouveau', 'contacte', 'signe', 'non-fructueux'];
   if (!ALLOWED.includes(status)) return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'invalid status. Allowed: ' + ALLOWED.join(', ') }) };
+
   try {
     const store = getBlobStore('parrainages');
     const record = await store.get(id, { type: 'json' });
     if (!record) return { statusCode: 404, body: JSON.stringify({ ok: false, error: 'Not found' }) };
     const filleuls = record.filleuls || [];
-    if (filleulIndex < 0 || filleulIndex >= filleuls.length) return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'Invalid filleulIndex' }) };
+    if (filleulIndex < 0 || filleulIndex >= filleuls.length) {
+      return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'Invalid filleulIndex' }) };
+    }
     const f = filleuls[filleulIndex];
     f.status = status;
     f.status_updated_at = new Date().toISOString();
     if (note !== undefined) f.status_note = String(note || '').slice(0, 500);
+    // Auto-tag contactedAt si status implique contact
     if ((status === 'contacte' || status === 'signe' || status === 'non-fructueux') && !f.contactedAt) {
       f.contactedAt = new Date().toISOString();
     }
     record.filleuls = filleuls;
     await store.setJSON(record.id, record);
-    return { statusCode: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ ok: true, filleul: f }) };
-  } catch (err) { return { statusCode: 500, body: JSON.stringify({ ok: false, error: err.message }) }; }
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ ok: true, filleul: f })
+    };
+  } catch (err) {
+    return { statusCode: 500, body: JSON.stringify({ ok: false, error: err.message }) };
+  }
 }
 
 async function handleDelete(event) {
-  // v250l - Accepte 2 auths : PARRAINAGE_ADMIN_TOKEN OU JWT pro role=admin.
+  // v250l — Accepte 2 auths : PARRAINAGE_ADMIN_TOKEN (back-office) OU JWT pro role=admin.
   const adminToken = process.env.PARRAINAGE_ADMIN_TOKEN || '';
   const proSecret  = process.env.PRO_JWT_SECRET || '';
   const authHdr = event.headers.authorization || event.headers.Authorization || '';
   const bearer = authHdr.startsWith('Bearer ') ? authHdr.slice(7) : '';
+
   let authOk = false;
   let isAdmin = false;
-  if (adminToken && bearer === adminToken) { authOk = true; isAdmin = true; }
+
+  if (adminToken && bearer === adminToken) {
+    authOk = true; isAdmin = true;
+  }
   if (!authOk && proSecret && bearer) {
     try {
       const { verifyToken } = require('./pro-login');
       const payload = verifyToken(bearer, proSecret);
       if (payload && payload.r === 'admin') { authOk = true; isAdmin = true; }
-    } catch (_e) {}
+    } catch (_e) { /* ignore */ }
   }
   if (!authOk || !isAdmin) return { statusCode: 401, body: JSON.stringify({ ok: false, error: 'Unauthorized (admin only)' }) };
+
   let body;
   try { body = JSON.parse(event.body || '{}'); } catch (e) { return { statusCode: 400, body: 'Invalid JSON' }; }
   if (!body.id) return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'Missing id' }) };
@@ -944,7 +973,7 @@ const innerHandler = async (event) => {
   if (event.httpMethod === 'POST' && action === 'delete') return handleDelete(event);
   // v200x — Marquer un filleul comme contacté ou décocher
   if (event.httpMethod === 'POST' && action === 'mark-contacted') return handleMarkContacted(event);
-  // v263 - update filleul status
+  // v263 — update filleul status
   if (event.httpMethod === 'POST' && action === 'set-status') return handleSetStatus(event);
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
@@ -1014,24 +1043,38 @@ const innerHandler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'Données incomplètes (parrain + au moins 1 filleul requis)' }) };
   }
 
-  // v250l — ANTI-SPAM / ANTI-FRAUDE (rejette bots + fake data typique).
+  // v250l — ANTI-SPAM / ANTI-FRAUDE (fix demandé par audit + cas Robert Williams)
+  // Rejette les patterns typiques de bots/spam :
+  //   1. Même prénom+nom pour parrain et filleul
+  //   2. Même email pour parrain et filleul (partout)
+  //   3. Numéros de téléphone US format spam ((202) 555-0122 = Google fake number)
+  //   4. TLD à haut risque (.ru, .tk, .ml, .ga, .cf, .xyz sur emails suspects)
+  //   5. Conseiller inconnu (uniquement Corentin/David/Nicolas/"Paris Conseils")
+  //   6. Prénom == Nom (Robert Williams, John Doe, etc.)
   const spamReasons = [];
-  const KNOWN_CONSEILLERS = ['paris conseils','corentin','curtet','david','pereira','nicolas','moreau'];
+  const KNOWN_CONSEILLERS = ['paris conseils','corentin','curtet','corentin curtet','david','pereira','david pereira','nicolas','moreau','nicolas moreau'];
   const RISK_TLD = /\.(ru|tk|ml|ga|cf)$/i;
   const FAKE_PHONE = /\(?\s*(202|555|800)\s*\)?\s*[-\s]?\s*555\s*[-\s]?\s*\d{4}/;
   const conLc = conseiller.toLowerCase().trim();
-  if (!KNOWN_CONSEILLERS.some(c => conLc.includes(c) || c.includes(conLc))) spamReasons.push('conseiller inconnu');
-  if (parrain.prenom && parrain.nom && parrain.prenom.toLowerCase() === parrain.nom.toLowerCase()) spamReasons.push('parrain prenom=nom');
-  if (parrain.email && RISK_TLD.test(parrain.email)) spamReasons.push('parrain tld risque');
+  if (!KNOWN_CONSEILLERS.some(c => conLc.includes(c) || c.includes(conLc))) {
+    spamReasons.push('conseiller inconnu');
+  }
+  if (parrain.prenom && parrain.nom && parrain.prenom.toLowerCase() === parrain.nom.toLowerCase()) {
+    spamReasons.push('parrain prenom=nom');
+  }
+  if (parrain.email && RISK_TLD.test(parrain.email)) spamReasons.push('parrain tld risqué');
   if (parrain.tel && FAKE_PHONE.test(parrain.tel)) spamReasons.push('parrain tel factice');
   for (const f of filleuls) {
     if (parrain.email && f.email && parrain.email === f.email) { spamReasons.push('email parrain=filleul'); break; }
-    if (parrain.prenom && parrain.nom && f.prenom && f.nom && parrain.prenom.toLowerCase() === f.prenom.toLowerCase() && parrain.nom.toLowerCase() === f.nom.toLowerCase()) { spamReasons.push('nom complet parrain=filleul'); break; }
+    if (parrain.prenom && parrain.nom && f.prenom && f.nom
+        && parrain.prenom.toLowerCase() === f.prenom.toLowerCase()
+        && parrain.nom.toLowerCase() === f.nom.toLowerCase()) { spamReasons.push('nom complet parrain=filleul'); break; }
     if (f.prenom && f.nom && f.prenom.toLowerCase() === f.nom.toLowerCase()) { spamReasons.push('filleul prenom=nom'); break; }
-    if (f.email && RISK_TLD.test(f.email)) { spamReasons.push('filleul tld risque'); break; }
+    if (f.email && RISK_TLD.test(f.email)) { spamReasons.push('filleul tld risqué'); break; }
     if (f.tel && FAKE_PHONE.test(f.tel)) { spamReasons.push('filleul tel factice'); break; }
   }
   if (spamReasons.length) {
+    // Log dans un blob dédié pour audit, ne rien envoyer
     try {
       const spamStore = getBlobStore('parrainages-spam');
       await spamStore.setJSON(crypto.randomUUID(), {
@@ -1041,8 +1084,8 @@ const innerHandler = async (event) => {
         reasons: spamReasons,
         parrain, conseiller, filleuls
       });
-    } catch (_e) {}
-    return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'Soumission refusee. Contactez contact@parisconseils.fr si besoin.' }) };
+    } catch (_e) { /* silent */ }
+    return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'Soumission refusée. Contactez contact@parisconseils.fr si besoin.' }) };
   }
 
   // 1) Dashboard (best-effort, skip si non configuré)
