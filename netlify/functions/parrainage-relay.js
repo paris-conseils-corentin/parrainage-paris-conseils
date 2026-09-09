@@ -19,7 +19,7 @@
 //                          Sinon, l'email conseiller fallback vers contact@parisconseils.fr
 
 // v200am — Bascule Resend → SMTP direct via parisconseils.fr
-// build-stamp: 2026-09-09-v277-HISTO-FRISE
+// build-stamp: 2026-09-09-v278-DPLUS-WEBHOOK
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 
@@ -92,7 +92,8 @@ const RIP_TEXT_SOFT  = '#4a5568';
 const FONT_BODY  = "Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif";
 const FONT_SERIF = "'Cormorant Garamond',Georgia,'Times New Roman',serif";
 // Note moyenne nationale affichée sur la frise (lettre A..G). Variable Netlify RIP_NOTE_MOYENNE.
-const RIP_NOTE_MOYENNE = (process.env.RIP_NOTE_MOYENNE || 'C').toString().trim().toUpperCase().charAt(0);
+const RIP_NOTE_MOYENNE_LABEL = (process.env.RIP_NOTE_MOYENNE || 'D+').toString().trim().toUpperCase();
+const RIP_NOTE_MOYENNE = RIP_NOTE_MOYENNE_LABEL.charAt(0);
 
 function baseShell(opts) {
   const title    = opts && opts.title    ? opts.title    : 'Paris Conseils';
@@ -202,7 +203,7 @@ function noteScale(avgLetter) {
   const avg = scale.findIndex(s => s.l === avgLetter);
   const cells = scale.map(s => `<td align="center" style="padding:0 2px;"><div style="background:${s.c};color:#ffffff;font-family:${FONT_BODY};font-weight:700;font-size:13px;line-height:30px;height:30px;border-radius:6px;">${s.l}</div></td>`).join('');
   const marks = scale.map((s,i) => {
-    if (i === avg) return `<td align="center" style="padding:6px 2px 0;font-family:${FONT_BODY};font-size:10px;letter-spacing:1px;color:${RIP_TEXT_SOFT};text-transform:uppercase;line-height:1.3;">▲<br>Moyenne<br>nationale</td>`;
+    if (i === avg) return `<td align="center" style="padding:6px 2px 0;font-family:${FONT_BODY};font-size:10px;letter-spacing:1px;color:${RIP_TEXT_SOFT};text-transform:uppercase;line-height:1.3;">▲<br>Moyenne<br>nationale<br><b class="pc-navy-text" style="color:${RIP_NAVY};font-size:12px;">${escapeHtml(RIP_NOTE_MOYENNE_LABEL)}</b></td>`;
     return `<td style="padding:6px 2px 0;"></td>`;
   }).join('');
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:14px 0 6px;">
@@ -345,7 +346,7 @@ ${rdvHref ? ctaNavy(rdvHref, `Consulter le planning de ${escapeHtml(consPrenom)}
 
 ${goldBadge('Avant votre rendez-vous')}
 ${h2Serif('Connaissez-vous votre note patrimoniale&nbsp;?')}
-${p(`En <b>six minutes</b>, notre bilan en ligne évalue votre situation — endettement, épargne, patrimoine, protection de vos proches, fiscalité — et vous attribue une note de <b>A+</b> à <b>G−</b>. Elle situe votre profil sans le juger, et permet à ${escapeHtml(consPrenom || 'votre conseiller')} de préparer votre échange sur du concret&nbsp;: vos points forts, vos leviers, ce qui peut être optimisé.`, 'text-align:center;')}
+${p(`En <b>six minutes</b>, notre bilan en ligne évalue votre situation — endettement, épargne, patrimoine, protection de vos proches, fiscalité — et vous attribue une note de <b>A+</b> à <b>G−</b>. La moyenne nationale se situe à <b>${escapeHtml(RIP_NOTE_MOYENNE_LABEL)}</b>. Elle situe votre profil sans le juger, et permet à ${escapeHtml(consPrenom || 'votre conseiller')} de préparer votre échange sur du concret&nbsp;: vos points forts, vos leviers, ce qui peut être optimisé.`, 'text-align:center;')}
 ${noteScale(RIP_NOTE_MOYENNE)}
 ${ctaNavy(ripHref, 'Obtenir ma note patrimoniale')}
 ${pSoft(`Gratuit et confidentiel. ${hasCons ? `${escapeHtml(consNom)} est déjà sélectionné comme votre conseiller&nbsp;: vous validez simplement l'engagement de confidentialité par un code reçu par e-mail, puis vous répondez à l'essentiel.` : `Vous validez l'engagement de confidentialité par un code reçu par e-mail, puis vous répondez à l'essentiel.`}`, 'text-align:center;')}
@@ -443,6 +444,23 @@ function getBlobStore(name) {
 
 // v277 — Compte les filleuls déjà transmis par ce parrain sur l'année civile en cours (blobs).
 // Ignore le record courant (excludeId) et les records supprimés/refusés.
+// v278 — Webhook vers le dashboard RIP (rip.parisconseils.fr). Best-effort, non bloquant.
+// Activé si RIP_WEBHOOK_URL + RIP_WEBHOOK_SECRET sont définis dans Netlify.
+async function notifyRipDashboard(env, payloadObj) {
+  const url = env.RIP_WEBHOOK_URL; const secret = env.RIP_WEBHOOK_SECRET;
+  if (!url || !secret) return { skipped: true };
+  try {
+    const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 5000);
+    const r = await fetch(url, {
+      method: 'POST', signal: ctrl.signal,
+      headers: { 'content-type': 'application/json', 'X-Parrainage-Secret': secret, 'X-Parrainage-Event': 'parrainage.created' },
+      body: JSON.stringify(payloadObj)
+    });
+    clearTimeout(t);
+    return { ok: r.ok, status: r.status };
+  } catch (e) { return { ok: false, error: String(e && e.message || e) }; }
+}
+
 async function countFilleulsAnneeParrain(parrainEmail, excludeId) {
   try {
     const email = (parrainEmail || '').trim().toLowerCase();
@@ -1170,6 +1188,22 @@ const innerHandler = async (event) => {
   }
   const nbApres = nbAvant + filleuls.length;
 
+  // v278 — Notification dashboard RIP (fire-and-forget, résultat renvoyé dans la réponse)
+  const ripSlugs = conseillerSlugs(conseiller);
+  const ripPromise = notifyRipDashboard(env, {
+    event: 'parrainage.created',
+    id: parrainageId,
+    createdAt: record.createdAt,
+    conseiller: conseillerComplet(conseiller),
+    conseillerSlug: ripSlugs ? ripSlugs.rip : null,
+    parrain: record.parrain,
+    filleuls: record.filleuls,
+    nbFilleuls: record.nbFilleuls,
+    status: record.status,
+    histo: { nbAvant, nbApres, cumulPotentiel: cumulAt(nbApres) },
+    source: 'parrainage.parisconseils.fr'
+  });
+
   // 2) Emails
   const conseillerEmail = resolveConseillerEmail(env, conseiller);
   const total = cumulAt(filleuls.length);
@@ -1245,6 +1279,8 @@ const innerHandler = async (event) => {
       ok: overallOk,
       parrainageId,
       blobs: blobResult,
+      rip: await ripPromise,
+      histo: { nbAvant, nbApres },
       dashboard: { ok: allDashOk, count: dashboardResults.length, results: dashboardResults },
       mails:     { ok: allMailsOk, count: mailResults.length, results: mailResults }
     })
