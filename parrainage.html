@@ -666,18 +666,28 @@
           </div>
           <input type="hidden" id="conseiller_id" name="conseiller_id" value="">
 
-          <div class="form-section-title">RIB (facultatif)</div>
-          <div class="form-group"><label for="iban">IBAN</label>
-            <input id="iban" placeholder="FR76 0000 0000 0000 0000 0000 000"
-                   style="font-family:'Courier New',monospace;letter-spacing:1px;">
-          </div>
-
-          <div class="consent-row"><input type="checkbox" id="cgu_rib">
-            <label for="cgu_rib" style="font-size:13px;color:var(--muted);margin:0;font-weight:400;">
-              <strong>RGPD :</strong> j'autorise Paris Conseils à conserver mon IBAN pour le versement.
-              Suppression à <a href="mailto:contact@parisconseils.fr">contact@parisconseils.fr</a>.
-            </label>
-          </div>
+          <!-- v273 : RIB dans un bloc replié, clairement optionnel, rassurance explicite -->
+          <details style="margin:18px 0 8px 0;background:#faf6ec;border:1px solid #e6d9b8;border-radius:10px;padding:0;">
+            <summary style="cursor:pointer;padding:14px 18px;font-weight:600;color:var(--pc-navy);font-size:14px;list-style:none;display:flex;justify-content:space-between;align-items:center;">
+              <span>Renseigner mon RIB maintenant <span style="font-weight:400;color:var(--muted);font-size:13px;font-style:italic;">— facultatif, à faire plus tard si vous préférez</span></span>
+              <span style="color:var(--pc-gold);font-size:18px;">+</span>
+            </summary>
+            <div style="padding:8px 18px 18px 18px;border-top:1px dashed #e6d9b8;">
+              <div style="font-size:13px;color:var(--muted);margin:10px 0 14px 0;line-height:1.55;">
+                Votre RIB sert uniquement au versement de votre prime, une fois qu'un filleul a validé. <b>Vous pouvez le communiquer plus tard</b> par retour de mail à <a href="mailto:contact@parisconseils.fr" style="color:var(--pc-navy);">contact@parisconseils.fr</a> — ça n'a aucun impact sur l'enregistrement de votre parrainage.
+              </div>
+              <div class="form-group"><label for="iban">IBAN</label>
+                <input id="iban" placeholder="FR76 0000 0000 0000 0000 0000 000"
+                       style="font-family:'Courier New',monospace;letter-spacing:1px;">
+              </div>
+              <div class="consent-row"><input type="checkbox" id="cgu_rib">
+                <label for="cgu_rib" style="font-size:13px;color:var(--muted);margin:0;font-weight:400;">
+                  <strong>RGPD :</strong> j'autorise Paris Conseils à conserver mon IBAN pour le versement.
+                  Suppression à <a href="mailto:contact@parisconseils.fr">contact@parisconseils.fr</a>.
+                </label>
+              </div>
+            </div>
+          </details>
           <div class="consent-row"><input type="checkbox" id="cgu_filleul" required>
             <label for="cgu_filleul" style="font-size:13px;color:var(--muted);margin:0;font-weight:400;">
               J'ai informé mes filleuls et j'accepte le
@@ -1323,7 +1333,7 @@
               '<div class="form-group"><label>Prenom *</label><input class="fi-prenom" required></div>'+
               '<div class="form-group"><label>Nom *</label><input class="fi-nom" required></div>'+
               '<div class="form-group"><label>Email *</label><input class="fi-email" type="email" required></div>'+
-              '<div class="form-group"><label>Telephone *</label><input class="fi-tel" type="tel" required></div>'+
+              '<div class="form-group"><label>Telephone <span style="color:var(--muted);font-weight:400;">(facultatif)</span></label><input class="fi-tel" type="tel"></div>'+
             '</div>'+
             '<button type="button" class="fb-del">&mdash; Supprimer ce filleul</button>';
           listEl.appendChild(w);
@@ -1368,8 +1378,9 @@
             var el = document.getElementById(id);
             if (!el || !el.value.trim()) missing.push(id);
           });
+          // v273 : téléphone du filleul devient OPTIONNEL (rendre plus permissif — la cliente Attia bloquait dessus)
           Array.prototype.forEach.call(listEl ? listEl.children : [], function(b, i){
-            ['fi-prenom','fi-nom','fi-email','fi-tel'].forEach(function(cls){
+            ['fi-prenom','fi-nom','fi-email'].forEach(function(cls){
               var el = b.querySelector('.'+cls);
               if (!el || !el.value.trim()) missing.push('filleul ' + (i+1) + ' / ' + cls.replace('fi-',''));
             });
