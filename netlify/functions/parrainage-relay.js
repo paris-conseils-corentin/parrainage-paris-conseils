@@ -19,7 +19,7 @@
 //                          Sinon, l'email conseiller fallback vers contact@parisconseils.fr
 
 // v200am — Bascule Resend → SMTP direct via parisconseils.fr
-// build-stamp: 2026-09-08-v271-BILAN-CTA
+// build-stamp: 2026-09-09-v276-RIP-EXACT
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 
@@ -73,72 +73,75 @@ const escapeHtml = (s) => String(s||'').replace(/[&<>"']/g, c => ({ '&':'&amp;',
 
 // Squelette style dashboard rip.parisconseils.fr : header navy avec logo blanc,
 // filet doré, cards blanches, footer navy sobre.
+// ═══════════════════════════════════════════════════════════════════════════
+// v276 — Templates mails parrainage alignés STRICTEMENT sur les mails RIP
+// (rip.parisconseils.fr : "C'est confirmé" / "C'est demain").
+// Typo : H1 Cormorant Garamond 700 34px navy · corps 15px #1a1a1a · eyebrow or
+// uppercase 12px · hero cream (#faf5e6, bord #e8d9b5) · badge or contour ·
+// CTA navy 700 16px · info beige 14px. Dark-mode Apple Mail : background-image PNG.
+// ═══════════════════════════════════════════════════════════════════════════
+const PX_NAVY_PNG  = "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQI12PgkrP/DwACBAFndrNaSAAAAABJRU5ErkJggg==')";
+const PX_GOLD_PNG  = "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQI12O4wbnyPwAFTQKC2LnHrgAAAABJRU5ErkJggg==')";
+const PX_WHITE_PNG = "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQI12P4//8/AwAI/AL+XJ/PMAAAAABJRU5ErkJggg==')";
+const PX_NAVY_ATTR  = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQI12PgkrP/DwACBAFndrNaSAAAAABJRU5ErkJggg==';
+const PX_WHITE_ATTR = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQI12P4//8/AwAI/AL+XJ/PMAAAAABJRU5ErkJggg==';
+const RIP_CREAM      = '#faf5e6';
+const RIP_CREAM_LINE = '#e8d9b5';
+const RIP_TEXT       = '#1a1a1a';
+const RIP_TEXT_SOFT  = '#4a5568';
+const FONT_BODY = "Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif";
+const FONT_SERIF = "'Cormorant Garamond',Georgia,'Times New Roman',serif";
+
 function baseShell(opts) {
   const title    = opts && opts.title    ? opts.title    : 'Paris Conseils';
   const eyebrow  = opts && opts.eyebrow  ? opts.eyebrow  : '';
-  const subtitle = opts && opts.subtitle ? opts.subtitle : '';
   const body     = opts && opts.body     ? opts.body     : '';
-  // v270 — Anti dark mode Apple Mail : les zones navy sont peintes via background-image (Apple Mail
-  // ne peut PAS inverser les background-image, contrairement aux background-color). Combiné à bgcolor
-  // fallback pour clients qui ne lisent pas le PNG, on garantit navy dans tous les modes.
-  const NAVY_PNG = "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQI12PgkrP/DwACBAFndrNaSAAAAABJRU5ErkJggg==')";
-  const GOLD_PNG = "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQI12O4wbnyPwAFTQKC2LnHrgAAAABJRU5ErkJggg==')";
+  const whiteTd = `class="pc-white-card" bgcolor="#ffffff" background="${PX_WHITE_ATTR}"`;
+  const whiteStyle = `background:#ffffff;background-color:#ffffff;background-image:${PX_WHITE_PNG};background-repeat:repeat;`;
   return `<!DOCTYPE html>
-<html lang="fr" style="color-scheme: light dark;"><head>
+<html lang="fr"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="light dark">
-<meta name="supported-color-schemes" content="light dark">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
 <title>${escapeHtml(title)}</title>
-<!-- v270 — Dark mode bulletproof : background-image trick + !important overrides + text force -->
 <style type="text/css">
-  :root { color-scheme: light dark; supported-color-schemes: light dark; }
-  /* Apple Mail iOS/macOS dark mode : force les zones importantes */
+  :root { color-scheme: light; supported-color-schemes: light; }
+  a { color:${RIP_GOLD}; }
   @media (prefers-color-scheme: dark) {
-    .pc-navy-bg, td.pc-navy-bg { background-color: ${RIP_NAVY} !important; background-image: ${NAVY_PNG} !important; }
-    .pc-gold-bg { background-color: ${RIP_GOLD} !important; background-image: ${GOLD_PNG} !important; }
-    .pc-white-card { background-color: #ffffff !important; }
-    .pc-navy-text { color: ${RIP_NAVY} !important; }
-    .pc-ink-text { color: ${RIP_INK} !important; }
-    .pc-muted-text { color: ${RIP_MUTED} !important; }
-    .pc-gold-text { color: ${RIP_GOLD} !important; }
-    .pc-white-text { color: #ffffff !important; }
-    .pc-cream-text { color: #cdd5e5 !important; }
-    .pc-gold-soft-text { color: ${RIP_GOLDS} !important; }
+    .pc-navy-bg { background-color:${RIP_NAVY} !important; background-image:${PX_NAVY_PNG} !important; }
+    .pc-white-card { background-color:#ffffff !important; background-image:${PX_WHITE_PNG} !important; }
+    .pc-cream { background-color:${RIP_CREAM} !important; }
+    .pc-navy-text { color:${RIP_NAVY} !important; }
+    .pc-text { color:${RIP_TEXT} !important; }
+    .pc-gold-text { color:${RIP_GOLD} !important; }
+    .pc-white-text { color:#ffffff !important; }
   }
-  /* Outlook.com dark mode */
-  [data-ogsc] .pc-navy-bg, [data-ogsb] .pc-navy-bg { background-color: ${RIP_NAVY} !important; background-image: ${NAVY_PNG} !important; }
-  [data-ogsc] .pc-white-card { background-color: #ffffff !important; }
-  [data-ogsc] .pc-navy-text { color: ${RIP_NAVY} !important; }
-  [data-ogsc] .pc-ink-text { color: ${RIP_INK} !important; }
+  [data-ogsc] .pc-navy-bg { background-color:${RIP_NAVY} !important; }
+  [data-ogsc] .pc-white-card { background-color:#ffffff !important; }
+  [data-ogsc] .pc-navy-text { color:${RIP_NAVY} !important; }
+  [data-ogsc] .pc-text { color:${RIP_TEXT} !important; }
 </style>
 </head>
-<body class="pc-ink-text" style="margin:0;padding:0;background:${RIP_BG};font-family:Inter,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;color:${RIP_INK};font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;">
+<body class="pc-text" style="margin:0;padding:0;background:${RIP_BG};font-family:${FONT_BODY};color:${RIP_TEXT};font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;">
   <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:${RIP_BG};padding:32px 12px;">
     <tr><td align="center">
-      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="640" class="pc-white-card" bgcolor="#ffffff" style="max-width:640px;background:#ffffff;background-color:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 8px 30px rgba(10,30,63,0.08);border:1px solid ${RIP_LINE};">
-        <!-- HEADER NAVY : background-image + bgcolor pour résister aux inversions Apple Mail -->
-        <tr><td class="pc-navy-bg" bgcolor="${RIP_NAVY}" background="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQI12PgkrP/DwACBAFndrNaSAAAAABJRU5ErkJggg==" style="background:${RIP_NAVY};background-color:${RIP_NAVY};background-image:${NAVY_PNG};background-repeat:repeat;padding:24px 32px;text-align:center;">
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="640" ${whiteTd} style="max-width:640px;${whiteStyle}border-radius:14px;overflow:hidden;border:1px solid ${RIP_LINE};">
+        <tr><td class="pc-navy-bg" bgcolor="${RIP_NAVY}" background="${PX_NAVY_ATTR}" style="background:${RIP_NAVY};background-color:${RIP_NAVY};background-image:${PX_NAVY_PNG};background-repeat:repeat;padding:30px 32px;text-align:center;">
           <img src="${RIP_LOGO}" alt="Paris Conseils — Ingénierie financière & optimisation fiscale" width="260" height="104" style="display:block;height:auto;max-width:260px;width:100%;border:0;outline:none;text-decoration:none;margin:0 auto;">
         </td></tr>
-        <!-- Filet doré -->
-        <tr><td class="pc-gold-bg" bgcolor="${RIP_GOLD}" style="height:3px;background:${RIP_GOLD};background-color:${RIP_GOLD};background-image:${GOLD_PNG};line-height:0;font-size:0;">&nbsp;</td></tr>
-        ${eyebrow ? `<tr><td class="pc-white-card" bgcolor="#ffffff" style="background-color:#ffffff;padding:26px 34px 0 34px;">
-          <div class="pc-gold-text" style="font-size:11px;letter-spacing:2.5px;color:${RIP_GOLD};font-weight:700;text-transform:uppercase;">${escapeHtml(eyebrow)}</div>
-        </td></tr>` : ''}
-        <tr><td class="pc-white-card" bgcolor="#ffffff" style="background-color:#ffffff;padding:${eyebrow?'8':'26'}px 34px 0 34px;">
-          <h1 class="pc-navy-text" style="font-family:'Cormorant Garamond',Georgia,serif;font-size:30px;font-weight:500;color:${RIP_NAVY};line-height:1.2;margin:0;">${escapeHtml(title)}</h1>
+        <tr><td bgcolor="${RIP_GOLD}" style="height:3px;background:${RIP_GOLD};background-color:${RIP_GOLD};background-image:${PX_GOLD_PNG};line-height:0;font-size:0;">&nbsp;</td></tr>
+        <tr><td ${whiteTd} style="${whiteStyle}padding:34px 40px 0 40px;">
+          ${eyebrow ? `<div class="pc-gold-text" style="font-family:${FONT_BODY};font-size:12px;letter-spacing:2px;color:${RIP_GOLD};font-weight:700;text-transform:uppercase;margin:0 0 10px;">${eyebrow}</div>` : ''}
+          <h1 class="pc-navy-text" style="font-family:${FONT_SERIF};font-size:34px;font-weight:700;color:${RIP_NAVY};line-height:1.15;margin:0 0 22px;">${title}</h1>
         </td></tr>
-        ${subtitle ? `<tr><td class="pc-white-card" bgcolor="#ffffff" style="background-color:#ffffff;padding:6px 34px 0 34px;">
-          <div class="pc-muted-text" style="font-size:14px;color:${RIP_MUTED};">${escapeHtml(subtitle)}</div>
-        </td></tr>` : ''}
-        <tr><td class="pc-white-card pc-ink-text" bgcolor="#ffffff" style="background-color:#ffffff;padding:22px 34px 30px 34px;font-size:15px;line-height:1.6;color:${RIP_INK};">${body}</td></tr>
-        <tr><td class="pc-navy-bg" bgcolor="${RIP_NAVY}" background="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQI12PgkrP/DwACBAFndrNaSAAAAABJRU5ErkJggg==" style="background:${RIP_NAVY};background-color:${RIP_NAVY};background-image:${NAVY_PNG};background-repeat:repeat;padding:22px 34px;text-align:center;font-size:12px;color:#c9d0dc;">
-          <div class="pc-gold-soft-text" style="margin-bottom:6px;color:${RIP_GOLDS};letter-spacing:1.5px;">Paris Conseils &middot; Ingénierie financière & optimisation fiscale</div>
-          <div class="pc-cream-text" style="color:#94a0b8;">Confidentialité absolue &middot; Secret professionnel</div>
+        <tr><td ${whiteTd} class="pc-white-card pc-text" style="${whiteStyle}padding:0 40px 36px 40px;font-family:${FONT_BODY};font-size:15px;line-height:1.65;color:${RIP_TEXT};">${body}</td></tr>
+        <tr><td class="pc-navy-bg" bgcolor="${RIP_NAVY}" background="${PX_NAVY_ATTR}" style="background:${RIP_NAVY};background-color:${RIP_NAVY};background-image:${PX_NAVY_PNG};background-repeat:repeat;padding:22px 34px;text-align:center;font-family:${FONT_BODY};font-size:12px;">
+          <div style="color:${RIP_GOLDS};letter-spacing:1.5px;margin-bottom:6px;">Paris Conseils &middot; Ingénierie financière & optimisation fiscale</div>
+          <div style="color:#94a0b8;">Confidentialité absolue &middot; Secret professionnel</div>
         </td></tr>
       </table>
-      <div style="max-width:640px;padding:16px 12px 0;color:${RIP_MUTED};font-family:Inter,Helvetica,Arial,sans-serif;font-size:11px;text-align:center;">
+      <div style="max-width:640px;padding:16px 12px 0;color:${RIP_MUTED};font-family:${FONT_BODY};font-size:11px;text-align:center;">
         <a href="https://parrainage.parisconseils.fr" style="color:${RIP_MUTED};text-decoration:none;">parrainage.parisconseils.fr</a>
         &nbsp;&middot;&nbsp;
         <a href="mailto:contact@parisconseils.fr" style="color:${RIP_MUTED};text-decoration:none;">contact@parisconseils.fr</a>
@@ -148,7 +151,164 @@ function baseShell(opts) {
 </body></html>`;
 }
 
-// starsRow : ligne d'étoiles Euromillions (dorées / grises) style dashboard.
+// ── Briques RIP ──────────────────────────────────────────────────────────────
+function p(html, extra) {
+  return `<p style="margin:0 0 16px;font-family:${FONT_BODY};font-size:15px;line-height:1.65;color:${RIP_TEXT};${extra||''}">${html}</p>`;
+}
+function pSoft(html) {
+  return `<p style="margin:0 0 16px;font-family:${FONT_BODY};font-size:14px;line-height:1.65;color:${RIP_TEXT_SOFT};">${html}</p>`;
+}
+function heroCream(eyebrow, headline, note) {
+  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:6px 0 22px;">
+    <tr><td class="pc-cream" bgcolor="${RIP_CREAM}" style="background:${RIP_CREAM};background-color:${RIP_CREAM};border:1px solid ${RIP_CREAM_LINE};border-radius:12px;padding:24px 28px;text-align:center;">
+      <div class="pc-gold-text" style="font-family:${FONT_BODY};font-size:12px;letter-spacing:2px;color:${RIP_GOLD};font-weight:700;text-transform:uppercase;margin-bottom:12px;">${eyebrow}</div>
+      <div class="pc-navy-text" style="font-family:${FONT_SERIF};font-size:30px;line-height:1.2;color:${RIP_NAVY};font-weight:700;">${headline}</div>
+      ${note ? `<div style="font-family:${FONT_BODY};font-size:14px;color:${RIP_TEXT_SOFT};margin-top:10px;line-height:1.5;">${note}</div>` : ''}
+    </td></tr>
+  </table>`;
+}
+function goldBadge(label) {
+  return `<table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:26px auto 14px;">
+    <tr><td class="pc-cream" bgcolor="${RIP_CREAM}" style="background:${RIP_CREAM};border:1px solid ${RIP_GOLDS};border-radius:999px;padding:9px 20px;font-family:${FONT_BODY};font-size:11px;letter-spacing:2px;color:${RIP_GOLD};font-weight:700;text-transform:uppercase;white-space:nowrap;">${label}</td></tr>
+  </table>`;
+}
+function h2Serif(text) {
+  return `<div class="pc-navy-text" style="font-family:${FONT_SERIF};font-size:26px;font-weight:700;color:${RIP_NAVY};line-height:1.2;text-align:center;margin:0 0 14px;">${text}</div>`;
+}
+function ctaNavy(href, label) {
+  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:6px 0 22px;">
+    <tr><td align="center">
+      <a href="${href}" class="pc-white-text" style="display:inline-block;background:${RIP_NAVY};background-color:${RIP_NAVY};color:#ffffff;padding:16px 40px;text-decoration:none;border-radius:10px;font-family:${FONT_BODY};font-weight:700;font-size:16px;line-height:1.2;">${label}</a>
+    </td></tr>
+  </table>`;
+}
+function infoBeige(html) {
+  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:8px 0 0;">
+    <tr><td class="pc-cream" bgcolor="${RIP_CREAM}" style="background:${RIP_CREAM};background-color:${RIP_CREAM};border:1px solid ${RIP_CREAM_LINE};border-radius:10px;padding:18px 22px;font-family:${FONT_BODY};font-size:14px;color:${RIP_TEXT};line-height:1.65;">${html}</td></tr>
+  </table>`;
+}
+function signature() {
+  return `<p style="margin:26px 0 0;font-family:${FONT_BODY};font-size:15px;line-height:1.6;color:${RIP_TEXT};">À très bientôt,<br><b class="pc-navy-text" style="color:${RIP_NAVY};">L'équipe Paris Conseils</b></p>`;
+}
+
+// ── Helpers conseiller ───────────────────────────────────────────────────────
+function conseillerPrenom(value) {
+  const v = (value || '').toString().trim().toLowerCase();
+  if (v.includes('pereira')) return 'David';
+  if (v.includes('moreau'))  return 'Nicolas';
+  if (v.includes('curtet'))  return 'Corentin';
+  if (!v || v === 'paris conseils' || v === 'paris-conseils') return null;
+  const parts = value.toString().trim().split(/\s+/);
+  const first = parts[0] || '';
+  return first ? (first.charAt(0).toUpperCase() + first.slice(1).toLowerCase()) : null;
+}
+function conseillerComplet(value) {
+  const v = (value || '').toString().trim().toLowerCase();
+  if (v.includes('pereira')) return 'David Pereira';
+  if (v.includes('moreau'))  return 'Nicolas Moreau';
+  if (v.includes('curtet'))  return 'Corentin Curtet';
+  if (!v || v === 'paris conseils' || v === 'paris-conseils') return 'Paris Conseils';
+  return value;
+}
+// Slugs RIP (rip.parisconseils.fr/<slug>) et RDV (parrainage.parisconseils.fr/rdv-<slug>.html)
+function conseillerSlugs(value) {
+  const v = (value || '').toString().trim().toLowerCase();
+  if (v.includes('pereira') || v.includes('david'))    return { rip:'david-pereira',   rdv:'david' };
+  if (v.includes('moreau')  || v.includes('nicolas'))  return { rip:'nicolas-moreau',  rdv:'nicolas' };
+  if (v.includes('curtet')  || v.includes('corentin')) return { rip:'corentin-curtet', rdv:'corentin' };
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MAIL PARRAIN — accusé de réception
+// ═══════════════════════════════════════════════════════════════════════════
+function emailParrain({ parrain, conseiller, filleuls, total }) {
+  const consNom = conseillerComplet(conseiller);
+  const consPrenom = conseillerPrenom(conseiller) || 'votre conseiller';
+  const nb = filleuls.length;
+  const filleulsHtml = filleuls.map(f => `${escapeHtml(f.prenom)} ${escapeHtml(f.nom)}`).join('<br>');
+  const premierPrenom = escapeHtml(filleuls[0] && filleuls[0].prenom || 'votre filleul');
+
+  const body = `
+${p(`Bonjour ${escapeHtml(parrain.prenom)},`)}
+${p(`Nous avons bien reçu votre recommandation. <b>${nb > 1 ? 'Vos proches ont' : premierPrenom + ' a'} été transmis</b> à <b>${escapeHtml(consNom)}</b>, qui prendra contact ${nb > 1 ? 'avec chacun' : 'avec lui'} sous <b>48&nbsp;heures</b>.`)}
+${heroCream(nb > 1 ? 'Vos filleuls' : 'Votre filleul', filleulsHtml, `transmis à ${escapeHtml(consNom)}`)}
+${heroCream('Votre prime potentielle', `${Number(total).toLocaleString('fr-FR')}&nbsp;€`, `versée dès que ${nb > 1 ? 'vos filleuls deviennent clients' : premierPrenom + ' devient client'} · plafond 15&nbsp;000&nbsp;€ par an`)}
+${p(`Vous connaissez d'autres proches qui pourraient bénéficier d'un accompagnement patrimonial&nbsp;? Chaque nouvelle recommandation augmente votre prime.`)}
+${ctaNavy('https://parrainage.parisconseils.fr/parrainage.html', 'Recommander un autre proche')}
+${infoBeige(`<b>Votre RIB&nbsp;:</b> pour le versement de votre prime, vous pourrez nous le communiquer à tout moment par simple retour de mail — aucune urgence, cela n'a aucun impact sur l'enregistrement de votre parrainage.<br><br><b>Confidentialité&nbsp;:</b> en soumettant cette recommandation, vous avez autorisé Paris Conseils à contacter ${nb > 1 ? 'les personnes ci-dessus' : premierPrenom}. Vous pouvez retirer cette autorisation à tout moment en écrivant à <a href="mailto:contact@parisconseils.fr" style="color:${RIP_NAVY};font-weight:600;">contact@parisconseils.fr</a>.`)}
+${signature()}`;
+
+  return baseShell({
+    title: `Merci, ${escapeHtml(parrain.prenom)}`,
+    eyebrow: 'Votre recommandation est bien reçue',
+    body
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MAIL CONSEILLER — notification interne
+// ═══════════════════════════════════════════════════════════════════════════
+function emailConseiller({ parrain, conseiller, filleuls }) {
+  const consPrenom = conseillerPrenom(conseiller) || 'cher conseiller';
+  const nb = filleuls.length;
+  const filleulsHtml = filleuls.map(f => `${escapeHtml(f.prenom)} ${escapeHtml(f.nom)}`).join('<br>');
+  const contact = [];
+  if (parrain.email) contact.push(`<a href="mailto:${escapeHtml(parrain.email)}" style="color:${RIP_NAVY};font-weight:600;">${escapeHtml(parrain.email)}</a>`);
+  if (parrain.tel)   contact.push(`<a href="tel:${escapeHtml(parrain.tel)}" style="color:${RIP_NAVY};font-weight:600;">${escapeHtml(parrain.tel)}</a>`);
+
+  const body = `
+${p(`Bonjour ${escapeHtml(consPrenom)},`)}
+${p(`<b>${escapeHtml(parrain.prenom)} ${escapeHtml(parrain.nom)}</b> vient de vous recommander <b>${nb} nouveau${nb>1?'x':''} filleul${nb>1?'s':''}</b>.`)}
+${heroCream('À contacter sous 48 heures', filleulsHtml, `recommandé${nb>1?'s':''} par ${escapeHtml(parrain.prenom)} ${escapeHtml(parrain.nom)}`)}
+${ctaNavy('https://paris-conseils-dashboard.netlify.app/equipe.html', 'Ouvrir le dashboard équipe')}
+${infoBeige(`<b>Confidentialité RGPD&nbsp;:</b> les coordonnées des filleuls ne figurent pas dans cet e-mail. Ouvrez le dashboard pour consulter nom, e-mail, téléphone, projet et statut, et pour marquer chaque filleul comme contacté.${contact.length ? `<br><br><b>Parrain à remercier&nbsp;:</b> ${escapeHtml(parrain.prenom)} ${escapeHtml(parrain.nom)} — ${contact.join(' · ')}` : ''}`)}
+<p style="margin:26px 0 0;font-family:${FONT_BODY};font-size:15px;line-height:1.6;color:${RIP_TEXT};">Merci de votre réactivité,<br><b class="pc-navy-text" style="color:${RIP_NAVY};">L'équipe Paris Conseils</b></p>`;
+
+  return baseShell({
+    title: `${nb} nouveau${nb>1?'x':''} filleul${nb>1?'s':''} à contacter`,
+    eyebrow: 'Nouvelle recommandation · à traiter sous 48 h',
+    body
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MAIL FILLEUL — annonce + planning conseiller + note patrimoniale (RIP)
+// ═══════════════════════════════════════════════════════════════════════════
+function emailFilleul({ parrain, conseiller, filleul }) {
+  const consNom = conseillerComplet(conseiller);
+  const consPrenom = conseillerPrenom(conseiller);
+  const slugs = conseillerSlugs(conseiller);
+  const hasCons = !!consPrenom;
+  const ripHref = slugs ? `https://rip.parisconseils.fr/${slugs.rip}` : 'https://rip.parisconseils.fr/';
+  const rdvHref = slugs ? `https://parrainage.parisconseils.fr/rdv-${slugs.rdv}.html` : null;
+  const parrainNom = `${escapeHtml(parrain.prenom)} ${escapeHtml(parrain.nom)}`;
+  const parrainPrenom = escapeHtml(parrain.prenom);
+
+  const body = `
+${p(`Bonjour ${escapeHtml(filleul.prenom)},`)}
+${p(`<b>${parrainNom}</b> vous a recommandé auprès de Paris Conseils, cabinet d'<i>ingénierie financière et d'optimisation fiscale</i>.`)}
+${p(`Un proche qui prend le temps de vous recommander, c'est rarement anodin. Notre rôle est d'apporter à chacun de nos clients un <b>accompagnement sur-mesure</b>, dans la plus stricte confidentialité.`)}
+${heroCream('Votre interlocuteur', escapeHtml(consNom), hasCons ? 'prendra contact avec vous sous 48&nbsp;heures' : 'vous contactera dans les meilleurs délais')}
+${rdvHref ? p(`Si vous souhaitez anticiper, vous pouvez consulter directement le planning de ${escapeHtml(consPrenom)} et choisir le créneau qui vous convient le mieux — en visioconférence ou par téléphone, une trentaine de minutes.`) : ''}
+${rdvHref ? ctaNavy(rdvHref, `Consulter le planning de ${escapeHtml(consPrenom)}`) : ''}
+
+${goldBadge('Avant votre rendez-vous')}
+${h2Serif('Connaissez-vous votre note patrimoniale&nbsp;?')}
+${p(`En dix minutes, notre bilan patrimonial en ligne évalue votre situation — endettement, épargne, patrimoine, protection de vos proches, fiscalité — et vous attribue une note de <b>A+</b> (profil exceptionnel) à <b>G−</b> (profil très fragile). Elle situe votre profil sans le juger, et permet à ${escapeHtml(consPrenom || 'votre conseiller')} de préparer votre échange sur du concret&nbsp;: vos points forts, vos leviers, ce qui peut être optimisé.`, 'text-align:center;')}
+${ctaNavy(ripHref, 'Obtenir ma note patrimoniale')}
+${pSoft(`Gratuit et confidentiel. ${hasCons ? `${escapeHtml(consNom)} est déjà sélectionné comme votre conseiller&nbsp;: vous validez simplement l'engagement de confidentialité par un code reçu par e-mail, puis vous répondez à l'essentiel.` : `Vous validez l'engagement de confidentialité par un code reçu par e-mail, puis vous répondez à l'essentiel.`}`)}
+
+${infoBeige(`<b>Aucun engagement, ni juridique ni financier.</b> Cet échange est strictement confidentiel&nbsp;: il sert à comprendre votre situation et vos objectifs, et à voir si un accompagnement sur-mesure — optimisation fiscale, structuration de votre patrimoine, préparation d'un projet — peut vous être utile. ${parrainPrenom} a pensé à vous pour vous rendre service, pas pour vous engager. Si vous préférez ne pas être contacté, il vous suffit de répondre à cet e-mail.`)}
+${signature()}`;
+
+  return baseShell({
+    title: `${parrainPrenom} vous recommande Paris Conseils`,
+    eyebrow: 'Une recommandation pour vous',
+    body
+  });
+}
+
 function starsRow(nLit) {
   const n = Math.max(0, Math.min(10, nLit|0));
   let html = '<div style="text-align:center;font-size:22px;letter-spacing:6px;line-height:1;margin:12px 0;">';
@@ -210,202 +370,6 @@ function blocExplicationPaliers(nbFilleulsApres) {
   </div>`;
 }
 
-function emailParrain({ parrain, conseiller, filleuls, total, nbFilleulsConfirmes }) {
-  const nbConfirmes = (typeof nbFilleulsConfirmes === 'number') ? nbFilleulsConfirmes : 0;
-  const nbApresAjout = nbConfirmes + filleuls.length;
-  const triggersRetro = nbConfirmes < 3 && nbApresAjout >= 3;
-  const conseillerNom = conseillerComplet(conseiller);
-  const nb = filleuls.length;
-
-  const filleulsAutorises = filleuls.map(f =>
-    `  <li style="margin:4px 0;"><b>${escapeHtml(f.prenom)} ${escapeHtml(f.nom)}</b></li>`
-  ).join('\n');
-
-  const filleulsDetails = filleuls.map((f, i) => {
-    const details = [];
-    if (f.email) details.push(escapeHtml(f.email));
-    if (f.tel)   details.push(escapeHtml(f.tel));
-    const suffix = details.length ? `<div style="font-size:13px;color:${RIP_MUTED};margin-top:2px;">${details.join(' &middot; ')}</div>` : '';
-    return `<tr><td style="padding:12px 0;border-bottom:1px solid ${RIP_LINE};">
-      <div style="font-weight:600;color:${RIP_NAVY};font-size:15px;">${i+1}. ${escapeHtml(f.prenom)} ${escapeHtml(f.nom)}</div>${suffix}
-    </td></tr>`;
-  }).join('');
-
-  const retroBlock = triggersRetro
-    ? `<div style="background:${RIP_GOLDT};border:1px solid ${RIP_GOLDS};border-left:4px solid ${RIP_GOLD};border-radius:10px;padding:16px 20px;margin:20px 0;">
-        <div style="font-size:11px;letter-spacing:2px;color:${RIP_GOLD};font-weight:700;text-transform:uppercase;margin-bottom:6px;">Effet rétroactif déclenché</div>
-        <div style="font-size:15px;color:${RIP_NAVY};line-height:1.5;">Avec ce 3<sup>e</sup> filleul, vos 2 premières recommandations passent rétroactivement à <b>1&nbsp;500&nbsp;EUR chacune</b> (complément de 2&nbsp;000&nbsp;EUR).</div>
-      </div>`
-    : '';
-
-  const body = `
-<p style="margin:0 0 14px;">Bonjour ${escapeHtml(parrain.prenom)},</p>
-<p style="margin:0 0 18px;">Nous avons bien reçu votre recommandation. <b>${nb} proche${nb>1?'s ont':' a'} été transmis</b> à votre conseiller <b>${escapeHtml(conseillerNom)}</b>, qui prendra contact avec chacun sous <b>48 heures</b>.</p>
-
-<div style="background:${RIP_BG};border:1px solid ${RIP_LINE};border-radius:12px;padding:18px 22px;margin:18px 0;">
-  <div style="font-size:11px;letter-spacing:2.5px;color:${RIP_GOLD};font-weight:700;text-transform:uppercase;margin-bottom:10px;">Personnes recommandées</div>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${filleulsDetails}</table>
-</div>
-
-<div style="background:${RIP_GOLDT};border:1px solid ${RIP_GOLDS};border-radius:12px;padding:18px 22px;margin:18px 0;">
-  <div style="font-size:11px;letter-spacing:2.5px;color:${RIP_GOLD};font-weight:700;text-transform:uppercase;margin-bottom:8px;">Autorisation RGPD</div>
-  <div style="font-size:14px;color:${RIP_INK2};line-height:1.5;">En soumettant ce formulaire, vous avez donné votre autorisation explicite à Paris Conseils pour contacter :
-    <ul style="margin:8px 0 4px 0;padding-left:20px;">${filleulsAutorises}</ul>
-  </div>
-  <div style="font-size:12px;color:${RIP_MUTED};margin-top:10px;">Conforme RGPD. Retrait possible à tout moment à <a href="mailto:contact@parisconseils.fr" style="color:${RIP_NAVY};text-decoration:none;">contact@parisconseils.fr</a>.</div>
-</div>
-
-<div style="background:${RIP_NAVY};border-radius:12px;padding:20px 22px;margin:20px 0;text-align:center;">
-  <div style="font-size:11px;letter-spacing:2.5px;color:${RIP_GOLDS};font-weight:700;text-transform:uppercase;margin-bottom:4px;">Votre progression</div>
-  ${starsRow(Math.min(nbApresAjout,10))}
-  <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:${RIP_GOLDS};margin-top:4px;">${Math.min(nbApresAjout,10)} filleul${nbApresAjout>1?'s':''} sur 10</div>
-</div>
-${retroBlock}
-${blocExplicationPaliers(nbApresAjout)}
-
-<div style="background:${RIP_NAVY};border-radius:12px;padding:22px 24px;margin:20px 0;text-align:center;">
-  <div style="font-size:11px;letter-spacing:2.5px;color:${RIP_GOLDS};font-weight:700;text-transform:uppercase;margin-bottom:6px;">Votre potentiel total</div>
-  <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:34px;font-weight:600;color:${RIP_GOLDS};line-height:1;">${total.toLocaleString('fr-FR')}&nbsp;EUR</div>
-  <div style="font-size:12px;color:#cdd5e5;margin-top:6px;font-style:italic;">selon les filleuls qui souscrivent · plafond 15 000 EUR / an</div>
-</div>
-
-<p style="text-align:center;margin:26px 0;">
-  <a href="https://parrainage.parisconseils.fr/parrainage.html" style="display:inline-block;background:${RIP_NAVY};color:#fff;padding:14px 30px;text-decoration:none;border-radius:10px;font-weight:600;font-size:14px;letter-spacing:1px;">Recommander un nouveau filleul</a>
-</p>
-
-<p style="margin:20px 0 0;">Merci de votre confiance,<br><b style="color:${RIP_NAVY};">L'équipe Paris Conseils</b></p>`;
-
-  return baseShell({
-    title: `Recommandation bien reçue, merci ${escapeHtml(parrain.prenom)}`,
-    eyebrow: `Parrainage · ${nb} filleul${nb>1?'s':''} transmis à ${escapeHtml(conseillerNom)}`,
-    subtitle: `Conseiller ${escapeHtml(conseillerNom)} · contact sous 48 h`,
-    body
-  });
-}
-
-// v200aa — Helpers pour transformer le slug conseiller en prénom / nom complet
-function conseillerPrenom(value) {
-  const v = (value || '').toString().trim().toLowerCase();
-  if (v.includes('pereira')) return 'David';
-  if (v.includes('moreau'))  return 'Nicolas';
-  if (v.includes('curtet'))  return 'Corentin';
-  if (!v || v === 'paris conseils' || v === 'paris-conseils') return null;
-  // Fallback : 1er mot capitalisé
-  const parts = value.toString().trim().split(/\s+/);
-  const p = parts[0] || '';
-  return p ? (p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()) : null;
-}
-function conseillerComplet(value) {
-  const v = (value || '').toString().trim().toLowerCase();
-  if (v.includes('pereira')) return 'David Pereira';
-  if (v.includes('moreau'))  return 'Nicolas Moreau';
-  if (v.includes('curtet'))  return 'Corentin Curtet';
-  if (!v || v === 'paris conseils' || v === 'paris-conseils') return 'Paris Conseils';
-  return value;
-}
-
-// v200ak — Mail conseiller minimaliste : juste une notification + lien dashboard.
-// On NE met PAS les coordonnées des filleuls dans le mail (sécurité + RGPD).
-// Le conseiller doit aller sur le dashboard pour voir les détails et marquer comme contacté.
-function emailConseiller({ parrain, conseiller, filleuls }) {
-  const prenomCons = conseillerPrenom(conseiller) || 'cher conseiller';
-  const nb = filleuls.length;
-  const contactBits = [];
-  if (parrain.email) contactBits.push(`<a href="mailto:${escapeHtml(parrain.email)}" style="color:${RIP_NAVY};">${escapeHtml(parrain.email)}</a>`);
-  if (parrain.tel)   contactBits.push(`<a href="tel:${escapeHtml(parrain.tel)}" style="color:${RIP_NAVY};">${escapeHtml(parrain.tel)}</a>`);
-  const contactSuffix = contactBits.length ? ` (${contactBits.join(' &middot; ')})` : '';
-
-  const body = `
-<p style="margin:0 0 14px;">Bonjour <b>${escapeHtml(prenomCons)}</b>,</p>
-<p style="margin:0 0 18px;">Nouvelle recommandation de <b>${escapeHtml(parrain.prenom)} ${escapeHtml(parrain.nom)}</b>${contactSuffix}.</p>
-
-<div style="background:${RIP_GOLDT};border:1px solid ${RIP_GOLDS};border-left:4px solid ${RIP_GOLD};border-radius:12px;padding:18px 22px;margin:18px 0;">
-  <div style="font-size:11px;letter-spacing:2.5px;color:${RIP_GOLD};font-weight:700;text-transform:uppercase;margin-bottom:8px;">À traiter sous 48 h</div>
-  <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:26px;font-weight:600;color:${RIP_NAVY};line-height:1.25;">${nb} nouveau${nb>1?'x':''} filleul${nb>1?'s':''} à contacter</div>
-  <div style="font-size:13px;color:${RIP_MUTED};margin-top:10px;line-height:1.55;">Pour des raisons de confidentialité (RGPD), les coordonnées des filleuls ne sont pas dans cet email. Connectez-vous au dashboard équipe pour consulter les détails complets et marquer chaque filleul comme contacté.</div>
-</div>
-
-<p style="text-align:center;margin:24px 0;">
-  <a href="https://paris-conseils-dashboard.netlify.app/equipe.html" style="display:inline-block;background:${RIP_NAVY};color:#fff;padding:14px 30px;text-decoration:none;border-radius:10px;font-weight:600;font-size:14px;letter-spacing:1px;">Ouvrir le dashboard équipe</a>
-</p>
-
-<p style="margin:18px 0 0;font-size:13px;color:${RIP_MUTED};font-style:italic;text-align:center;">Le dashboard vous montre nom, email, téléphone, projet et statut de chaque filleul.</p>
-
-<p style="margin:22px 0 0;">Merci de votre réactivité,<br><b style="color:${RIP_NAVY};">L'équipe Paris Conseils</b></p>`;
-  return baseShell({
-    title: 'Nouveau parrainage à traiter',
-    eyebrow: `Notification conseiller · ${nb} filleul${nb>1?'s':''}`,
-    subtitle: 'À traiter sous 48 h via le dashboard équipe',
-    body
-  });
-}
-
-function emailFilleul({ parrain, conseiller, filleul }) {
-  const cleanCons = (conseiller || '').toString().trim();
-  const lc = cleanCons.toLowerCase();
-  const hasSpecific = lc && lc !== 'paris conseils' && lc !== 'paris-conseils';
-  const map = { 'pereira':'David Pereira','moreau':'Nicolas Moreau','curtet':'Corentin Curtet',
-    'david pereira':'David Pereira','nicolas moreau':'Nicolas Moreau','corentin curtet':'Corentin Curtet' };
-  const conseillerDisplay = hasSpecific ? (map[lc] || cleanCons) : 'Un conseiller Paris Conseils';
-  const slug = lc.indexOf('pereira')!==-1 || lc.indexOf('david')!==-1 ? 'david'
-             : lc.indexOf('moreau')!==-1  || lc.indexOf('nicolas')!==-1 ? 'nicolas'
-             : lc.indexOf('curtet')!==-1  || lc.indexOf('corentin')!==-1 ? 'corentin'
-             : null;
-  const contactPhrase = hasSpecific
-    ? `<b>${escapeHtml(conseillerDisplay)}</b> prendra contact avec vous sous 48&nbsp;heures.`
-    : `<b>${escapeHtml(conseillerDisplay)}</b> vous contactera dans les meilleurs d&eacute;lais.`;
-
-  const rdvLine = slug
-    ? `\n<p><b>Prendre rendez-vous en 1 clic</b> : choisissez le cr&eacute;neau qui vous arrange sur l'agenda de ${escapeHtml(conseillerDisplay)}. RDV t&eacute;l&eacute;phonique ou visio Google Meet, 30&nbsp;min, sans engagement.<br>
-&raquo; <a href="https://parrainage.parisconseils.fr/rdv-${slug}.html"><b>Prendre rendez-vous</b></a></p>`
-    : '';
-
-  const rdvBlock = slug
-    ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:20px 0;">
-      <tr><td class="pc-navy-bg" bgcolor="${RIP_NAVY}" background="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQI12PgkrP/DwACBAFndrNaSAAAAABJRU5ErkJggg==" style="background:${RIP_NAVY};background-color:${RIP_NAVY};background-image:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQI12PgkrP/DwACBAFndrNaSAAAAABJRU5ErkJggg==');border-radius:12px;padding:22px 24px;text-align:center;">
-        <div class="pc-gold-soft-text" style="font-size:11px;letter-spacing:2.5px;color:${RIP_GOLDS};font-weight:700;text-transform:uppercase;margin-bottom:10px;">Prenez rendez-vous en 1 clic</div>
-        <div class="pc-white-text" style="font-family:'Cormorant Garamond',Georgia,serif;font-size:22px;color:#ffffff;font-weight:600;line-height:1.3;margin-bottom:8px;">Faites connaissance avec ${escapeHtml(conseillerDisplay)}</div>
-        <div class="pc-cream-text" style="font-size:14px;color:#cdd5e5;margin-bottom:18px;line-height:1.5;">Choisissez le créneau qui vous arrange sur son agenda.<br>RDV téléphonique ou visio Google Meet · 30 min · sans engagement.</div>
-        <a href="https://parrainage.parisconseils.fr/rdv-${slug}.html" style="display:inline-block;background:${RIP_GOLDS};color:${RIP_NAVY};padding:14px 30px;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;letter-spacing:1px;">Prendre rendez-vous</a>
-      </td></tr></table>`
-    : '';
-
-  const body = `
-<p style="margin:0 0 14px;">Bonjour ${escapeHtml(filleul.prenom)},</p>
-<p style="margin:0 0 14px;"><b>${escapeHtml(parrain.prenom)} ${escapeHtml(parrain.nom)}</b> vous a recommandé auprès de Paris Conseils, cabinet d'<i>ingénierie financière et d'optimisation fiscale</i>.</p>
-<p style="margin:0 0 18px;">Un proche qui prend le temps de vous recommander, c'est rarement anodin. Notre rôle est d'apporter à chacun de nos clients un <b>accompagnement sur-mesure</b>, dans la plus stricte confidentialité.</p>
-
-<div style="background:${RIP_BG};border:1px solid ${RIP_LINE};border-radius:12px;padding:20px 24px;margin:18px 0;text-align:center;">
-  <div style="font-size:11px;letter-spacing:2.5px;color:${RIP_GOLD};font-weight:700;text-transform:uppercase;margin-bottom:8px;">Votre interlocuteur</div>
-  <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:26px;color:${RIP_NAVY};font-weight:600;">${escapeHtml(conseillerDisplay)}</div>
-  <div style="font-size:13px;color:${RIP_MUTED};margin-top:6px;font-style:italic;">${hasSpecific ? 'prendra contact avec vous sous 48 heures' : 'vous contactera dans les meilleurs délais'}</div>
-</div>
-
-${rdvBlock}
-
-<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:20px 0;">
-  <tr><td style="background:${RIP_GOLDT};border:1px solid ${RIP_GOLDS};border-radius:12px;padding:22px 24px;">
-    <div style="font-size:11px;letter-spacing:2.5px;color:${RIP_GOLD};font-weight:700;text-transform:uppercase;margin-bottom:10px;text-align:center;">Avant votre rendez-vous — optionnel</div>
-    <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:22px;color:${RIP_NAVY};font-weight:600;line-height:1.3;margin-bottom:10px;text-align:center;">Obtenez votre note patrimoniale</div>
-    <div style="font-size:14px;color:${RIP_INK2};line-height:1.6;margin-bottom:16px;text-align:center;">Notre bilan patrimonial en ligne évalue votre situation en <b>5 minutes</b> et vous restitue une note sur 100 assortie de recommandations concrètes. Confidentiel, gratuit, sans création de compte.</div>
-    <div style="text-align:center;">
-      <a href="https://rip.parisconseils.fr/" style="display:inline-block;background:${RIP_NAVY};color:#ffffff;padding:13px 28px;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;letter-spacing:0.5px;">Faire mon bilan gratuit</a>
-    </div>
-  </td></tr>
-</table>
-
-<p style="margin:20px 0 14px;">${contactPhrase} Cette première conversation est <b>sans engagement</b> et strictement confidentielle. Elle sert à comprendre votre situation, vos objectifs, et à voir de quelle manière nous pouvons vous être utile.</p>
-
-<p style="margin:20px 0 0;font-size:13px;color:${RIP_MUTED};">Si vous préférez ne pas être contacté, répondez simplement à cet email — nous respecterons votre choix immédiatement.</p>
-
-<p style="margin:16px 0 0;">À très bientôt,<br><b style="color:${RIP_NAVY};">L'équipe Paris Conseils</b></p>`;
-  return baseShell({
-    title: `${escapeHtml(parrain.prenom)} vous recommande Paris Conseils`,
-    eyebrow: 'Une recommandation pour vous',
-    subtitle: 'Accompagnement confidentiel · ingénierie patrimoniale',
-    body
-  });
-}
 
 // v200h — Stockage persistant via Netlify Blobs
 // Chaque parrainage est enregistré dans le store "parrainages" avec un UUID.
