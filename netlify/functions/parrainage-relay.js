@@ -19,7 +19,7 @@
 //                          Sinon, l'email conseiller fallback vers contact@parisconseils.fr
 
 // v200am — Bascule Resend → SMTP direct via parisconseils.fr
-// build-stamp: 2026-09-09-v276-RIP-EXACT
+// build-stamp: 2026-09-09-v277-HISTO-FRISE
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 
@@ -74,11 +74,11 @@ const escapeHtml = (s) => String(s||'').replace(/[&<>"']/g, c => ({ '&':'&amp;',
 // Squelette style dashboard rip.parisconseils.fr : header navy avec logo blanc,
 // filet doré, cards blanches, footer navy sobre.
 // ═══════════════════════════════════════════════════════════════════════════
-// v276 — Templates mails parrainage alignés STRICTEMENT sur les mails RIP
-// (rip.parisconseils.fr : "C'est confirmé" / "C'est demain").
-// Typo : H1 Cormorant Garamond 700 34px navy · corps 15px #1a1a1a · eyebrow or
-// uppercase 12px · hero cream (#faf5e6, bord #e8d9b5) · badge or contour ·
-// CTA navy 700 16px · info beige 14px. Dark-mode Apple Mail : background-image PNG.
+// v277 — Templates mails parrainage alignés sur les mails RIP (rip.parisconseils.fr)
+// Tailles calées sur le mail "C'est confirmé" : H1 Cormorant 700 30px · hero 26px ·
+// corps 14.5px #1a1a1a · eyebrow 11.5px · CTA 15px. Dark-mode Apple Mail : PNG bg.
+// Parrain : historique année + paliers + rétroactivité + 31 décembre.
+// Filleul : planning conseiller + frise couleur A+→G− (moyenne nationale / vous) + RIP.
 // ═══════════════════════════════════════════════════════════════════════════
 const PX_NAVY_PNG  = "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQI12PgkrP/DwACBAFndrNaSAAAAABJRU5ErkJggg==')";
 const PX_GOLD_PNG  = "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQI12O4wbnyPwAFTQKC2LnHrgAAAABJRU5ErkJggg==')";
@@ -89,8 +89,10 @@ const RIP_CREAM      = '#faf5e6';
 const RIP_CREAM_LINE = '#e8d9b5';
 const RIP_TEXT       = '#1a1a1a';
 const RIP_TEXT_SOFT  = '#4a5568';
-const FONT_BODY = "Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif";
+const FONT_BODY  = "Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif";
 const FONT_SERIF = "'Cormorant Garamond',Georgia,'Times New Roman',serif";
+// Note moyenne nationale affichée sur la frise (lettre A..G). Variable Netlify RIP_NOTE_MOYENNE.
+const RIP_NOTE_MOYENNE = (process.env.RIP_NOTE_MOYENNE || 'C').toString().trim().toUpperCase().charAt(0);
 
 function baseShell(opts) {
   const title    = opts && opts.title    ? opts.title    : 'Paris Conseils';
@@ -123,25 +125,25 @@ function baseShell(opts) {
   [data-ogsc] .pc-text { color:${RIP_TEXT} !important; }
 </style>
 </head>
-<body class="pc-text" style="margin:0;padding:0;background:${RIP_BG};font-family:${FONT_BODY};color:${RIP_TEXT};font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;">
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:${RIP_BG};padding:32px 12px;">
+<body class="pc-text" style="margin:0;padding:0;background:${RIP_BG};font-family:${FONT_BODY};color:${RIP_TEXT};font-size:14.5px;line-height:1.6;-webkit-font-smoothing:antialiased;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:${RIP_BG};padding:28px 12px;">
     <tr><td align="center">
-      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="640" ${whiteTd} style="max-width:640px;${whiteStyle}border-radius:14px;overflow:hidden;border:1px solid ${RIP_LINE};">
-        <tr><td class="pc-navy-bg" bgcolor="${RIP_NAVY}" background="${PX_NAVY_ATTR}" style="background:${RIP_NAVY};background-color:${RIP_NAVY};background-image:${PX_NAVY_PNG};background-repeat:repeat;padding:30px 32px;text-align:center;">
-          <img src="${RIP_LOGO}" alt="Paris Conseils — Ingénierie financière & optimisation fiscale" width="260" height="104" style="display:block;height:auto;max-width:260px;width:100%;border:0;outline:none;text-decoration:none;margin:0 auto;">
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="620" ${whiteTd} style="max-width:620px;${whiteStyle}border-radius:14px;overflow:hidden;border:1px solid ${RIP_LINE};">
+        <tr><td class="pc-navy-bg" bgcolor="${RIP_NAVY}" background="${PX_NAVY_ATTR}" style="background:${RIP_NAVY};background-color:${RIP_NAVY};background-image:${PX_NAVY_PNG};background-repeat:repeat;padding:28px 32px;text-align:center;">
+          <img src="${RIP_LOGO}" alt="Paris Conseils — Ingénierie financière & optimisation fiscale" width="240" height="96" style="display:block;height:auto;max-width:240px;width:100%;border:0;outline:none;text-decoration:none;margin:0 auto;">
         </td></tr>
         <tr><td bgcolor="${RIP_GOLD}" style="height:3px;background:${RIP_GOLD};background-color:${RIP_GOLD};background-image:${PX_GOLD_PNG};line-height:0;font-size:0;">&nbsp;</td></tr>
-        <tr><td ${whiteTd} style="${whiteStyle}padding:34px 40px 0 40px;">
-          ${eyebrow ? `<div class="pc-gold-text" style="font-family:${FONT_BODY};font-size:12px;letter-spacing:2px;color:${RIP_GOLD};font-weight:700;text-transform:uppercase;margin:0 0 10px;">${eyebrow}</div>` : ''}
-          <h1 class="pc-navy-text" style="font-family:${FONT_SERIF};font-size:34px;font-weight:700;color:${RIP_NAVY};line-height:1.15;margin:0 0 22px;">${title}</h1>
+        <tr><td ${whiteTd} style="${whiteStyle}padding:30px 38px 0 38px;">
+          ${eyebrow ? `<div class="pc-gold-text" style="font-family:${FONT_BODY};font-size:11.5px;letter-spacing:2px;color:${RIP_GOLD};font-weight:700;text-transform:uppercase;margin:0 0 8px;">${eyebrow}</div>` : ''}
+          <h1 class="pc-navy-text" style="font-family:${FONT_SERIF};font-size:30px;font-weight:700;color:${RIP_NAVY};line-height:1.15;margin:0 0 20px;">${title}</h1>
         </td></tr>
-        <tr><td ${whiteTd} class="pc-white-card pc-text" style="${whiteStyle}padding:0 40px 36px 40px;font-family:${FONT_BODY};font-size:15px;line-height:1.65;color:${RIP_TEXT};">${body}</td></tr>
-        <tr><td class="pc-navy-bg" bgcolor="${RIP_NAVY}" background="${PX_NAVY_ATTR}" style="background:${RIP_NAVY};background-color:${RIP_NAVY};background-image:${PX_NAVY_PNG};background-repeat:repeat;padding:22px 34px;text-align:center;font-family:${FONT_BODY};font-size:12px;">
-          <div style="color:${RIP_GOLDS};letter-spacing:1.5px;margin-bottom:6px;">Paris Conseils &middot; Ingénierie financière & optimisation fiscale</div>
+        <tr><td ${whiteTd} class="pc-white-card pc-text" style="${whiteStyle}padding:0 38px 32px 38px;font-family:${FONT_BODY};font-size:14.5px;line-height:1.65;color:${RIP_TEXT};">${body}</td></tr>
+        <tr><td class="pc-navy-bg" bgcolor="${RIP_NAVY}" background="${PX_NAVY_ATTR}" style="background:${RIP_NAVY};background-color:${RIP_NAVY};background-image:${PX_NAVY_PNG};background-repeat:repeat;padding:20px 32px;text-align:center;font-family:${FONT_BODY};font-size:11.5px;">
+          <div style="color:${RIP_GOLDS};letter-spacing:1.5px;margin-bottom:5px;">Paris Conseils &middot; Ingénierie financière & optimisation fiscale</div>
           <div style="color:#94a0b8;">Confidentialité absolue &middot; Secret professionnel</div>
         </td></tr>
       </table>
-      <div style="max-width:640px;padding:16px 12px 0;color:${RIP_MUTED};font-family:${FONT_BODY};font-size:11px;text-align:center;">
+      <div style="max-width:620px;padding:14px 12px 0;color:${RIP_MUTED};font-family:${FONT_BODY};font-size:11px;text-align:center;">
         <a href="https://parrainage.parisconseils.fr" style="color:${RIP_MUTED};text-decoration:none;">parrainage.parisconseils.fr</a>
         &nbsp;&middot;&nbsp;
         <a href="mailto:contact@parisconseils.fr" style="color:${RIP_MUTED};text-decoration:none;">contact@parisconseils.fr</a>
@@ -153,42 +155,61 @@ function baseShell(opts) {
 
 // ── Briques RIP ──────────────────────────────────────────────────────────────
 function p(html, extra) {
-  return `<p style="margin:0 0 16px;font-family:${FONT_BODY};font-size:15px;line-height:1.65;color:${RIP_TEXT};${extra||''}">${html}</p>`;
+  return `<p style="margin:0 0 14px;font-family:${FONT_BODY};font-size:14.5px;line-height:1.65;color:${RIP_TEXT};${extra||''}">${html}</p>`;
 }
-function pSoft(html) {
-  return `<p style="margin:0 0 16px;font-family:${FONT_BODY};font-size:14px;line-height:1.65;color:${RIP_TEXT_SOFT};">${html}</p>`;
+function pSoft(html, extra) {
+  return `<p style="margin:0 0 14px;font-family:${FONT_BODY};font-size:13.5px;line-height:1.6;color:${RIP_TEXT_SOFT};${extra||''}">${html}</p>`;
 }
 function heroCream(eyebrow, headline, note) {
-  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:6px 0 22px;">
-    <tr><td class="pc-cream" bgcolor="${RIP_CREAM}" style="background:${RIP_CREAM};background-color:${RIP_CREAM};border:1px solid ${RIP_CREAM_LINE};border-radius:12px;padding:24px 28px;text-align:center;">
-      <div class="pc-gold-text" style="font-family:${FONT_BODY};font-size:12px;letter-spacing:2px;color:${RIP_GOLD};font-weight:700;text-transform:uppercase;margin-bottom:12px;">${eyebrow}</div>
-      <div class="pc-navy-text" style="font-family:${FONT_SERIF};font-size:30px;line-height:1.2;color:${RIP_NAVY};font-weight:700;">${headline}</div>
-      ${note ? `<div style="font-family:${FONT_BODY};font-size:14px;color:${RIP_TEXT_SOFT};margin-top:10px;line-height:1.5;">${note}</div>` : ''}
+  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:4px 0 20px;">
+    <tr><td class="pc-cream" bgcolor="${RIP_CREAM}" style="background:${RIP_CREAM};background-color:${RIP_CREAM};border:1px solid ${RIP_CREAM_LINE};border-radius:12px;padding:20px 24px;text-align:center;">
+      <div class="pc-gold-text" style="font-family:${FONT_BODY};font-size:11.5px;letter-spacing:2px;color:${RIP_GOLD};font-weight:700;text-transform:uppercase;margin-bottom:10px;">${eyebrow}</div>
+      <div class="pc-navy-text" style="font-family:${FONT_SERIF};font-size:26px;line-height:1.2;color:${RIP_NAVY};font-weight:700;">${headline}</div>
+      ${note ? `<div style="font-family:${FONT_BODY};font-size:13.5px;color:${RIP_TEXT_SOFT};margin-top:8px;line-height:1.5;">${note}</div>` : ''}
     </td></tr>
   </table>`;
 }
 function goldBadge(label) {
-  return `<table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:26px auto 14px;">
-    <tr><td class="pc-cream" bgcolor="${RIP_CREAM}" style="background:${RIP_CREAM};border:1px solid ${RIP_GOLDS};border-radius:999px;padding:9px 20px;font-family:${FONT_BODY};font-size:11px;letter-spacing:2px;color:${RIP_GOLD};font-weight:700;text-transform:uppercase;white-space:nowrap;">${label}</td></tr>
+  return `<table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:22px auto 12px;">
+    <tr><td class="pc-cream" bgcolor="${RIP_CREAM}" style="background:${RIP_CREAM};border:1px solid ${RIP_GOLDS};border-radius:999px;padding:8px 18px;font-family:${FONT_BODY};font-size:11px;letter-spacing:2px;color:${RIP_GOLD};font-weight:700;text-transform:uppercase;white-space:nowrap;">${label}</td></tr>
   </table>`;
 }
 function h2Serif(text) {
-  return `<div class="pc-navy-text" style="font-family:${FONT_SERIF};font-size:26px;font-weight:700;color:${RIP_NAVY};line-height:1.2;text-align:center;margin:0 0 14px;">${text}</div>`;
+  return `<div class="pc-navy-text" style="font-family:${FONT_SERIF};font-size:24px;font-weight:700;color:${RIP_NAVY};line-height:1.2;text-align:center;margin:0 0 12px;">${text}</div>`;
 }
 function ctaNavy(href, label) {
-  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:6px 0 22px;">
+  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:4px 0 20px;">
     <tr><td align="center">
-      <a href="${href}" class="pc-white-text" style="display:inline-block;background:${RIP_NAVY};background-color:${RIP_NAVY};color:#ffffff;padding:16px 40px;text-decoration:none;border-radius:10px;font-family:${FONT_BODY};font-weight:700;font-size:16px;line-height:1.2;">${label}</a>
+      <a href="${href}" class="pc-white-text" style="display:inline-block;background:${RIP_NAVY};background-color:${RIP_NAVY};color:#ffffff;padding:14px 36px;text-decoration:none;border-radius:10px;font-family:${FONT_BODY};font-weight:700;font-size:15px;line-height:1.2;">${label}</a>
     </td></tr>
   </table>`;
 }
 function infoBeige(html) {
-  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:8px 0 0;">
-    <tr><td class="pc-cream" bgcolor="${RIP_CREAM}" style="background:${RIP_CREAM};background-color:${RIP_CREAM};border:1px solid ${RIP_CREAM_LINE};border-radius:10px;padding:18px 22px;font-family:${FONT_BODY};font-size:14px;color:${RIP_TEXT};line-height:1.65;">${html}</td></tr>
+  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:6px 0 0;">
+    <tr><td class="pc-cream" bgcolor="${RIP_CREAM}" style="background:${RIP_CREAM};background-color:${RIP_CREAM};border:1px solid ${RIP_CREAM_LINE};border-radius:10px;padding:16px 20px;font-family:${FONT_BODY};font-size:13.5px;color:${RIP_TEXT};line-height:1.65;">${html}</td></tr>
   </table>`;
 }
-function signature() {
-  return `<p style="margin:26px 0 0;font-family:${FONT_BODY};font-size:15px;line-height:1.6;color:${RIP_TEXT};">À très bientôt,<br><b class="pc-navy-text" style="color:${RIP_NAVY};">L'équipe Paris Conseils</b></p>`;
+function signature(closing) {
+  return `<p style="margin:24px 0 0;font-family:${FONT_BODY};font-size:14.5px;line-height:1.6;color:${RIP_TEXT};">${closing || 'À très bientôt'},<br><b class="pc-navy-text" style="color:${RIP_NAVY};">L'équipe Paris Conseils</b></p>`;
+}
+
+// Frise A+ → G− (7 cases colorées) avec marqueurs "Moyenne nationale" et "Vous ?"
+function noteScale(avgLetter) {
+  const scale = [
+    { l:'A', c:'#1f7a4d' }, { l:'B', c:'#3a9a5a' }, { l:'C', c:'#8fbf3f' },
+    { l:'D', c:'#e2b93b' }, { l:'E', c:'#e78f2e' }, { l:'F', c:'#d9562b' }, { l:'G', c:'#b3261e' }
+  ];
+  const avg = scale.findIndex(s => s.l === avgLetter);
+  const cells = scale.map(s => `<td align="center" style="padding:0 2px;"><div style="background:${s.c};color:#ffffff;font-family:${FONT_BODY};font-weight:700;font-size:13px;line-height:30px;height:30px;border-radius:6px;">${s.l}</div></td>`).join('');
+  const marks = scale.map((s,i) => {
+    if (i === avg) return `<td align="center" style="padding:6px 2px 0;font-family:${FONT_BODY};font-size:10px;letter-spacing:1px;color:${RIP_TEXT_SOFT};text-transform:uppercase;line-height:1.3;">▲<br>Moyenne<br>nationale</td>`;
+    return `<td style="padding:6px 2px 0;"></td>`;
+  }).join('');
+  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:14px 0 6px;">
+    <tr><td style="font-family:${FONT_BODY};font-size:11px;letter-spacing:1.5px;color:${RIP_TEXT_SOFT};text-transform:uppercase;padding-bottom:6px;">A+ profil exceptionnel</td><td align="right" style="font-family:${FONT_BODY};font-size:11px;letter-spacing:1.5px;color:${RIP_TEXT_SOFT};text-transform:uppercase;padding-bottom:6px;">G− profil très fragile</td></tr>
+    <tr><td colspan="2"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr>${cells}</tr><tr>${marks}</tr></table></td></tr>
+    <tr><td colspan="2" align="center" style="padding-top:10px;font-family:${FONT_SERIF};font-size:20px;font-weight:700;color:${RIP_GOLD};">Et vous&nbsp;? <span class="pc-navy-text" style="color:${RIP_NAVY};">?</span></td></tr>
+  </table>`;
 }
 
 // ── Helpers conseiller ───────────────────────────────────────────────────────
@@ -210,7 +231,6 @@ function conseillerComplet(value) {
   if (!v || v === 'paris conseils' || v === 'paris-conseils') return 'Paris Conseils';
   return value;
 }
-// Slugs RIP (rip.parisconseils.fr/<slug>) et RDV (parrainage.parisconseils.fr/rdv-<slug>.html)
 function conseillerSlugs(value) {
   const v = (value || '').toString().trim().toLowerCase();
   if (v.includes('pereira') || v.includes('david'))    return { rip:'david-pereira',   rdv:'david' };
@@ -218,62 +238,92 @@ function conseillerSlugs(value) {
   if (v.includes('curtet')  || v.includes('corentin')) return { rip:'corentin-curtet', rdv:'corentin' };
   return null;
 }
+const ordinal = (n) => n === 1 ? '1<sup>er</sup>' : `${n}<sup>e</sup>`;
+const eur = (n) => `${Number(n).toLocaleString('fr-FR')}&nbsp;€`;
 
 // ═══════════════════════════════════════════════════════════════════════════
-// MAIL PARRAIN — accusé de réception
+// MAIL PARRAIN — accusé + historique + paliers + rétroactivité + 31 décembre
 // ═══════════════════════════════════════════════════════════════════════════
-function emailParrain({ parrain, conseiller, filleuls, total }) {
+function emailParrain({ parrain, conseiller, filleuls, total, nbAvant, nbApres }) {
   const consNom = conseillerComplet(conseiller);
-  const consPrenom = conseillerPrenom(conseiller) || 'votre conseiller';
   const nb = filleuls.length;
+  const avant = Math.max(0, nbAvant | 0);
+  const apres = Math.max(nb, nbApres | 0);
   const filleulsHtml = filleuls.map(f => `${escapeHtml(f.prenom)} ${escapeHtml(f.nom)}`).join('<br>');
   const premierPrenom = escapeHtml(filleuls[0] && filleuls[0].prenom || 'votre filleul');
+  const year = new Date().getFullYear();
+
+  // Prime de CE parrainage (marginale) et cumul si tout se concrétise
+  const primeCe = cumulAt(apres) - cumulAt(avant);
+  const cumulApres = cumulAt(apres);
+
+  // Message d'étape selon le rang atteint
+  let etape;
+  if (apres === 1) {
+    etape = `C'est votre <b>${ordinal(1)} parrainage</b> de l'année&nbsp;: <b>${eur(500)}</b> dès que ${premierPrenom} devient client. Au 2<sup>e</sup>, encore ${eur(500)}. Et au <b>3<sup>e</sup></b>, le programme change de dimension&nbsp;: <b>${eur(1500)}</b> pour le 3<sup>e</sup> <i>et</i> vos deux premiers sont revalorisés à ${eur(1500)} chacun — soit <b>${eur(4500)}</b> cumulés.`;
+  } else if (apres === 2) {
+    etape = `C'est votre <b>2<sup>e</sup> parrainage</b> de l'année&nbsp;: <b>${eur(500)}</b> supplémentaires dès que ${premierPrenom} devient client, soit ${eur(1000)} cumulés. <b>Au 3<sup>e</sup>, tout bascule&nbsp;:</b> ${eur(1500)} pour le 3<sup>e</sup> <i>et</i> vos deux premiers sont revalorisés rétroactivement à ${eur(1500)} chacun — <b>${eur(4500)}</b> cumulés d'un coup.`;
+  } else if (apres === 3) {
+    etape = `C'est votre <b>3<sup>e</sup> parrainage</b> de l'année — le palier qui change tout&nbsp;: <b>${eur(1500)}</b> pour celui-ci, et vos deux premiers sont revalorisés rétroactivement à ${eur(1500)} chacun. Soit <b>${eur(4500)}</b> cumulés si les trois se concrétisent. Ensuite, ${eur(1500)} par filleul supplémentaire.`;
+  } else if (apres < 10) {
+    etape = `C'est votre <b>${ordinal(apres)} parrainage</b> de l'année&nbsp;: <b>${eur(1500)}</b> de plus dès concrétisation, soit <b>${eur(cumulApres)}</b> cumulés. Il vous reste ${10 - apres} parrainage${10-apres>1?'s':''} possible${10-apres>1?'s':''} avant le plafond de ${eur(15000)}.`;
+  } else {
+    etape = `C'est votre <b>${ordinal(apres)} parrainage</b> de l'année&nbsp;: vous atteignez le <b>plafond de ${eur(15000)}</b>. Bravo.`;
+  }
 
   const body = `
 ${p(`Bonjour ${escapeHtml(parrain.prenom)},`)}
 ${p(`Nous avons bien reçu votre recommandation. <b>${nb > 1 ? 'Vos proches ont' : premierPrenom + ' a'} été transmis</b> à <b>${escapeHtml(consNom)}</b>, qui prendra contact ${nb > 1 ? 'avec chacun' : 'avec lui'} sous <b>48&nbsp;heures</b>.`)}
 ${heroCream(nb > 1 ? 'Vos filleuls' : 'Votre filleul', filleulsHtml, `transmis à ${escapeHtml(consNom)}`)}
-${heroCream('Votre prime potentielle', `${Number(total).toLocaleString('fr-FR')}&nbsp;€`, `versée dès que ${nb > 1 ? 'vos filleuls deviennent clients' : premierPrenom + ' devient client'} · plafond 15&nbsp;000&nbsp;€ par an`)}
-${p(`Vous connaissez d'autres proches qui pourraient bénéficier d'un accompagnement patrimonial&nbsp;? Chaque nouvelle recommandation augmente votre prime.`)}
+${heroCream(`Votre ${ordinal(apres)} parrainage ${year}`, `${eur(primeCe)} <span style="font-size:15px;font-weight:400;color:${RIP_TEXT_SOFT};">à recevoir</span>`, apres >= 3 ? `${eur(cumulApres)} cumulés si tous vos filleuls se concrétisent` : `${eur(cumulApres)} cumulés si tous vos filleuls se concrétisent · <b>${eur(4500)}</b> dès le 3<sup>e</sup>`)}
+${p(etape)}
+${pSoft(`Le montant final dépend des projets et des opérations réalisés avec chaque filleul. Le programme court jusqu'au <b>31&nbsp;décembre&nbsp;${year}</b>&nbsp;: le compteur repart à zéro le 1<sup>er</sup>&nbsp;janvier.`)}
 ${ctaNavy('https://parrainage.parisconseils.fr/parrainage.html', 'Recommander un autre proche')}
 ${infoBeige(`<b>Votre RIB&nbsp;:</b> pour le versement de votre prime, vous pourrez nous le communiquer à tout moment par simple retour de mail — aucune urgence, cela n'a aucun impact sur l'enregistrement de votre parrainage.<br><br><b>Confidentialité&nbsp;:</b> en soumettant cette recommandation, vous avez autorisé Paris Conseils à contacter ${nb > 1 ? 'les personnes ci-dessus' : premierPrenom}. Vous pouvez retirer cette autorisation à tout moment en écrivant à <a href="mailto:contact@parisconseils.fr" style="color:${RIP_NAVY};font-weight:600;">contact@parisconseils.fr</a>.`)}
-${signature()}`;
+${signature('Merci de votre confiance')}`;
 
   return baseShell({
     title: `Merci, ${escapeHtml(parrain.prenom)}`,
-    eyebrow: 'Votre recommandation est bien reçue',
+    eyebrow: `Votre ${ordinal(apres)} recommandation est bien reçue`,
     body
   });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// MAIL CONSEILLER — notification interne
+// MAIL CONSEILLER — notification interne + historique parrain
 // ═══════════════════════════════════════════════════════════════════════════
-function emailConseiller({ parrain, conseiller, filleuls }) {
+function emailConseiller({ parrain, conseiller, filleuls, nbAvant, nbApres }) {
   const consPrenom = conseillerPrenom(conseiller) || 'cher conseiller';
   const nb = filleuls.length;
+  const avant = Math.max(0, nbAvant | 0);
+  const apres = Math.max(nb, nbApres | 0);
+  const year = new Date().getFullYear();
   const filleulsHtml = filleuls.map(f => `${escapeHtml(f.prenom)} ${escapeHtml(f.nom)}`).join('<br>');
   const contact = [];
   if (parrain.email) contact.push(`<a href="mailto:${escapeHtml(parrain.email)}" style="color:${RIP_NAVY};font-weight:600;">${escapeHtml(parrain.email)}</a>`);
   if (parrain.tel)   contact.push(`<a href="tel:${escapeHtml(parrain.tel)}" style="color:${RIP_NAVY};font-weight:600;">${escapeHtml(parrain.tel)}</a>`);
+  const histo = avant > 0
+    ? `C'est son <b>${ordinal(apres)} parrainage ${year}</b> (${avant} déjà transmis cette année)${apres === 2 ? ' — au prochain, elle passe au palier rétroactif de 4&nbsp;500&nbsp;€' : ''}.`
+    : `C'est son <b>premier parrainage ${year}</b>.`;
 
   const body = `
 ${p(`Bonjour ${escapeHtml(consPrenom)},`)}
-${p(`<b>${escapeHtml(parrain.prenom)} ${escapeHtml(parrain.nom)}</b> vient de vous recommander <b>${nb} nouveau${nb>1?'x':''} filleul${nb>1?'s':''}</b>.`)}
+${p(`<b>${escapeHtml(parrain.prenom)} ${escapeHtml(parrain.nom)}</b> vient de vous recommander <b>${nb} nouveau${nb>1?'x':''} filleul${nb>1?'s':''}</b>. ${histo}`)}
 ${heroCream('À contacter sous 48 heures', filleulsHtml, `recommandé${nb>1?'s':''} par ${escapeHtml(parrain.prenom)} ${escapeHtml(parrain.nom)}`)}
+${p(`${nb > 1 ? 'Chaque filleul a' : 'Le filleul a'} reçu un e-mail lui proposant de <b>choisir un créneau sur votre planning</b> ou d'<b>obtenir sa note patrimoniale</b> sur votre lien RIP. Idéalement, appelez-${nb > 1 ? 'les' : 'le'} <b>sous 48&nbsp;heures</b>, même s'il n'a pas encore réagi.`)}
 ${ctaNavy('https://paris-conseils-dashboard.netlify.app/equipe.html', 'Ouvrir le dashboard équipe')}
 ${infoBeige(`<b>Confidentialité RGPD&nbsp;:</b> les coordonnées des filleuls ne figurent pas dans cet e-mail. Ouvrez le dashboard pour consulter nom, e-mail, téléphone, projet et statut, et pour marquer chaque filleul comme contacté.${contact.length ? `<br><br><b>Parrain à remercier&nbsp;:</b> ${escapeHtml(parrain.prenom)} ${escapeHtml(parrain.nom)} — ${contact.join(' · ')}` : ''}`)}
-<p style="margin:26px 0 0;font-family:${FONT_BODY};font-size:15px;line-height:1.6;color:${RIP_TEXT};">Merci de votre réactivité,<br><b class="pc-navy-text" style="color:${RIP_NAVY};">L'équipe Paris Conseils</b></p>`;
+${signature('Merci de votre réactivité')}`;
 
   return baseShell({
     title: `${nb} nouveau${nb>1?'x':''} filleul${nb>1?'s':''} à contacter`,
-    eyebrow: 'Nouvelle recommandation · à traiter sous 48 h',
+    eyebrow: `Nouvelle recommandation · ${ordinal(apres)} parrainage de ${escapeHtml(parrain.prenom)}`,
     body
   });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// MAIL FILLEUL — annonce + planning conseiller + note patrimoniale (RIP)
+// MAIL FILLEUL — annonce + planning conseiller + frise note patrimoniale (RIP)
 // ═══════════════════════════════════════════════════════════════════════════
 function emailFilleul({ parrain, conseiller, filleul }) {
   const consNom = conseillerComplet(conseiller);
@@ -290,16 +340,17 @@ ${p(`Bonjour ${escapeHtml(filleul.prenom)},`)}
 ${p(`<b>${parrainNom}</b> vous a recommandé auprès de Paris Conseils, cabinet d'<i>ingénierie financière et d'optimisation fiscale</i>.`)}
 ${p(`Un proche qui prend le temps de vous recommander, c'est rarement anodin. Notre rôle est d'apporter à chacun de nos clients un <b>accompagnement sur-mesure</b>, dans la plus stricte confidentialité.`)}
 ${heroCream('Votre interlocuteur', escapeHtml(consNom), hasCons ? 'prendra contact avec vous sous 48&nbsp;heures' : 'vous contactera dans les meilleurs délais')}
-${rdvHref ? p(`Si vous souhaitez anticiper, vous pouvez consulter directement le planning de ${escapeHtml(consPrenom)} et choisir le créneau qui vous convient le mieux — en visioconférence ou par téléphone, une trentaine de minutes.`) : ''}
+${rdvHref ? p(`Si vous souhaitez anticiper, vous pouvez consulter directement le planning de ${escapeHtml(consPrenom)} et choisir le moment où vous préférez être rappelé — en visioconférence ou par téléphone, une trentaine de minutes.`) : ''}
 ${rdvHref ? ctaNavy(rdvHref, `Consulter le planning de ${escapeHtml(consPrenom)}`) : ''}
 
 ${goldBadge('Avant votre rendez-vous')}
 ${h2Serif('Connaissez-vous votre note patrimoniale&nbsp;?')}
-${p(`En dix minutes, notre bilan patrimonial en ligne évalue votre situation — endettement, épargne, patrimoine, protection de vos proches, fiscalité — et vous attribue une note de <b>A+</b> (profil exceptionnel) à <b>G−</b> (profil très fragile). Elle situe votre profil sans le juger, et permet à ${escapeHtml(consPrenom || 'votre conseiller')} de préparer votre échange sur du concret&nbsp;: vos points forts, vos leviers, ce qui peut être optimisé.`, 'text-align:center;')}
+${p(`En <b>six minutes</b>, notre bilan en ligne évalue votre situation — endettement, épargne, patrimoine, protection de vos proches, fiscalité — et vous attribue une note de <b>A+</b> à <b>G−</b>. Elle situe votre profil sans le juger, et permet à ${escapeHtml(consPrenom || 'votre conseiller')} de préparer votre échange sur du concret&nbsp;: vos points forts, vos leviers, ce qui peut être optimisé.`, 'text-align:center;')}
+${noteScale(RIP_NOTE_MOYENNE)}
 ${ctaNavy(ripHref, 'Obtenir ma note patrimoniale')}
-${pSoft(`Gratuit et confidentiel. ${hasCons ? `${escapeHtml(consNom)} est déjà sélectionné comme votre conseiller&nbsp;: vous validez simplement l'engagement de confidentialité par un code reçu par e-mail, puis vous répondez à l'essentiel.` : `Vous validez l'engagement de confidentialité par un code reçu par e-mail, puis vous répondez à l'essentiel.`}`)}
+${pSoft(`Gratuit et confidentiel. ${hasCons ? `${escapeHtml(consNom)} est déjà sélectionné comme votre conseiller&nbsp;: vous validez simplement l'engagement de confidentialité par un code reçu par e-mail, puis vous répondez à l'essentiel.` : `Vous validez l'engagement de confidentialité par un code reçu par e-mail, puis vous répondez à l'essentiel.`}`, 'text-align:center;')}
 
-${infoBeige(`<b>Aucun engagement, ni juridique ni financier.</b> Cet échange est strictement confidentiel&nbsp;: il sert à comprendre votre situation et vos objectifs, et à voir si un accompagnement sur-mesure — optimisation fiscale, structuration de votre patrimoine, préparation d'un projet — peut vous être utile. ${parrainPrenom} a pensé à vous pour vous rendre service, pas pour vous engager. Si vous préférez ne pas être contacté, il vous suffit de répondre à cet e-mail.`)}
+${infoBeige(`<b>Aucun engagement, ni juridique ni financier.</b> Ce premier échange est une étude strictement confidentielle&nbsp;: comprendre votre situation et vos objectifs, et étalonner ce qui peut réellement vous être utile — optimisation fiscale, structuration de votre patrimoine, préparation d'un projet. ${parrainPrenom} a pensé à vous pour vous rendre service, pas pour vous engager. Si vous préférez ne pas être contacté, il vous suffit de répondre à cet e-mail.`)}
 ${signature()}`;
 
   return baseShell({
@@ -388,6 +439,31 @@ function getBlobStore(name) {
   }
   // Sinon repli sur auto-context (fonctionne dans la plupart des runtimes Netlify)
   return getStore(name);
+}
+
+// v277 — Compte les filleuls déjà transmis par ce parrain sur l'année civile en cours (blobs).
+// Ignore le record courant (excludeId) et les records supprimés/refusés.
+async function countFilleulsAnneeParrain(parrainEmail, excludeId) {
+  try {
+    const email = (parrainEmail || '').trim().toLowerCase();
+    if (!email) return 0;
+    const year = new Date().getFullYear();
+    const store = getBlobStore('parrainages');
+    const listing = await store.list();
+    let n = 0;
+    for (const blob of (listing.blobs || [])) {
+      if (blob.key === excludeId) continue;
+      const r = await store.get(blob.key, { type: 'json' });
+      if (!r || !r.parrain) continue;
+      if ((r.parrain.email || '').trim().toLowerCase() !== email) continue;
+      const y = r.createdAt ? new Date(r.createdAt).getFullYear() : null;
+      if (y !== year) continue;
+      const st = String(r.status || '').toUpperCase();
+      if (st === 'SUPPRIME' || st === 'REFUSE' || st === 'SPAM' || st === 'DELETED') continue;
+      n += (typeof r.nbFilleuls === 'number' ? r.nbFilleuls : (Array.isArray(r.filleuls) ? r.filleuls.length : 0));
+    }
+    return n;
+  } catch (e) { return 0; }
 }
 
 async function saveParrainageToBlobs(record) {
@@ -1083,6 +1159,17 @@ const innerHandler = async (event) => {
   };
   const blobResult = await saveParrainageToBlobs(record);
 
+  // v277 — Historique du parrain sur l'année civile (pour paliers / rétroactivité dans les mails).
+  // nbAvant = filleuls déjà transmis cette année AVANT cette soumission (hors ce record).
+  // Override admin possible via payload.nbFilleulsAvant (nombre) si l'historique n'est pas dans les blobs.
+  let nbAvant = 0;
+  if (typeof payload.nbFilleulsAvant === 'number' && payload.nbFilleulsAvant >= 0) {
+    nbAvant = Math.floor(payload.nbFilleulsAvant);
+  } else {
+    nbAvant = await countFilleulsAnneeParrain(parrain.email, parrainageId);
+  }
+  const nbApres = nbAvant + filleuls.length;
+
   // 2) Emails
   const conseillerEmail = resolveConseillerEmail(env, conseiller);
   const total = cumulAt(filleuls.length);
@@ -1108,7 +1195,7 @@ const innerHandler = async (event) => {
       from: env.MAIL_FROM,
       to: parrain.email,
       subject: `Merci ${parrain.prenom || ''} — votre recommandation est bien reçue`,
-      html: emailParrain({ parrain, conseiller, filleuls, total }),
+      html: emailParrain({ parrain, conseiller, filleuls, total, nbAvant, nbApres }),
       replyTo: conseillerEmail,
       bcc,
       testRedirect
@@ -1121,7 +1208,7 @@ const innerHandler = async (event) => {
     from: env.MAIL_FROM,
     to: conseillerEmail,
     subject: `Nouveau parrainage — ${parrain.prenom || ''} ${parrain.nom || ''} (${filleuls.length} filleul${filleuls.length>1?'s':''}) [mode: ${emailMode}]`,
-    html: emailConseiller({ parrain, conseiller, filleuls }),
+    html: emailConseiller({ parrain, conseiller, filleuls, nbAvant, nbApres }),
     replyTo: parrain.email || undefined,
     bcc,
     testRedirect
