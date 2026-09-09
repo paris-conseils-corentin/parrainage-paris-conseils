@@ -4,6 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Paris Conseils — Programme Parrainage</title>
+  <!-- v283 : une seule adresse officielle. L'ancien site Netlify (parrainage-paris-conseils.netlify.app) déploie le même code
+       mais avec une base de données séparée → on redirige vers parrainage.parisconseils.fr pour ne jamais perdre un parrainage. -->
+  <script>(function(){var h=location.hostname;if(/netlify\.app$/i.test(h)){location.replace('https://parrainage.parisconseils.fr'+location.pathname.replace(/^\/index\.html$/,'/')+location.search+location.hash);}})();</script>
   <!-- Charte alignée sur parisconseils.com : Inter (body/UI) + Cormorant Garamond 500 (headings) -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.20/400.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.20/500.css">
@@ -1175,21 +1178,29 @@
     var contactForm = document.getElementById('contact-form');
     var contactFlash = document.getElementById('contact-flash');
     if (contactForm){
+      // v283 : Netlify Forms est désactivé sur ce site (les messages étaient perdus) → envoi via le relay (mail à Paris Conseils).
       contactForm.addEventListener('submit', function(e){
         e.preventDefault();
         var fd = new FormData(contactForm);
-        fetch('/', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
-          body: new URLSearchParams(fd).toString()})
+        var payload = {};
+        fd.forEach(function(v, k){ payload[k] = v; });
+        var sbtn = contactForm.querySelector('button[type="submit"]');
+        if (sbtn) { sbtn.disabled = true; sbtn.textContent = 'ENVOI…'; }
+        fetch('/.netlify/functions/parrainage-relay?action=contact', {method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify(payload)})
+          .then(function(r){ return r.json().then(function(j){ if (!r.ok || !j.ok) throw new Error(j.error || ('HTTP ' + r.status)); return j; }); })
           .then(function(){
             contactFlash.className = 'flash success';
             contactFlash.style.display = 'block';
             contactFlash.innerHTML = '✓ Merci ! Votre message a bien été envoyé. On revient vers vous sous 48 h.';
             contactForm.reset();
+            if (sbtn) { sbtn.textContent = 'ENVOYÉ'; }
           })
-          .catch(function(){
+          .catch(function(err){
             contactFlash.className = 'flash error';
             contactFlash.style.display = 'block';
-            contactFlash.innerHTML = 'Erreur d\'envoi. Réessayez ou écrivez à contact@parisconseils.fr';
+            contactFlash.innerHTML = 'Erreur d\'envoi (' + (err && err.message || 'inconnue') + '). Réessayez ou écrivez à contact@parisconseils.fr';
+            if (sbtn) { sbtn.disabled = false; sbtn.textContent = 'ENVOYER →'; }
           });
       });
     }
