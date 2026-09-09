@@ -19,7 +19,7 @@
 //                          Sinon, l'email conseiller fallback vers contact@parisconseils.fr
 
 // v200am — Bascule Resend → SMTP direct via parisconseils.fr
-// build-stamp: 2026-09-09-v280-RIP-DASHBOARD-CTA
+// build-stamp: 2026-09-09-v281-UPDATE-DATE-NOTE
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 
@@ -711,6 +711,16 @@ async function handleRappels(event) {
   const auth = event.headers.authorization || event.headers.Authorization || '';
   if (auth !== `Bearer ${token}`) return { statusCode: 401, body: JSON.stringify({ ok: false, error: 'Unauthorized' }) };
 
+  // v281 — Relances J+45 automatiques désactivées par défaut (règle : aucun mail client sans validation).
+  // Réactivation : variable d'env PARRAINAGE_RAPPELS_ENABLED=true (après validation du template).
+  if (String(process.env.PARRAINAGE_RAPPELS_ENABLED || '').toLowerCase() !== 'true') {
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ok: true, disabled: true, message: 'Relances J+45 désactivées (PARRAINAGE_RAPPELS_ENABLED != true)' })
+    };
+  }
+
   try {
     const store = getBlobStore('parrainages');
     const relanceStore = getBlobStore('parrainages-relances');
@@ -935,7 +945,9 @@ async function handleSetStatus(event) {
 }
 
 // v279 — Mise à jour admin des coordonnées d'un enregistrement (aucun mail envoyé).
-// body: { id, parrain?: {prenom?,nom?,email?,tel?}, filleuls?: [{ index, prenom?,nom?,email?,tel? }] }
+// body: { id, parrain?: {prenom?,nom?,email?,tel?}, filleuls?: [{ index, prenom?,nom?,email?,tel?, note? }] }
+// v281 — + createdAt (date réelle du parrainage, ISO), origine (ex: "Formulaire Netlify 14/06/2026"),
+//        note (≤ 1000 car.). L'ancienne date est conservée dans createdAtOriginal.
 async function handleUpdate(event) {
   const adminToken = process.env.PARRAINAGE_ADMIN_TOKEN || '';
   const proSecret  = process.env.PRO_JWT_SECRET || '';
@@ -964,8 +976,21 @@ async function handleUpdate(event) {
         const i = upd && upd.index;
         if (typeof i !== 'number' || i < 0 || i >= record.filleuls.length) continue;
         for (const k of ['prenom','nom','email','tel']) if (upd[k] !== undefined) record.filleuls[i][k] = clean(upd[k]);
+        if (upd.note !== undefined) record.filleuls[i].note = String(upd.note == null ? '' : upd.note).trim().slice(0, 500);
       }
     }
+    // v281 — date réelle du parrainage (reprise d'historique), origine et note.
+    if (body.createdAt !== undefined) {
+      const ts = Date.parse(String(body.createdAt));
+      const y = isNaN(ts) ? 0 : new Date(ts).getUTCFullYear();
+      if (isNaN(ts) || y < 2020 || y > 2100) {
+        return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'createdAt invalide (ISO 8601 attendu)' }) };
+      }
+      if (!record.createdAtOriginal) record.createdAtOriginal = record.createdAt || null;
+      record.createdAt = new Date(ts).toISOString();
+    }
+    if (body.origine !== undefined) record.origine = clean(body.origine);
+    if (body.note !== undefined) record.note = String(body.note == null ? '' : body.note).trim().slice(0, 1000);
     record.updatedAt = new Date().toISOString();
     await store.setJSON(record.id, record);
     return { statusCode: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ ok: true, record }) };
