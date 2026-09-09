@@ -1,5 +1,5 @@
 # Configuration Netlify — site parrainage Paris Conseils
-# v250i — bump for PRO_PASS_* env vars injection
+# v284 — surveillance quotidienne (parrainage-healthcheck) + cache HTML court
 
 [build]
   publish = "."
@@ -7,6 +7,11 @@
 
 [functions]
   node_bundler = "esbuild"
+
+# ==== Surveillance : contrôle quotidien du formulaire, de la base et de la messagerie ====
+# 07:00 UTC = 9h (heure de Paris en été). Mail d'alerte uniquement si problème + un « OK » le lundi.
+[functions."parrainage-healthcheck"]
+  schedule = "0 7 * * *"
 
 # ==== Sécurité globale ====
 [[headers]]
@@ -43,9 +48,14 @@
   [headers.values]
     Cache-Control = "public, max-age=2592000"
 
-# ==== HTML : cache court + revalidation ====
+# ==== HTML : cache court + revalidation (une correction est visible immédiatement) ====
 [[headers]]
   for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
