@@ -19,7 +19,8 @@
 //                          Sinon, l'email conseiller fallback vers contact@parisconseils.fr
 
 // v200am — Bascule Resend → SMTP direct via parisconseils.fr
-// build-stamp: 2026-09-09-v283-PRIME-ATTESTATION-CONTACT
+// build-stamp: 2026-09-09-v284-RIP-SECRET-STORE-HEALTHCHECK
+const BUILD_STAMP = '2026-09-09-v284-RIP-SECRET-STORE-HEALTHCHECK';
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 
@@ -446,19 +447,174 @@ function getBlobStore(name) {
 // Ignore le record courant (excludeId) et les records supprimés/refusés.
 // v278 — Webhook vers le dashboard RIP (rip.parisconseils.fr). Best-effort, non bloquant.
 // Activé si RIP_WEBHOOK_URL + RIP_WEBHOOK_SECRET sont définis dans Netlify.
-async function notifyRipDashboard(env, payloadObj) {
-  const url = env.RIP_WEBHOOK_URL; const secret = env.RIP_WEBHOOK_SECRET;
-  if (!url || !secret) return { skipped: true };
+// v284 — Le secret peut aussi être stocké dans le store Blobs `parrainages-config` (clé `rip-webhook`)
+// via ?action=set-rip-secret : il est copié depuis les Réglages RIP sans jamais transiter en clair ailleurs.
+let __ripConfigCache = null;
+async function getRipConfig(env) {
+  if (__ripConfigCache) return __ripConfigCache;
+  let url = env.RIP_WEBHOOK_URL || null, secret = env.RIP_WEBHOOK_SECRET || null;
+  if (!secret || !url) {
+    try {
+      const cfg = await getBlobStore('parrainages-config').get('rip-webhook', { type: 'json' });
+      if (cfg) { if (!secret && cfg.secret) secret = cfg.secret; if (!url && cfg.url) url = cfg.url; }
+    } catch (_e) { /* store absent : on reste sur l'env */ }
+  }
+  if (!url) url = 'https://rip.parisconseils.fr/api/parrainage/webhook';
+  __ripConfigCache = { url, secret };
+  return __ripConfigCache;
+}
+function ripPayloadFromRecord(record, extra) {
+  const ripSlugs = conseillerSlugs(record.conseiller);
+  return Object.assign({
+    event: 'parrainage.created',
+    id: record.id,
+    createdAt: record.createdAt,
+    conseiller: conseillerComplet(record.conseiller),
+    conseillerSlug: ripSlugs ? ripSlugs.rip : null,
+    parrain: record.parrain,
+    filleuls: record.filleuls,
+    nbFilleuls: record.nbFilleuls || (record.filleuls || []).length,
+    status: record.status,
+    source: 'parrainage.parisconseils.fr'
+  }, extra || {});
+}
+async function notifyRipDashboard(env, payloadObj, eventName) {
+  const cfg = await getRipConfig(env);
+  if (!cfg.secret) return { skipped: true, reason: 'secret RIP absent (RIP_WEBHOOK_SECRET ou ?action=set-rip-secret)' };
   try {
-    const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 5000);
-    const r = await fetch(url, {
+    const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 8000);
+    const r = await fetch(cfg.url, {
       method: 'POST', signal: ctrl.signal,
-      headers: { 'content-type': 'application/json', 'X-Parrainage-Secret': secret, 'X-Parrainage-Event': 'parrainage.created' },
+      headers: { 'content-type': 'application/json', 'X-Parrainage-Secret': cfg.secret, 'X-Parrainage-Event': eventName || 'parrainage.created' },
       body: JSON.stringify(payloadObj)
     });
     clearTimeout(t);
-    return { ok: r.ok, status: r.status };
+    let bodyTxt = ''; try { bodyTxt = (await r.text()).slice(0, 300); } catch (_e) {}
+    return { ok: r.ok, status: r.status, body: bodyTxt };
   } catch (e) { return { ok: false, error: String(e && e.message || e) }; }
+}
+
+// v284 — Enregistrer le secret du webhook RIP côté relay (admin). Body { secret, url? }.
+// La réponse ne renvoie jamais le secret : seulement sa longueur et une empreinte courte.
+async function handleSetRipSecret(event) {
+  if (!isAdminEvent(event)) return jsonResp(401, { ok: false, error: 'Unauthorized (admin only)' });
+  let body; try { body = JSON.parse(event.body || '{}'); } catch (e) { return jsonResp(400, { ok: false, error: 'Invalid JSON' }); }
+  const secret = String(body.secret || '').trim();
+  if (secret.length < 16) return jsonResp(400, { ok: false, error: 'Secret trop court (16 caractères minimum).' });
+  const url = String(body.url || '').trim() || 'https://rip.parisconseils.fr/api/parrainage/webhook';
+  if (!/^https:\/\/rip\.parisconseils\.fr\//.test(url)) return jsonResp(400, { ok: false, error: 'URL webhook non autorisée.' });
+  try {
+    await getBlobStore('parrainages-config').setJSON('rip-webhook', { secret, url, updatedAt: new Date().toISOString() });
+    __ripConfigCache = null;
+    const fp = crypto.createHash('sha256').update(secret).digest('hex').slice(0, 8);
+    return jsonResp(200, { ok: true, length: secret.length, fingerprint: fp, url });
+  } catch (err) { return jsonResp(500, { ok: false, error: err.message }); }
+}
+
+// v284 — Re-pousser vers le RIP tous les parrainages (ou un seul : body { id }). Idempotent côté RIP (INSERT OR IGNORE sur id).
+async function handleRipResync(event) {
+  if (!isAdminEvent(event)) return jsonResp(401, { ok: false, error: 'Unauthorized (admin only)' });
+  let body; try { body = JSON.parse(event.body || '{}'); } catch (e) { body = {}; }
+  try {
+    const env = process.env;
+    const cfg = await getRipConfig(env);
+    if (!cfg.secret) return jsonResp(400, { ok: false, error: 'Secret RIP absent : utilisez ?action=set-rip-secret d\'abord.' });
+    const store = getBlobStore('parrainages');
+    const listing = await store.list();
+    const results = [];
+    for (const blob of (listing.blobs || [])) {
+      if (body.id && blob.key !== body.id) continue;
+      const r = await store.get(blob.key, { type: 'json' });
+      if (!r || !r.parrain) continue;
+      const st = String(r.status || '').toUpperCase();
+      if (['SUPPRIME', 'REFUSE', 'SPAM', 'DELETED'].includes(st)) continue;
+      const res = await notifyRipDashboard(env, ripPayloadFromRecord(r, { histo: r.histo || null, resync: true, historique: true }), 'parrainage.created');
+      results.push({ id: r.id.slice(0, 8), parrain: `${r.parrain.prenom || ''} ${r.parrain.nom || ''}`.trim(), ok: !!res.ok, status: res.status, error: res.error, body: res.body });
+    }
+    return jsonResp(200, { ok: results.every(x => x.ok), count: results.length, url: cfg.url, results });
+  } catch (err) { return jsonResp(500, { ok: false, error: err.message }); }
+}
+
+// v284 — Auto-diagnostic. GET ?action=ping (public, aucun secret exposé) : version, Blobs, fournisseur mail, config RIP.
+async function handlePing() {
+  const env = process.env;
+  const out = { ok: true, build: BUILD_STAMP, at: new Date().toISOString(), checks: {} };
+  try { const st = getBlobStore('parrainages'); const l = await st.list(); out.checks.blobs = { ok: true, records: (l.blobs || []).length }; }
+  catch (e) { out.ok = false; out.checks.blobs = { ok: false, error: e.message }; }
+  try {
+    if (env.RESEND_API_KEY) {
+      const r = await fetch('https://api.resend.com/domains', { headers: { 'Authorization': 'Bearer ' + env.RESEND_API_KEY } });
+      const j = await r.json().catch(() => ({}));
+      const doms = Array.isArray(j.data) ? j.data.map(d => ({ name: d.name, status: d.status })) : [];
+      const okDom = doms.some(d => /parisconseils\.fr$/.test(d.name) && d.status === 'verified');
+      out.checks.mail = { ok: r.ok && okDom, provider: 'resend', http: r.status, domains: doms };
+      if (!(r.ok && okDom)) out.ok = false;
+    } else if (env.BREVO_API_KEY) { out.checks.mail = { ok: true, provider: 'brevo (non vérifié)' }; }
+    else { out.ok = false; out.checks.mail = { ok: false, error: 'aucun fournisseur mail configuré' }; }
+  } catch (e) { out.ok = false; out.checks.mail = { ok: false, error: e.message }; }
+  try { const cfg = await getRipConfig(env); out.checks.rip = { configured: !!cfg.secret, url: cfg.url, source: env.RIP_WEBHOOK_SECRET ? 'env' : (cfg.secret ? 'blobs' : null) }; }
+  catch (e) { out.checks.rip = { configured: false, error: e.message }; }
+  out.checks.env = { MAIL_FROM: !!env.MAIL_FROM, PARRAINAGE_ADMIN_TOKEN: !!env.PARRAINAGE_ADMIN_TOKEN, PRO_JWT_SECRET: !!env.PRO_JWT_SECRET, MAIL_CC_OPS: !!env.MAIL_CC_OPS };
+  if (!env.MAIL_FROM || !env.PARRAINAGE_ADMIN_TOKEN || !env.PRO_JWT_SECRET) out.ok = false;
+  return jsonResp(out.ok ? 200 : 503, out);
+}
+
+// v284 — Contrôle complet du parcours (admin, lancé chaque jour par parrainage-healthcheck) :
+// pages servies + intégrité du script du formulaire + ping. Mail d'alerte à Corentin si quelque chose casse ;
+// le lundi, un court « tout va bien » pour prouver que la surveillance tourne.
+const SITE_URL = process.env.URL && /^https:\/\/parrainage\./.test(process.env.URL) ? process.env.URL : 'https://parrainage.parisconseils.fr';
+async function handleHealthcheck(event) {
+  if (!isAdminEvent(event)) return jsonResp(401, { ok: false, error: 'Unauthorized (admin only)' });
+  const env = process.env;
+  const problems = [];
+  const pages = {};
+  const checkPage = async (path, opts) => {
+    const res = { status: 0, bytes: 0 };
+    try {
+      const r = await fetch(SITE_URL + path + (path.includes('?') ? '&' : '?') + 'hc=' + Date.now(), { headers: { 'cache-control': 'no-cache' } });
+      const html = await r.text();
+      res.status = r.status; res.bytes = html.length;
+      if (r.status !== 200) problems.push(`${path} : HTTP ${r.status}`);
+      if (html.length < (opts.minBytes || 1000)) problems.push(`${path} : page anormalement petite (${html.length} o)`);
+      for (const m of (opts.mustContain || [])) if (!html.includes(m)) problems.push(`${path} : marqueur manquant « ${m} »`);
+      for (const m of (opts.mustNotContain || [])) if (html.includes(m)) problems.push(`${path} : code cassé détecté « ${m} »`);
+      if (opts.checkScripts) {
+        const scripts = html.match(/<script(?![^>]*\ssrc=)[^>]*>([\s\S]*?)<\/script>/gi) || [];
+        res.scripts = scripts.length;
+        scripts.forEach((s, i) => {
+          const code = s.replace(/^<script[^>]*>/i, '').replace(/<\/script>$/i, '');
+          try { new Function(code); } catch (e) { problems.push(`${path} : erreur de syntaxe dans le script n°${i + 1} — ${e.message}`); }
+        });
+        if (scripts.length < (opts.minScripts || 1)) problems.push(`${path} : ${scripts.length} script(s) au lieu de ${opts.minScripts}`);
+      }
+    } catch (e) { res.error = e.message; problems.push(`${path} : injoignable (${e.message})`); }
+    pages[path] = res;
+  };
+  const formOpts = { minBytes: 60000, minScripts: 3, checkScripts: true, mustContain: ['id="submit-btn"', 'id="filleuls-list"', 'id="conseiller_id"', 'parrainage-relay', 'tierLabels', 'v200u'], mustNotContain: ['var labels = [', 'Uploads are disabled'] };
+  await checkPage('/', formOpts);
+  await checkPage('/parrainage.html', formOpts);
+  await checkPage('/espace-pro.html', { minBytes: 30000, minScripts: 1, checkScripts: true, mustContain: ['pro-login', 'primeStart'] });
+  await checkPage('/prime.html', { minBytes: 15000, minScripts: 1, checkScripts: true, mustContain: ['prime-sign', 'jspdf'] });
+  // index.html doit être identique à parrainage.html (la racine est la page que tapent les clients)
+  if (pages['/'].bytes && pages['/parrainage.html'].bytes && pages['/'].bytes !== pages['/parrainage.html'].bytes) problems.push(`/ et /parrainage.html diffèrent (${pages['/'].bytes} o vs ${pages['/parrainage.html'].bytes} o)`);
+  const pingResp = await handlePing();
+  const ping = JSON.parse(pingResp.body);
+  if (!ping.ok) problems.push('auto-diagnostic KO : ' + JSON.stringify(ping.checks));
+  const ok = problems.length === 0;
+  const isMonday = new Date().getUTCDay() === 1;
+  const forceMail = !!((event.queryStringParameters || {}).mail);
+  const alertTo = (env.HEALTH_ALERT_TO || [env.MAIL_CONTACT || 'contact@parisconseils.fr', 'curtet@parisconseils.fr'].join(',')).split(',').map(s => s.trim()).filter(Boolean);
+  let mail = null;
+  if (!ok || isMonday || forceMail) {
+    const title = ok ? 'Parrainage : tout fonctionne' : `Parrainage : ${problems.length} problème${problems.length > 1 ? 's' : ''} détecté${problems.length > 1 ? 's' : ''}`;
+    const body = ok
+      ? `${p(`Contrôle automatique du ${fmtDateFr(new Date().toISOString())} : formulaire, espace pro, page prime, base et messagerie répondent normalement.`)}${infoBeige(`${ping.checks.blobs && ping.checks.blobs.records} parrainage(s) en base · mail : ${escapeHtml((ping.checks.mail || {}).provider || '?')} · RIP : ${ping.checks.rip && ping.checks.rip.configured ? 'connecté' : '<b>non connecté</b>'}`)}`
+      : `${p(`Le contrôle automatique du ${fmtDateFr(new Date().toISOString())} a détecté&nbsp;:`)}${infoBeige(problems.map(x => '• ' + escapeHtml(x)).join('<br>'))}${p(`Le formulaire de recommandation est peut-être <b>inutilisable</b>. À vérifier tout de suite sur <a href="${SITE_URL}" style="color:${RIP_NAVY};">${SITE_URL}</a>.`, 'margin-top:14px;')}`;
+    const html = baseShell({ title: escapeHtml(title), eyebrow: ok ? 'Surveillance · OK' : 'Surveillance · ALERTE', body });
+    mail = await sendEmail({ apiKey: env.RESEND_API_KEY, from: env.MAIL_FROM, to: alertTo, subject: (ok ? '✅ ' : '🚨 ') + title, html });
+    mail = { ok: mail.ok, status: mail.status, to: alertTo };
+  }
+  return jsonResp(ok ? 200 : 503, { ok, build: BUILD_STAMP, problems, pages, ping: ping.checks, mail });
 }
 
 async function countFilleulsAnneeParrain(parrainEmail, excludeId) {
@@ -1408,6 +1564,11 @@ const innerHandler = async (event) => {
   if (event.httpMethod === 'POST' && action === 'prime-sign')   return handlePrimeSign(event);
   if (event.httpMethod === 'GET'  && action === 'prime-doc')    return handlePrimeDoc(event);
   if (event.httpMethod === 'POST' && action === 'contact')      return handleContact(event);
+  // v284 — intégration RIP + surveillance
+  if (event.httpMethod === 'POST' && action === 'set-rip-secret') return handleSetRipSecret(event);
+  if (event.httpMethod === 'POST' && action === 'rip-resync')     return handleRipResync(event);
+  if (event.httpMethod === 'GET'  && action === 'ping')           return handlePing();
+  if (action === 'healthcheck')                                   return handleHealthcheck(event);
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
