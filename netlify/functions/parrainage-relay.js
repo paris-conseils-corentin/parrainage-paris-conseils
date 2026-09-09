@@ -19,7 +19,7 @@
 //                          Sinon, l'email conseiller fallback vers contact@parisconseils.fr
 
 // v200am — Bascule Resend → SMTP direct via parisconseils.fr
-// build-stamp: 2026-09-09-v278-DPLUS-WEBHOOK
+// build-stamp: 2026-09-09-v280-RIP-DASHBOARD-CTA
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 
@@ -312,8 +312,8 @@ ${p(`Bonjour ${escapeHtml(consPrenom)},`)}
 ${p(`<b>${escapeHtml(parrain.prenom)} ${escapeHtml(parrain.nom)}</b> vient de vous recommander <b>${nb} nouveau${nb>1?'x':''} filleul${nb>1?'s':''}</b>. ${histo}`)}
 ${heroCream('À contacter sous 48 heures', filleulsHtml, `recommandé${nb>1?'s':''} par ${escapeHtml(parrain.prenom)} ${escapeHtml(parrain.nom)}`)}
 ${p(`${nb > 1 ? 'Chaque filleul a' : 'Le filleul a'} reçu un e-mail lui proposant de <b>choisir un créneau sur votre planning</b> ou d'<b>obtenir sa note patrimoniale</b> sur votre lien RIP. Idéalement, appelez-${nb > 1 ? 'les' : 'le'} <b>sous 48&nbsp;heures</b>, même s'il n'a pas encore réagi.`)}
-${ctaNavy('https://paris-conseils-dashboard.netlify.app/equipe.html', 'Ouvrir le dashboard équipe')}
-${infoBeige(`<b>Confidentialité RGPD&nbsp;:</b> les coordonnées des filleuls ne figurent pas dans cet e-mail. Ouvrez le dashboard pour consulter nom, e-mail, téléphone, projet et statut, et pour marquer chaque filleul comme contacté.${contact.length ? `<br><br><b>Parrain à remercier&nbsp;:</b> ${escapeHtml(parrain.prenom)} ${escapeHtml(parrain.nom)} — ${contact.join(' · ')}` : ''}`)}
+${ctaNavy('https://rip.parisconseils.fr/dashboard', 'Ouvrir mes recommandations')}
+${infoBeige(`<b>Confidentialité RGPD&nbsp;:</b> les coordonnées des filleuls ne figurent pas dans cet e-mail. Retrouvez-les dans l'onglet <b>Recommandations</b> de votre dashboard rip.parisconseils.fr (nom, e-mail, téléphone, statut), où vous pouvez marquer chaque filleul comme contacté.${contact.length ? `<br><br><b>Parrain à remercier&nbsp;:</b> ${escapeHtml(parrain.prenom)} ${escapeHtml(parrain.nom)} — ${contact.join(' · ')}` : ''}`)}
 ${signature('Merci de votre réactivité')}`;
 
   return baseShell({
@@ -934,6 +934,46 @@ async function handleSetStatus(event) {
   }
 }
 
+// v279 — Mise à jour admin des coordonnées d'un enregistrement (aucun mail envoyé).
+// body: { id, parrain?: {prenom?,nom?,email?,tel?}, filleuls?: [{ index, prenom?,nom?,email?,tel? }] }
+async function handleUpdate(event) {
+  const adminToken = process.env.PARRAINAGE_ADMIN_TOKEN || '';
+  const proSecret  = process.env.PRO_JWT_SECRET || '';
+  const authHdr = event.headers.authorization || event.headers.Authorization || '';
+  const bearer = authHdr.startsWith('Bearer ') ? authHdr.slice(7) : '';
+  let isAdmin = false;
+  if (adminToken && bearer === adminToken) isAdmin = true;
+  if (!isAdmin && proSecret && bearer) {
+    try { const { verifyToken } = require('./pro-login'); const p = verifyToken(bearer, proSecret); if (p && p.r === 'admin') isAdmin = true; } catch (_e) {}
+  }
+  if (!isAdmin) return { statusCode: 401, body: JSON.stringify({ ok: false, error: 'Unauthorized (admin only)' }) };
+  let body; try { body = JSON.parse(event.body || '{}'); } catch (e) { return { statusCode: 400, body: 'Invalid JSON' }; }
+  if (!body.id) return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'Missing id' }) };
+  const clean = (v) => String(v == null ? '' : v).trim().slice(0, 200);
+  try {
+    const store = getBlobStore('parrainages');
+    const record = await store.get(body.id, { type: 'json' });
+    if (!record) return { statusCode: 404, body: JSON.stringify({ ok: false, error: 'Not found' }) };
+    record.parrain = record.parrain || {};
+    if (body.parrain && typeof body.parrain === 'object') {
+      for (const k of ['prenom','nom','email','tel']) if (body.parrain[k] !== undefined) record.parrain[k] = clean(body.parrain[k]);
+    }
+    if (Array.isArray(body.filleuls)) {
+      record.filleuls = record.filleuls || [];
+      for (const upd of body.filleuls) {
+        const i = upd && upd.index;
+        if (typeof i !== 'number' || i < 0 || i >= record.filleuls.length) continue;
+        for (const k of ['prenom','nom','email','tel']) if (upd[k] !== undefined) record.filleuls[i][k] = clean(upd[k]);
+      }
+    }
+    record.updatedAt = new Date().toISOString();
+    await store.setJSON(record.id, record);
+    return { statusCode: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ ok: true, record }) };
+  } catch (err) {
+    return { statusCode: 500, body: JSON.stringify({ ok: false, error: err.message }) };
+  }
+}
+
 async function handleDelete(event) {
   // v250l — Accepte 2 auths : PARRAINAGE_ADMIN_TOKEN (back-office) OU JWT pro role=admin.
   const adminToken = process.env.PARRAINAGE_ADMIN_TOKEN || '';
@@ -1033,6 +1073,7 @@ const innerHandler = async (event) => {
   if (event.httpMethod === 'POST' && action === 'mark-contacted') return handleMarkContacted(event);
   // v263 — update filleul status
   if (event.httpMethod === 'POST' && action === 'set-status') return handleSetStatus(event);
+  if (event.httpMethod === 'POST' && action === 'update') return handleUpdate(event);
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
