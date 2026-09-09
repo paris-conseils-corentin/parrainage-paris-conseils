@@ -19,7 +19,7 @@
 //                          Sinon, l'email conseiller fallback vers contact@parisconseils.fr
 
 // v200am — Bascule Resend → SMTP direct via parisconseils.fr
-// build-stamp: 2026-09-09-v281-UPDATE-DATE-NOTE
+// build-stamp: 2026-09-09-v283-PRIME-ATTESTATION-CONTACT
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 
@@ -579,12 +579,14 @@ async function postDashboard(env, parrain, conseiller, filleuls) {
 //   3. RESEND_API_KEY défini      → envoi via Resend (legacy)
 // Brevo est prioritaire car validation domaine très simple (1 seul record TXT)
 // et 300 mails/jour gratuits — largement assez pour le parrainage.
-async function sendEmail({ apiKey, from, to, subject, html, replyTo, bcc, testRedirect }) {
+async function sendEmail({ apiKey, from, to, subject, html, replyTo, bcc, testRedirect, attachments }) {
   let realTo = to;
   let realSubject = subject;
   if (testRedirect) {
     realTo = testRedirect;
   }
+  // v283 — pièces jointes : [{ filename, contentBase64, contentType }]
+  const atts = Array.isArray(attachments) ? attachments.filter(a => a && a.filename && a.contentBase64) : [];
   // --- MODE BREVO (PRIORITAIRE) ---
   const brevoKey = process.env.BREVO_API_KEY;
   if (brevoKey) {
@@ -605,6 +607,7 @@ async function sendEmail({ apiKey, from, to, subject, html, replyTo, bcc, testRe
       if (bcc) {
         body.bcc = (Array.isArray(bcc) ? bcc : [bcc]).filter(Boolean).map(e => ({ email: e }));
       }
+      if (atts.length) body.attachment = atts.map(a => ({ name: a.filename, content: a.contentBase64 }));
       const r = await fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
         headers: {
@@ -630,7 +633,8 @@ async function sendEmail({ apiKey, from, to, subject, html, replyTo, bcc, testRe
         subject: realSubject,
         html,
         replyTo: replyTo || undefined,
-        bcc: bcc ? (Array.isArray(bcc) ? bcc.join(', ') : bcc) : undefined
+        bcc: bcc ? (Array.isArray(bcc) ? bcc.join(', ') : bcc) : undefined,
+        attachments: atts.length ? atts.map(a => ({ filename: a.filename, content: Buffer.from(a.contentBase64, 'base64'), contentType: a.contentType || undefined })) : undefined
       });
       return { ok: true, status: 200, response: { id: info.messageId, accepted: info.accepted, rejected: info.rejected }, via: 'smtp' };
     } catch (e) {
@@ -642,6 +646,7 @@ async function sendEmail({ apiKey, from, to, subject, html, replyTo, bcc, testRe
   const body = { from, to: Array.isArray(realTo) ? realTo : [realTo], subject: realSubject, html };
   if (replyTo) body.reply_to = replyTo;
   if (bcc)     body.bcc      = Array.isArray(bcc) ? bcc : [bcc];
+  if (atts.length) body.attachments = atts.map(a => ({ filename: a.filename, content: a.contentBase64 }));
   const r = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -999,6 +1004,304 @@ async function handleUpdate(event) {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// v283 — PRIME DE PARRAINAGE : notification au parrain (échelon), attestation
+// signée en ligne (RIB + pièce d'identité + signature), PDF archivé + envoyé.
+//   POST ?action=prime-notify  (admin)  { id, filleulIndex, montant?, echelon?, preview? }
+//   GET  ?action=prime-info&t= (public, token signé)
+//   POST ?action=prime-sign    (public, token signé) { t, iban, titulaire, adresse, lieu,
+//                                signaturePng, attestationPdf:{name,dataBase64}, piece:{name,type,dataBase64} }
+//   GET  ?action=prime-doc&id=&fi=&kind=attestation|piece|signature (admin)
+// Aucun mail n'est envoyé sans clic explicite de l'admin dans l'espace pro.
+// ═══════════════════════════════════════════════════════════════════════════
+const PRIME_TOKEN_TTL_DAYS = 60;
+const b64url = (buf) => Buffer.from(buf).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const b64urlDecode = (s) => Buffer.from(String(s).replace(/-/g, '+').replace(/_/g, '/'), 'base64');
+function primeSecret() { return process.env.PRIME_TOKEN_SECRET || process.env.PRO_JWT_SECRET || process.env.PARRAINAGE_ADMIN_TOKEN || ''; }
+function signPrimeToken(payload) {
+  const secret = primeSecret();
+  if (!secret) throw new Error('PRIME secret manquant (PRO_JWT_SECRET)');
+  const body = b64url(JSON.stringify(payload));
+  const sig  = b64url(crypto.createHmac('sha256', secret).update(body).digest());
+  return body + '.' + sig;
+}
+function verifyPrimeToken(token) {
+  try {
+    const secret = primeSecret();
+    const [body, sig] = String(token || '').split('.');
+    if (!body || !sig || !secret) return null;
+    const expect = b64url(crypto.createHmac('sha256', secret).update(body).digest());
+    if (expect.length !== sig.length || !crypto.timingSafeEqual(Buffer.from(expect), Buffer.from(sig))) return null;
+    const payload = JSON.parse(b64urlDecode(body).toString('utf8'));
+    if (!payload || !payload.id || typeof payload.fi !== 'number') return null;
+    if (payload.exp && Date.now() > payload.exp) return { expired: true, payload };
+    return { payload };
+  } catch (_e) { return null; }
+}
+function isAdminEvent(event) {
+  const adminToken = process.env.PARRAINAGE_ADMIN_TOKEN || '';
+  const proSecret  = process.env.PRO_JWT_SECRET || '';
+  const authHdr = event.headers.authorization || event.headers.Authorization || '';
+  const bearer = authHdr.startsWith('Bearer ') ? authHdr.slice(7) : '';
+  if (adminToken && bearer === adminToken) return true;
+  if (proSecret && bearer) {
+    try { const { verifyToken } = require('./pro-login'); const p = verifyToken(bearer, proSecret); if (p && p.r === 'admin') return true; } catch (_e) {}
+  }
+  return false;
+}
+const jsonResp = (code, obj) => ({ statusCode: code, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify(obj) });
+function normIban(v) { return String(v || '').replace(/\s+/g, '').toUpperCase(); }
+function ibanValid(iban) {
+  const s = normIban(iban);
+  if (!/^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$/.test(s)) return false;
+  if (s.startsWith('FR') && s.length !== 27) return false;
+  const rearr = s.slice(4) + s.slice(0, 4);
+  let rem = 0;
+  for (const ch of rearr) {
+    const v = /[A-Z]/.test(ch) ? String(ch.charCodeAt(0) - 55) : ch;
+    for (const d of v) rem = (rem * 10 + Number(d)) % 97;
+  }
+  return rem === 1;
+}
+const maskIban = (iban) => { const s = normIban(iban); return s.length > 8 ? s.slice(0, 4) + ' •••• •••• ' + s.slice(-4) : '••••'; };
+const fmtDateFr = (iso) => { try { return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Europe/Paris' }); } catch (_e) { return String(iso || ''); } };
+
+// Rang de ce filleul parmi les filleuls SIGNÉS du parrain sur l'année → prime marginale selon le barème.
+async function computePrimeDefault(store, record, filleulIndex) {
+  const email = ((record.parrain || {}).email || '').toLowerCase();
+  const year = new Date(record.createdAt || Date.now()).getUTCFullYear();
+  const signed = [];
+  const listing = await store.list();
+  for (const blob of (listing.blobs || [])) {
+    const r = await store.get(blob.key, { type: 'json' });
+    if (!r || !r.parrain || (r.parrain.email || '').toLowerCase() !== email) continue;
+    if (new Date(r.createdAt || 0).getUTCFullYear() !== year) continue;
+    (r.filleuls || []).forEach((f, i) => { if (f && f.status === 'signe') signed.push({ id: r.id, i, at: f.status_updated_at || r.createdAt || '' }); });
+  }
+  signed.sort((a, b) => a.at.localeCompare(b.at));
+  let rank = signed.findIndex(s => s.id === record.id && s.i === filleulIndex) + 1;
+  if (rank <= 0) rank = signed.length + 1;
+  const montant = cumulAt(rank) - cumulAt(rank - 1);
+  return { echelon: rank, montant, nbSignes: signed.length };
+}
+
+function emailPrimeParrain({ parrain, filleul, conseiller, montant, echelon, lien }) {
+  const consNom = conseillerComplet(conseiller);
+  const consPrenom = conseillerPrenom(conseiller) || 'votre conseiller';
+  const fNom = `${escapeHtml(filleul.prenom || '')} ${escapeHtml(filleul.nom || '')}`.trim();
+  const year = new Date().getFullYear();
+  const body = `
+${p(`Bonjour ${escapeHtml(parrain.prenom)},`)}
+${p(`Bonne nouvelle&nbsp;: <b>${fNom}</b> nous a rejoints grâce à votre recommandation. Votre parrainage est <b>concrétisé</b>, et nous tenions à vous en remercier sincèrement.`)}
+${heroCream(`Votre prime de parrainage · échelon ${echelon}`, `${eur(montant)}`, `${ordinal(echelon)} parrainage concrétisé en ${year}`)}
+${p(`Pour déclencher le versement, il nous reste une formalité simple, à faire en <b>trois minutes</b> depuis votre téléphone ou votre ordinateur&nbsp;:`)}
+${p(`<b>1.</b> Indiquer le RIB sur lequel vous souhaitez recevoir la prime.<br><b>2.</b> Joindre une pièce d'identité en cours de validité.<br><b>3.</b> Signer l'attestation de réception de prime (elle vaut justificatif comptable — vous en recevez une copie).`)}
+${ctaNavy(lien, 'Compléter mon dossier de prime')}
+${pSoft(`Ce lien vous est personnel et reste valable ${PRIME_TOKEN_TTL_DAYS} jours. Le versement intervient après réception de l'attestation signée.`)}
+${infoBeige(`<b>Rappel du programme ${year}</b>&nbsp;: ${eur(500)} pour chacun de vos deux premiers parrainages concrétisés, puis dès le 3<sup>e</sup>, ${eur(1500)} par parrainage avec revalorisation rétroactive des deux premiers (${eur(4500)} cumulés au 3<sup>e</sup>). Le programme court jusqu'au 31&nbsp;décembre.<br><br><b>Confidentialité</b>&nbsp;: vos documents sont stockés de manière chiffrée, réservés à la comptabilité de Paris Conseils, et supprimables sur simple demande à <a href="mailto:contact@parisconseils.fr" style="color:${RIP_NAVY};">contact@parisconseils.fr</a>.`)}
+${signature(`Avec toute notre reconnaissance`)}
+${pSoft(`${escapeHtml(consNom)} reste votre interlocuteur pour toute question.`, 'margin-top:6px;')}`;
+  return baseShell({ title: `Votre prime de ${eur(montant)} vous attend`, eyebrow: 'Parrainage concrétisé', body });
+}
+
+function emailPrimeSigneeParrain({ parrain, filleul, montant, echelon, signedAt }) {
+  const fNom = `${escapeHtml(filleul.prenom || '')} ${escapeHtml(filleul.nom || '')}`.trim();
+  const body = `
+${p(`Bonjour ${escapeHtml(parrain.prenom)},`)}
+${p(`Nous avons bien reçu votre attestation signée le <b>${fmtDateFr(signedAt)}</b> pour le parrainage de <b>${fNom}</b>. Vous en trouverez une copie en pièce jointe.`)}
+${heroCream('Versement en préparation', `${eur(montant)}`, `échelon ${echelon} · sur le compte ${escapeHtml(maskIban(parrain.iban))}`)}
+${p(`Notre comptabilité procède au virement dans les prochains jours. Vous n'avez plus rien à faire.`)}
+${infoBeige(`Un doute, une question sur ce versement&nbsp;? Répondez simplement à cet e-mail ou écrivez à <a href="mailto:contact@parisconseils.fr" style="color:${RIP_NAVY};">contact@parisconseils.fr</a>.`)}
+${signature('Merci encore pour votre confiance')}`;
+  return baseShell({ title: 'Attestation bien reçue', eyebrow: 'Prime de parrainage', body });
+}
+
+function emailPrimeSigneeCompta({ parrain, filleul, record, montant, echelon, signedAt, meta }) {
+  const fNom = `${escapeHtml(filleul.prenom || '')} ${escapeHtml(filleul.nom || '')}`.trim();
+  const pNom = `${escapeHtml(parrain.prenom || '')} ${escapeHtml(parrain.nom || '')}`.trim();
+  const body = `
+${p(`Attestation de prime <b>signée</b> par le parrain. PDF en pièce jointe (RIB complet dans le PDF). La pièce d'identité est consultable dans l'espace pro (fiche du parrainage), elle n'est pas envoyée par e-mail.`)}
+${heroCream('À virer', `${eur(montant)}`, `échelon ${echelon} · ${pNom} → ${fNom}`)}
+${infoBeige(`<b>Parrain</b>&nbsp;: ${pNom} · ${escapeHtml(parrain.email || '')} · ${escapeHtml(parrain.tel || '')}<br><b>Titulaire du compte</b>&nbsp;: ${escapeHtml(meta.titulaire || '')}<br><b>IBAN</b>&nbsp;: ${escapeHtml(meta.ibanSpaced || '')}<br><b>Adresse</b>&nbsp;: ${escapeHtml(meta.adresse || '')}<br><b>Signé le</b>&nbsp;: ${fmtDateFr(signedAt)} à ${escapeHtml(meta.lieu || '')} · IP ${escapeHtml(meta.ip || '')}<br><b>Empreinte PDF</b>&nbsp;: ${escapeHtml((meta.pdfSha256 || '').slice(0, 16))}…<br><b>Conseiller</b>&nbsp;: ${escapeHtml(record.conseiller || '')} · ID ${escapeHtml(record.id)}`)}
+${ctaNavy('https://parrainage.parisconseils.fr/espace-pro.html', 'Ouvrir l\'espace pro')}`;
+  return baseShell({ title: `Prime à virer — ${pNom}`, eyebrow: 'Comptabilité · parrainage', body });
+}
+
+async function handlePrimeNotify(event) {
+  if (!isAdminEvent(event)) return jsonResp(401, { ok: false, error: 'Unauthorized (admin only)' });
+  let body; try { body = JSON.parse(event.body || '{}'); } catch (e) { return jsonResp(400, { ok: false, error: 'Invalid JSON' }); }
+  const { id, filleulIndex } = body;
+  if (!id || typeof filleulIndex !== 'number') return jsonResp(400, { ok: false, error: 'id / filleulIndex requis' });
+  try {
+    const store = getBlobStore('parrainages');
+    const record = await store.get(id, { type: 'json' });
+    if (!record) return jsonResp(404, { ok: false, error: 'Not found' });
+    const f = (record.filleuls || [])[filleulIndex];
+    if (!f) return jsonResp(400, { ok: false, error: 'Invalid filleulIndex' });
+    if (f.status !== 'signe') return jsonResp(400, { ok: false, error: 'Le filleul doit être au statut « signé » avant de déclencher la prime.' });
+    const def = await computePrimeDefault(store, record, filleulIndex);
+    const montant = Number(body.montant) > 0 ? Math.round(Number(body.montant)) : def.montant;
+    const echelon = Number(body.echelon) > 0 ? Math.round(Number(body.echelon)) : def.echelon;
+    const exp = Date.now() + PRIME_TOKEN_TTL_DAYS * 24 * 3600 * 1000;
+    const token = signPrimeToken({ id: record.id, fi: filleulIndex, m: montant, e: echelon, exp });
+    const lien = `https://parrainage.parisconseils.fr/prime.html?t=${encodeURIComponent(token)}`;
+    const html = emailPrimeParrain({ parrain: record.parrain, filleul: f, conseiller: record.conseiller, montant, echelon, lien });
+    if (body.preview) return jsonResp(200, { ok: true, preview: true, montant, echelon, defaut: def, html, subject: `Votre prime de parrainage de ${montant.toLocaleString('fr-FR')} € — une formalité à compléter` });
+    const env = process.env;
+    const sendRes = await sendEmail({
+      apiKey: env.RESEND_API_KEY, from: env.MAIL_FROM, to: record.parrain.email,
+      subject: `Votre prime de parrainage de ${montant.toLocaleString('fr-FR')} € — une formalité à compléter`,
+      html, replyTo: resolveConseillerEmail(env, record.conseiller), bcc: env.MAIL_CC_OPS
+    });
+    f.prime = Object.assign({}, f.prime || {}, { montant, echelon, status: 'notifie', notifiedAt: new Date().toISOString(), notifiedBy: 'espace-pro', tokenExp: new Date(exp).toISOString(), mail: { ok: !!sendRes.ok, status: sendRes.status, via: sendRes.via } });
+    record.filleuls[filleulIndex] = f;
+    record.updatedAt = new Date().toISOString();
+    await store.setJSON(record.id, record);
+    return jsonResp(sendRes.ok ? 200 : 502, { ok: !!sendRes.ok, montant, echelon, filleul: f, mail: sendRes });
+  } catch (err) { return jsonResp(500, { ok: false, error: err.message }); }
+}
+
+async function handlePrimeInfo(event) {
+  const t = (event.queryStringParameters || {}).t || '';
+  const v = verifyPrimeToken(t);
+  if (!v) return jsonResp(401, { ok: false, error: 'Lien invalide.' });
+  if (v.expired) return jsonResp(410, { ok: false, error: 'Ce lien a expiré. Écrivez à contact@parisconseils.fr pour en recevoir un nouveau.' });
+  try {
+    const store = getBlobStore('parrainages');
+    const record = await store.get(v.payload.id, { type: 'json' });
+    const f = record && (record.filleuls || [])[v.payload.fi];
+    if (!record || !f) return jsonResp(404, { ok: false, error: 'Parrainage introuvable.' });
+    const pr = record.parrain || {};
+    const prime = f.prime || {};
+    return jsonResp(200, { ok: true,
+      parrain: { prenom: pr.prenom || '', nom: pr.nom || '', email: pr.email || '', tel: pr.tel || '', ibanMasque: pr.iban ? maskIban(pr.iban) : null, titulaire: pr.titulaire || '', adresse: pr.adresse || '' },
+      filleul: { prenom: f.prenom || '', nom: f.nom || '' },
+      conseiller: conseillerComplet(record.conseiller),
+      montant: prime.montant || v.payload.m, echelon: prime.echelon || v.payload.e,
+      dejaSigne: prime.status === 'signe', signedAt: prime.signedAt || null, annee: new Date(record.createdAt || Date.now()).getFullYear()
+    });
+  } catch (err) { return jsonResp(500, { ok: false, error: err.message }); }
+}
+
+const B64_MAX = { signature: 400 * 1024, attestation: 4 * 1024 * 1024, piece: 4 * 1024 * 1024 };
+function b64Payload(obj, maxBytes) {
+  if (!obj || typeof obj.dataBase64 !== 'string') return null;
+  const data = obj.dataBase64.replace(/^data:[^;]+;base64,/, '');
+  const bytes = Math.floor(data.length * 3 / 4);
+  if (bytes < 200 || bytes > maxBytes) return null;
+  return { data, bytes, name: String(obj.name || '').replace(/[^\w.\-]+/g, '_').slice(0, 80), type: String(obj.type || '').slice(0, 60) };
+}
+async function handlePrimeSign(event) {
+  let body; try { body = JSON.parse(event.body || '{}'); } catch (e) { return jsonResp(400, { ok: false, error: 'Invalid JSON' }); }
+  const v = verifyPrimeToken(body.t);
+  if (!v) return jsonResp(401, { ok: false, error: 'Lien invalide.' });
+  if (v.expired) return jsonResp(410, { ok: false, error: 'Ce lien a expiré.' });
+  const iban = normIban(body.iban);
+  if (!ibanValid(iban)) return jsonResp(400, { ok: false, error: 'IBAN invalide — vérifiez les 27 caractères (FR76 …).' });
+  const titulaire = String(body.titulaire || '').trim().slice(0, 120);
+  const adresse   = String(body.adresse || '').trim().slice(0, 300);
+  const lieu      = String(body.lieu || '').trim().slice(0, 80);
+  if (titulaire.length < 3) return jsonResp(400, { ok: false, error: 'Nom du titulaire du compte requis.' });
+  if (adresse.length < 8)   return jsonResp(400, { ok: false, error: 'Adresse postale requise.' });
+  if (lieu.length < 2)      return jsonResp(400, { ok: false, error: 'Lieu de signature requis.' });
+  if (body.consent !== true) return jsonResp(400, { ok: false, error: 'Vous devez certifier l\'exactitude des informations.' });
+  const sig   = b64Payload({ dataBase64: body.signaturePng, name: 'signature.png', type: 'image/png' }, B64_MAX.signature);
+  const pdf   = b64Payload(body.attestationPdf, B64_MAX.attestation);
+  const piece = b64Payload(body.piece, B64_MAX.piece);
+  if (!sig)   return jsonResp(400, { ok: false, error: 'Signature manuscrite requise.' });
+  if (!pdf)   return jsonResp(400, { ok: false, error: 'Attestation PDF manquante ou trop lourde (max 4 Mo).' });
+  if (!piece) return jsonResp(400, { ok: false, error: 'Pièce d\'identité manquante ou trop lourde (max 4 Mo).' });
+  if (!/^(image\/(jpeg|png|webp|heic)|application\/pdf)$/.test(piece.type)) return jsonResp(400, { ok: false, error: 'Pièce d\'identité : formats acceptés JPG, PNG, WEBP ou PDF.' });
+  try {
+    const store = getBlobStore('parrainages');
+    const record = await store.get(v.payload.id, { type: 'json' });
+    const fi = v.payload.fi;
+    const f = record && (record.filleuls || [])[fi];
+    if (!record || !f) return jsonResp(404, { ok: false, error: 'Parrainage introuvable.' });
+    if (f.prime && f.prime.status === 'signe') return jsonResp(409, { ok: false, error: 'Cette attestation a déjà été signée.' });
+    const docs = getBlobStore('parrainages-docs');
+    const prefix = `${record.id}/${fi}/`;
+    const pdfBuf = Buffer.from(pdf.data, 'base64');
+    const pieceBuf = Buffer.from(piece.data, 'base64');
+    const sigBuf = Buffer.from(sig.data, 'base64');
+    const sha = (b) => crypto.createHash('sha256').update(b).digest('hex');
+    const pieceExt = piece.type === 'application/pdf' ? 'pdf' : (piece.type.split('/')[1] || 'bin').replace('jpeg', 'jpg');
+    await docs.set(prefix + 'attestation.pdf', pdfBuf, { metadata: { type: 'application/pdf' } });
+    await docs.set(prefix + 'piece-identite.' + pieceExt, pieceBuf, { metadata: { type: piece.type, name: piece.name } });
+    await docs.set(prefix + 'signature.png', sigBuf, { metadata: { type: 'image/png' } });
+    const signedAt = new Date().toISOString();
+    const ip = event.headers['x-nf-client-connection-ip'] || event.headers['client-ip'] || (event.headers['x-forwarded-for'] || '').split(',')[0].trim() || '';
+    const ua = String(event.headers['user-agent'] || '').slice(0, 200);
+    const montant = (f.prime && f.prime.montant) || v.payload.m;
+    const echelon = (f.prime && f.prime.echelon) || v.payload.e;
+    const ibanSpaced = iban.replace(/(.{4})/g, '$1 ').trim();
+    record.parrain = Object.assign({}, record.parrain || {}, { iban, titulaire, adresse });
+    f.prime = Object.assign({}, f.prime || {}, { montant, echelon, status: 'signe', signedAt, lieu, ip, ua,
+      docs: { attestation: prefix + 'attestation.pdf', piece: prefix + 'piece-identite.' + pieceExt, signature: prefix + 'signature.png' },
+      sha256: { attestation: sha(pdfBuf), piece: sha(pieceBuf), signature: sha(sigBuf) }, pieceType: piece.type, pieceBytes: piece.bytes });
+    record.filleuls[fi] = f;
+    record.updatedAt = signedAt;
+    await store.setJSON(record.id, record);
+    await docs.setJSON(prefix + 'meta.json', { id: record.id, fi, signedAt, ip, ua, lieu, titulaire, adresse, montant, echelon, sha256: f.prime.sha256, ibanMasque: maskIban(iban) });
+
+    const env = process.env;
+    const meta = { titulaire, adresse, lieu, ip, ibanSpaced, pdfSha256: f.prime.sha256.attestation };
+    const pdfName = `Attestation-prime-parrainage-${(record.parrain.nom || 'parrain').replace(/[^\w\-]+/g, '_')}-${signedAt.slice(0, 10)}.pdf`;
+    const compta = env.MAIL_COMPTA || env.MAIL_CONTACT || 'contact@parisconseils.fr';
+    const mails = [];
+    mails.push(Object.assign({ kind: 'compta', to: compta }, await sendEmail({ apiKey: env.RESEND_API_KEY, from: env.MAIL_FROM, to: compta,
+      subject: `Prime à virer — ${record.parrain.prenom} ${record.parrain.nom} (${Number(montant).toLocaleString('fr-FR')} €, attestation signée)`,
+      html: emailPrimeSigneeCompta({ parrain: record.parrain, filleul: f, record, montant, echelon, signedAt, meta }),
+      replyTo: record.parrain.email, attachments: [{ filename: pdfName, contentBase64: pdf.data, contentType: 'application/pdf' }] })));
+    mails.push(Object.assign({ kind: 'parrain', to: record.parrain.email }, await sendEmail({ apiKey: env.RESEND_API_KEY, from: env.MAIL_FROM, to: record.parrain.email,
+      subject: `Votre attestation de prime est bien reçue — ${Number(montant).toLocaleString('fr-FR')} €`,
+      html: emailPrimeSigneeParrain({ parrain: record.parrain, filleul: f, montant, echelon, signedAt }),
+      replyTo: resolveConseillerEmail(env, record.conseiller), bcc: env.MAIL_CC_OPS, attachments: [{ filename: pdfName, contentBase64: pdf.data, contentType: 'application/pdf' }] })));
+    return jsonResp(200, { ok: true, signedAt, montant, echelon, mails: mails.map(m => ({ kind: m.kind, ok: m.ok, status: m.status, via: m.via })) });
+  } catch (err) { return jsonResp(500, { ok: false, error: err.message }); }
+}
+
+async function handlePrimeDoc(event) {
+  if (!isAdminEvent(event)) return jsonResp(401, { ok: false, error: 'Unauthorized (admin only)' });
+  const q = event.queryStringParameters || {};
+  const kind = String(q.kind || 'attestation');
+  const fi = parseInt(q.fi, 10);
+  if (!q.id || isNaN(fi)) return jsonResp(400, { ok: false, error: 'id / fi requis' });
+  try {
+    const store = getBlobStore('parrainages');
+    const record = await store.get(q.id, { type: 'json' });
+    const f = record && (record.filleuls || [])[fi];
+    const key = f && f.prime && f.prime.docs && f.prime.docs[kind];
+    if (!key) return jsonResp(404, { ok: false, error: 'Document introuvable' });
+    const docs = getBlobStore('parrainages-docs');
+    const res = await docs.getWithMetadata(key, { type: 'arrayBuffer' });
+    if (!res || !res.data) return jsonResp(404, { ok: false, error: 'Document introuvable (blob)' });
+    const ctype = (res.metadata && res.metadata.type) || (kind === 'attestation' ? 'application/pdf' : 'application/octet-stream');
+    const fname = key.split('/').pop();
+    return { statusCode: 200, isBase64Encoded: true,
+      headers: { 'Content-Type': ctype, 'Content-Disposition': `inline; filename="${fname}"`, 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff', 'Access-Control-Allow-Origin': '*' },
+      body: Buffer.from(res.data).toString('base64') };
+  } catch (err) { return jsonResp(500, { ok: false, error: err.message }); }
+}
+
+// v283 — Formulaire contact du site (Netlify Forms est désactivé sur ce site → sans ceci, les messages étaient perdus).
+async function handleContact(event) {
+  let body; try { body = JSON.parse(event.body || '{}'); } catch (e) { return jsonResp(400, { ok: false, error: 'Invalid JSON' }); }
+  if (body['bot-field']) return jsonResp(200, { ok: true, skipped: 'bot' });
+  const clean = (v, n) => String(v == null ? '' : v).trim().slice(0, n || 200);
+  const prenom = clean(body.prenom, 60), nom = clean(body.nom, 60), email = clean(body.email, 120), tel = clean(body.telephone, 40), sujet = clean(body.sujet, 40), message = clean(body.message, 4000);
+  if (!prenom || !nom || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || message.length < 5) return jsonResp(400, { ok: false, error: 'Merci de renseigner prénom, nom, e-mail et message.' });
+  const env = process.env;
+  const to = env.MAIL_CONTACT || 'contact@parisconseils.fr';
+  const sujetLabel = { question: 'Question sur le parrainage', suggestion: 'Suggestion', 'rendez-vous': 'Demande de rendez-vous', autre: 'Autre' }[sujet] || (sujet || 'Message');
+  const html = baseShell({ title: escapeHtml(sujetLabel), eyebrow: 'Message reçu · parrainage.parisconseils.fr', body: `
+${p(`<b>${escapeHtml(prenom)} ${escapeHtml(nom)}</b> · <a href="mailto:${escapeHtml(email)}" style="color:${RIP_NAVY};">${escapeHtml(email)}</a>${tel ? ' · ' + escapeHtml(tel) : ''}`)}
+${infoBeige(escapeHtml(message).replace(/\n/g, '<br>'))}
+${pSoft(`Répondez directement à cet e-mail pour écrire à ${escapeHtml(prenom)}.`, 'margin-top:14px;')}` });
+  const r = await sendEmail({ apiKey: env.RESEND_API_KEY, from: env.MAIL_FROM, to, subject: `[Contact parrainage] ${sujetLabel} — ${prenom} ${nom}`, html, replyTo: `${prenom} ${nom} <${email}>` });
+  return jsonResp(r.ok ? 200 : 502, { ok: !!r.ok, via: r.via, status: r.status });
+}
+
 async function handleDelete(event) {
   // v250l — Accepte 2 auths : PARRAINAGE_ADMIN_TOKEN (back-office) OU JWT pro role=admin.
   const adminToken = process.env.PARRAINAGE_ADMIN_TOKEN || '';
@@ -1099,6 +1402,12 @@ const innerHandler = async (event) => {
   // v263 — update filleul status
   if (event.httpMethod === 'POST' && action === 'set-status') return handleSetStatus(event);
   if (event.httpMethod === 'POST' && action === 'update') return handleUpdate(event);
+  // v283 — prime de parrainage + contact
+  if (event.httpMethod === 'POST' && action === 'prime-notify') return handlePrimeNotify(event);
+  if (event.httpMethod === 'GET'  && action === 'prime-info')   return handlePrimeInfo(event);
+  if (event.httpMethod === 'POST' && action === 'prime-sign')   return handlePrimeSign(event);
+  if (event.httpMethod === 'GET'  && action === 'prime-doc')    return handlePrimeDoc(event);
+  if (event.httpMethod === 'POST' && action === 'contact')      return handleContact(event);
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
