@@ -1120,8 +1120,10 @@
         if (labels[th]) { if (reached) labels[th].classList.add('lit'); else labels[th].classList.remove('lit'); }
       });
       if (tier > lastTier){
-        var labels = ['PALIER I DÉBLOQUÉ','PALIER II DÉBLOQUÉ','PALIER III DÉBLOQUÉ','SOMMET ATTEINT'];
-        var t = document.createElement('div'); t.className='dash-toast'; t.textContent='✦ '+labels[tier];
+        // v282 : renommé (l'ancien `var labels` écrasait l'objet `labels` des paliers par hoisting → TypeError au chargement,
+        // ce qui coupait l'init du script : bouton ENVOYER sans handler sur index.html, formulaire contact jamais branché).
+        var tierLabels = ['PALIER I DÉBLOQUÉ','PALIER II DÉBLOQUÉ','PALIER III DÉBLOQUÉ','SOMMET ATTEINT'];
+        var t = document.createElement('div'); t.className='dash-toast'; t.textContent='✦ '+tierLabels[tier];
         toastZone.appendChild(t); setTimeout(function(){ t.remove(); }, 2600);
         lastTier = tier;
       }
@@ -1149,7 +1151,7 @@
           '<div class="form-group"><label>Prénom *</label><input class="fi-prenom" required></div>'+
           '<div class="form-group"><label>Nom *</label><input class="fi-nom" required></div>'+
           '<div class="form-group"><label>Email *</label><input class="fi-email" type="email" required></div>'+
-          '<div class="form-group"><label>Téléphone *</label><input class="fi-tel" type="tel" required></div>'+
+          '<div class="form-group"><label>Téléphone <span style="color:var(--muted);font-weight:400;">(facultatif)</span></label><input class="fi-tel" type="tel"></div>'+
         '</div>'+
         '<button type="button" class="fb-del">— Supprimer ce filleul</button>';
       list.appendChild(w);
@@ -1162,10 +1164,13 @@
     };
     addFilleul(true);
 
-    document.getElementById('add-filleul').addEventListener('click', function(){
+    var addFilleulBtn = document.getElementById('add-filleul');
+    addFilleulBtn.addEventListener('click', function(){
       if (count >= 10){ alert('Le programme est plafonné à 10 filleuls par parrain et par an.'); return; }
       addFilleul(false);
     });
+    // v282 : signale au script de secours (v200u) que ce handler est actif → évite un double ajout par clic.
+    addFilleulBtn.dataset.v200u = 'add-ok';
 
     var contactForm = document.getElementById('contact-form');
     var contactFlash = document.getElementById('contact-flash');
