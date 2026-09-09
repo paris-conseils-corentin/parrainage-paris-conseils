@@ -4,30 +4,37 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Paris Conseils — Programme Parrainage</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preload" as="image" href="/logo-paris-conseils.png">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap">
-
+  <!-- Charte alignée sur parisconseils.com : Inter (body/UI) + Cormorant Garamond 500 (headings) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.20/400.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.20/500.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.20/600.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.20/700.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/cormorant-garamond@5.0.16/400.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/cormorant-garamond@5.0.16/400-italic.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/cormorant-garamond@5.0.16/500.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/cormorant-garamond@5.0.16/500-italic.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/cormorant-garamond@5.0.16/600.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/cormorant-garamond@5.0.16/700.css">
   <style>
     :root{
       /* Palette alignée sur parisconseils.com */
-      --pc-navy:#0A1E3F;
+      --pc-navy:#0A1E3F;         /* navy profond (couleur boutons parisconseils.com) */
       --pc-navy-d:#0A1E3F;
-      --pc-navy-x:#061530;
-      --pc-blue:#4870AF;
+      --pc-navy-x:#061530;       /* extra dark pour hero radial */
+      --pc-blue:#4870AF;          /* bleu moyen (nav / liens parisconseils.com) */
       --pc-blue-l:#7a9ed6;
-      --pc-gold:#c9a961;
+      --pc-gold:#c9a961;          /* accent — conservé pour la constellation */
       --pc-gold-l:#e8d28a;
       --pc-gold-d:#8a6818;
-      --pc-cream:#F7F9FC;
+      --pc-cream:#F7F9FC;         /* fond général (blanc bleuté parisconseils.com) */
       --pc-cream-d:#eef2f8;
-      --pc-ink:#4A5A75;
-      --pc-heading:#0A1E3F;
+      --pc-ink:#4A5A75;           /* couleur de corps (bleu-gris parisconseils.com) */
+      --pc-heading:#0A1E3F;       /* couleur de titres sur fond clair */
       --muted:#6b7280;
       --border:#e5e7eb;
     }
-    body{background:var(--pc-cream);margin:0;color:var(--pc-ink);font-family:Inter,system-ui,-apple-system,'Segoe UI',sans-serif;font-size:16px;line-height:1.55;}
+    body{background:var(--pc-cream);margin:0;color:var(--pc-ink);
+         font-family:Inter,system-ui,-apple-system,'Segoe UI',sans-serif;font-size:16px;line-height:1.55;}
     h1,h2,h3{color:var(--pc-heading);}
 
     /* ===== Topbar ===== */
@@ -35,8 +42,8 @@
       padding:14px 28px;display:flex;align-items:center;justify-content:space-between;
       position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(15,23,42,.04);}
     .pc-topbar .logo-wrap{height:68px;display:flex;align-items:center;}
-    .pc-topbar .logo-wrap object{height:100%;width:auto;max-width:280px;display:block;overflow:visible;pointer-events:none;}
-    .pc-topbar .links{display:flex;gap:22px;align-items:center;font-size:14px;}
+    .pc-topbar .logo-wrap object,.pc-topbar .logo-wrap img{height:100%;width:auto;max-width:280px;display:block;overflow:visible;pointer-events:none;}
+    .pc-topbar .links{display:flex;gap:26px;align-items:center;font-size:15px;font-family:Inter,sans-serif;}
     .pc-topbar .links a{color:var(--pc-blue);text-decoration:none;font-weight:500;transition:color .15s;}
     .pc-topbar .links a:hover{color:var(--pc-navy);}
     .pc-topbar .btn-mini{background:var(--pc-navy);color:#fff;padding:12px 24px;border-radius:12px;
@@ -57,7 +64,8 @@
     .pc-hero .eyebrow{display:inline-block;background:rgba(201,169,97,.18);color:var(--pc-gold);
       font-family:'Inter',system-ui,sans-serif;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;
       padding:8px 16px;border-radius:999px;border:1px solid rgba(201,169,97,.4);margin-bottom:22px;}
-    .pc-hero h1{font-family:'Cormorant Garamond',Georgia,serif;font-size:60px;line-height:1.08;font-weight:500;margin:0 0 22px;letter-spacing:-.6px;color:#fff;}
+    .pc-hero h1{font-family:'Cormorant Garamond',Georgia,serif;font-size:60px;line-height:1.08;
+      font-weight:500;margin:0 0 22px;letter-spacing:-.6px;color:#fff;}
     .pc-hero h1 .gold{color:var(--pc-gold);font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:400;}
     .pc-hero p.lead{font-size:17px;line-height:1.65;opacity:.92;margin:0 0 16px;max-width:520px;}
     .pc-hero p.tagline{font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--pc-gold-l);
@@ -98,7 +106,8 @@
 
     /* ===== Sections ===== */
     .pc-section{padding:80px 24px;max-width:1120px;margin:0 auto;}
-    .pc-section h2{font-family:'Cormorant Garamond',Georgia,serif;font-size:42px;font-weight:500;color:var(--pc-heading);text-align:center;margin:0 0 14px;line-height:1.15;letter-spacing:-.3px;}
+    .pc-section h2{font-family:'Cormorant Garamond',Georgia,serif;font-size:42px;font-weight:500;color:var(--pc-heading);
+      text-align:center;margin:0 0 14px;line-height:1.15;letter-spacing:-.3px;}
     .pc-section h2 .it{font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--pc-gold);}
     .pc-section .section-sub{text-align:center;color:var(--muted);max-width:640px;
       margin:0 auto 50px;font-size:16px;line-height:1.6;font-family:'Cormorant Garamond',serif;font-style:italic;}
@@ -184,7 +193,45 @@
     .step h3{margin:0 0 8px;color:var(--pc-navy);font-size:16px;font-family:'Inter',system-ui,sans-serif;font-weight:700;letter-spacing:1px;}
     .step p{margin:0;color:var(--muted);font-size:14px;line-height:1.6;font-family:'Cormorant Garamond',serif;font-style:italic;}
 
-    /* ===== Pyramide visualisation ===== */
+    /* ===== Étoiles Euromillions (paliers) ===== */
+    .euro-stars{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin:20px 0 30px;align-items:start;}
+    .euro-star{text-align:center;position:relative;padding:14px 8px 18px;transition:transform .25s;}
+    .euro-star:hover{transform:translateY(-6px);}
+    .euro-star .es-svg{width:110px;height:110px;display:block;margin:0 auto 14px;filter:drop-shadow(0 6px 18px rgba(201,169,97,.35));}
+    .euro-star .es-label{font-family:Inter,sans-serif;font-size:10px;letter-spacing:2px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:6px;}
+    .euro-star .es-amount{font-family:'Cormorant Garamond',Georgia,serif;font-size:22px;color:var(--pc-navy);font-weight:500;letter-spacing:-.3px;line-height:1.05;}
+    .euro-star .es-desc{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5;font-family:'Cormorant Garamond',serif;font-style:italic;padding:0 4px;}
+    .euro-star.major .es-svg{width:135px;height:135px;filter:drop-shadow(0 8px 26px rgba(201,169,97,.55));}
+    .euro-star.major .es-amount{font-size:26px;color:var(--pc-gold-d);}
+    .euro-star.major .es-label{color:var(--pc-gold-d);letter-spacing:2.5px;}
+    .euro-star.sommet .es-svg{width:135px;height:135px;filter:drop-shadow(0 8px 30px rgba(201,169,97,.7));}
+    .euro-star.sommet .es-amount{font-size:26px;color:var(--pc-gold-d);}
+    .euro-star.sommet .es-label{color:var(--pc-gold-d);letter-spacing:2.5px;}
+    @media (max-width:900px){
+      .euro-stars{grid-template-columns:repeat(5,1fr);gap:6px;}
+      .euro-star{padding:10px 4px;}
+      .euro-star .es-svg{width:64px;height:64px;margin-bottom:8px;}
+      .euro-star.major .es-svg,.euro-star.sommet .es-svg{width:78px;height:78px;}
+      .euro-star .es-amount{font-size:16px;}
+      .euro-star.major .es-amount,.euro-star.sommet .es-amount{font-size:18px;}
+      .euro-star .es-label{font-size:8px;letter-spacing:1px;}
+      .euro-star .es-desc{font-size:10px;line-height:1.35;}
+    }
+
+    /* ===== Constellation visualisation ===== */
+    .star-base{transition:fill .9s ease, transform .9s ease, filter .9s ease; transform-origin:center;}
+    .star-base.dim{fill:#0e2240; stroke:#1f3a5f; stroke-width:.6;}
+    .star-base.lit{filter:drop-shadow(0 0 7px rgba(232,210,138,.85));}
+    .star-tier.dim{fill:#13294a; stroke:#3b5478; stroke-width:.6;}
+    .star-tier.lit{filter:drop-shadow(0 0 14px rgba(255,224,140,.95));}
+    .star-link{transition:stroke-dashoffset 1.2s ease, opacity .8s ease;
+               stroke:url(#pcGoldLink); stroke-width:1.2; stroke-linecap:round; opacity:0;}
+    .star-link.on{opacity:.85;}
+    .star-label{transition:fill .9s ease, opacity .9s ease; fill:#5a6680; opacity:.55;
+                font-family:'Cormorant Garamond',Georgia,serif; font-weight:700; text-anchor:middle;}
+    .star-label.lit{fill:#f0d077; opacity:1;}
+    .pyr-old-keep{display:none;}
+    /* ===== (anciens styles pyramide conservés pour compat) ===== */
     .pyr-wrap{display:grid;grid-template-columns:1fr 1fr;gap:50px;align-items:center;}
     .pyr-controls{display:flex;gap:8px;justify-content:center;margin-top:20px;flex-wrap:wrap;}
     .pyr-btn{background:#fff;border:1.5px solid var(--border);color:var(--pc-navy);
@@ -349,40 +396,6 @@
       .slogan-band .inner{font-size:20px;}
       .pacte-quote{font-size:26px;}
     }
-    /* ===== Étoiles Euromillions (paliers) ===== */
-    .euro-stars{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin:20px 0 30px;align-items:start;}
-    .euro-star{text-align:center;position:relative;padding:14px 8px 18px;transition:transform .25s;}
-    .euro-star:hover{transform:translateY(-6px);}
-    .euro-star .es-svg{width:110px;height:110px;display:block;margin:0 auto 14px;filter:drop-shadow(0 6px 18px rgba(201,169,97,.35));}
-    .euro-star .es-label{font-family:Inter,sans-serif;font-size:10px;letter-spacing:2px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:6px;}
-    .euro-star .es-amount{font-family:'Cormorant Garamond',Georgia,serif;font-size:30px;color:var(--pc-navy);font-weight:600;letter-spacing:-.5px;line-height:1.05;}
-    .euro-star .es-desc{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5;font-family:'Cormorant Garamond',serif;font-style:italic;padding:0 4px;}
-    .euro-star.major .es-svg,.euro-star.sommet .es-svg{width:135px;height:135px;filter:drop-shadow(0 8px 26px rgba(201,169,97,.6));}
-    .euro-star.major .es-amount,.euro-star.sommet .es-amount{font-size:36px;color:var(--pc-gold-d);}
-    .euro-star.major .es-label,.euro-star.sommet .es-label{color:var(--pc-gold-d);letter-spacing:2.5px;}
-    @media (max-width:900px){
-      .euro-stars{grid-template-columns:repeat(5,1fr);gap:6px;}
-      .euro-star{padding:10px 4px;}
-      .euro-star .es-svg{width:64px;height:64px;margin-bottom:8px;}
-      .euro-star.major .es-svg,.euro-star.sommet .es-svg{width:78px;height:78px;}
-      .euro-star .es-amount{font-size:16px;}
-      .euro-star.major .es-amount,.euro-star.sommet .es-amount{font-size:18px;}
-      .euro-star .es-label{font-size:8px;letter-spacing:1px;}
-      .euro-star .es-desc{font-size:10px;line-height:1.35;}
-    }
-    /* ===== Mini etoiles dorees dans le dashboard sticky ===== */
-    .dash-mini-stars{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:20px 8px 14px;
-      background:rgba(255,255,255,.04);border-radius:12px;margin:14px 0 4px;}
-    .dms-item{text-align:center;transition:transform .3s;padding:6px 2px;}
-    .dms-star{font-size:28px;color:#3a4560;transition:color .6s,transform .6s,text-shadow .6s;line-height:1;display:inline-block;}
-    .dms-item.major .dms-star,.dms-item.sommet .dms-star{font-size:36px;}
-    .dms-item.lit .dms-star{color:var(--pc-gold);text-shadow:0 0 12px rgba(232,210,138,.85),0 0 24px rgba(255,224,140,.4);transform:scale(1.1);}
-    .dms-item.major.lit .dms-star,.dms-item.sommet.lit .dms-star{text-shadow:0 0 16px rgba(255,224,140,.95),0 0 32px rgba(240,208,119,.7);transform:scale(1.15);}
-    .dms-amt{font-family:'Cormorant Garamond',serif;font-size:11px;color:#7a8aa8;margin-top:6px;transition:color .5s;font-style:italic;line-height:1.2;}
-    .dms-item.lit .dms-amt{color:var(--pc-gold-l);font-weight:600;font-style:normal;}
-
-
-
   </style>
 </head>
 <body>
@@ -407,9 +420,9 @@
         <span class="eyebrow">Programme parrainage</span>
         <h1>Recommandez,<br><span class="gold">soyez récompensé.</span></h1>
         <p class="lead">
-          Chaque proche que vous présentez débloque une nouvelle pierre dorée
-          dans votre pyramide annuelle — jusqu'à
-          <strong>15 000 € de primes</strong> et des cadeaux bonus<sup>*</sup>.
+          Découvrez en grattant <span class="gold">combien vous pouvez toucher cette année</span>
+          en rendant service à votre entourage. Augmentez votre pouvoir d'achat,
+          allégez vos impôts, constituez du capital — <strong>tout en faisant du bien autour de vous</strong>.
         </p>
         <p class="tagline">
           « Gratter, c'est facile. Agir, c'est généreux. »
@@ -458,6 +471,7 @@
       Chaque dossier finalisé est récompensé.
     </p>
 
+    <!-- Étoiles Euromillions : 5 étoiles dorées à 5 branches, numérotées comme les Étoiles Euromillions -->
     <svg width="0" height="0" style="position:absolute;">
       <defs>
         <radialGradient id="euroGold" cx="35%" cy="30%" r="80%">
@@ -476,16 +490,73 @@
     </svg>
 
     <div class="euro-stars">
-      <div class="euro-star"><svg class="es-svg" viewBox="0 0 100 100"><polygon points="50,6 61.8,38.2 96,38.2 68.1,58.4 78.9,90.6 50,70.8 21.1,90.6 31.9,58.4 4,38.2 38.2,38.2" fill="url(#euroGold)" stroke="#8a6818" stroke-width="1.2" stroke-linejoin="round"/><text x="50" y="59" text-anchor="middle" font-family="'Cormorant Garamond',Georgia,serif" font-size="28" font-weight="600" fill="#0a1e3f">1</text></svg><div class="es-label">1<sup>er</sup> filleul</div><div class="es-amount">500 &euro;</div><div class="es-desc">Vers&eacute;s au dossier finalis&eacute;</div></div>
-      <div class="euro-star"><svg class="es-svg" viewBox="0 0 100 100"><polygon points="50,6 61.8,38.2 96,38.2 68.1,58.4 78.9,90.6 50,70.8 21.1,90.6 31.9,58.4 4,38.2 38.2,38.2" fill="url(#euroGold)" stroke="#8a6818" stroke-width="1.2" stroke-linejoin="round"/><text x="50" y="59" text-anchor="middle" font-family="'Cormorant Garamond',Georgia,serif" font-size="28" font-weight="600" fill="#0a1e3f">2</text></svg><div class="es-label">2<sup>e</sup> filleul</div><div class="es-amount">1 000 &euro;</div><div class="es-desc">Cumul apr&egrave;s 2 dossiers</div></div>
-      <div class="euro-star major"><svg class="es-svg" viewBox="0 0 100 100"><polygon points="50,6 61.8,38.2 96,38.2 68.1,58.4 78.9,90.6 50,70.8 21.1,90.6 31.9,58.4 4,38.2 38.2,38.2" fill="url(#euroGoldMajor)" stroke="#7a5a10" stroke-width="1.4" stroke-linejoin="round"/><text x="50" y="59" text-anchor="middle" font-family="'Cormorant Garamond',Georgia,serif" font-size="28" font-weight="600" fill="#0a1e3f">3</text></svg><div class="es-label">Palier majeur</div><div class="es-amount">4 500 &euro;</div><div class="es-desc"><strong style="color:var(--pc-gold-d);">Effet r&eacute;troactif</strong> : les 2 premiers passent &agrave; 1 500 &euro;</div></div>
-      <div class="euro-star"><svg class="es-svg" viewBox="0 0 100 100"><polygon points="50,6 61.8,38.2 96,38.2 68.1,58.4 78.9,90.6 50,70.8 21.1,90.6 31.9,58.4 4,38.2 38.2,38.2" fill="url(#euroGold)" stroke="#8a6818" stroke-width="1.2" stroke-linejoin="round"/><text x="50" y="59" text-anchor="middle" font-family="'Cormorant Garamond',Georgia,serif" font-size="28" font-weight="600" fill="#0a1e3f">5</text></svg><div class="es-label">5 filleuls</div><div class="es-amount">7 500 &euro;</div><div class="es-desc">Cumul interm&eacute;diaire vers&eacute; par virement</div></div>
-      <div class="euro-star sommet"><svg class="es-svg" viewBox="0 0 100 100"><polygon points="50,6 61.8,38.2 96,38.2 68.1,58.4 78.9,90.6 50,70.8 21.1,90.6 31.9,58.4 4,38.2 38.2,38.2" fill="url(#euroGoldMajor)" stroke="#7a5a10" stroke-width="1.4" stroke-linejoin="round"/><text x="50" y="59" text-anchor="middle" font-family="'Cormorant Garamond',Georgia,serif" font-size="24" font-weight="600" fill="#0a1e3f">10</text></svg><div class="es-label">Sommet &middot; top parrain</div><div class="es-amount">15 000 &euro;</div><div class="es-desc">+ cadeaux bonus<sup>*</sup></div></div>
+      <div class="euro-star">
+        <svg class="es-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="50,6 61.8,38.2 96,38.2 68.1,58.4 78.9,90.6 50,70.8 21.1,90.6 31.9,58.4 4,38.2 38.2,38.2"
+                   fill="url(#euroGold)" stroke="#8a6818" stroke-width="1.2" stroke-linejoin="round"/>
+          <text x="50" y="59" text-anchor="middle" font-family="'Cormorant Garamond',Georgia,serif" font-size="28" font-weight="600" fill="#0a1e3f">1</text>
+        </svg>
+        <div class="es-label">1<sup>er</sup> filleul</div>
+        <div class="es-amount">500 €</div>
+        <div class="es-desc">Versés au dossier finalisé</div>
+      </div>
+      <div class="euro-star">
+        <svg class="es-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="50,6 61.8,38.2 96,38.2 68.1,58.4 78.9,90.6 50,70.8 21.1,90.6 31.9,58.4 4,38.2 38.2,38.2"
+                   fill="url(#euroGold)" stroke="#8a6818" stroke-width="1.2" stroke-linejoin="round"/>
+          <text x="50" y="59" text-anchor="middle" font-family="'Cormorant Garamond',Georgia,serif" font-size="28" font-weight="600" fill="#0a1e3f">2</text>
+        </svg>
+        <div class="es-label">2<sup>e</sup> filleul</div>
+        <div class="es-amount">1 000 €</div>
+        <div class="es-desc">Cumul après 2 dossiers</div>
+      </div>
+      <div class="euro-star major">
+        <svg class="es-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="50,6 61.8,38.2 96,38.2 68.1,58.4 78.9,90.6 50,70.8 21.1,90.6 31.9,58.4 4,38.2 38.2,38.2"
+                   fill="url(#euroGoldMajor)" stroke="#7a5a10" stroke-width="1.4" stroke-linejoin="round"/>
+          <text x="50" y="59" text-anchor="middle" font-family="'Cormorant Garamond',Georgia,serif" font-size="28" font-weight="600" fill="#0a1e3f">3</text>
+        </svg>
+        <div class="es-label">Palier majeur</div>
+        <div class="es-amount">4 500 €</div>
+        <div class="es-desc"><strong style="color:var(--pc-gold-d);">Effet rétroactif</strong> : les 2 premiers passent à 1 500 €</div>
+      </div>
+      <div class="euro-star">
+        <svg class="es-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="50,6 61.8,38.2 96,38.2 68.1,58.4 78.9,90.6 50,70.8 21.1,90.6 31.9,58.4 4,38.2 38.2,38.2"
+                   fill="url(#euroGold)" stroke="#8a6818" stroke-width="1.2" stroke-linejoin="round"/>
+          <text x="50" y="59" text-anchor="middle" font-family="'Cormorant Garamond',Georgia,serif" font-size="28" font-weight="600" fill="#0a1e3f">5</text>
+        </svg>
+        <div class="es-label">5 filleuls</div>
+        <div class="es-amount">7 500 €</div>
+        <div class="es-desc">Cumul intermédiaire, versé par virement</div>
+      </div>
+      <div class="euro-star sommet">
+        <svg class="es-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="50,6 61.8,38.2 96,38.2 68.1,58.4 78.9,90.6 50,70.8 21.1,90.6 31.9,58.4 4,38.2 38.2,38.2"
+                   fill="url(#euroGoldMajor)" stroke="#7a5a10" stroke-width="1.4" stroke-linejoin="round"/>
+          <text x="50" y="59" text-anchor="middle" font-family="'Cormorant Garamond',Georgia,serif" font-size="24" font-weight="600" fill="#0a1e3f">10</text>
+        </svg>
+        <div class="es-label">Sommet · top parrain</div>
+        <div class="es-amount">15 000 €</div>
+        <div class="es-desc">+ cadeaux bonus<sup>*</sup></div>
+      </div>
+    </div>
+
+    <!-- v200a — Bandeau rétro qui explique la mécanique -->
+    <div style="background:linear-gradient(135deg,#fdf6e3 0%,#fffaf0 100%);border:1px solid var(--pc-gold);border-left:4px solid var(--pc-gold);border-radius:14px;padding:24px 28px;margin:30px 0 18px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+      <div style="font-family:'Inter',system-ui,sans-serif;font-size:34px;color:var(--pc-gold-d);font-weight:700;flex-shrink:0;">★ ★ ★</div>
+      <div style="flex:1;min-width:280px;">
+        <div style="font-family:'Inter',system-ui,sans-serif;font-size:11px;letter-spacing:4px;color:var(--pc-gold-d);text-transform:uppercase;font-weight:700;margin-bottom:6px;">Effet rétroactif à partir du 3<sup>e</sup> filleul</div>
+        <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:22px;color:var(--pc-navy);line-height:1.35;">
+          Dès qu'un <strong>3<sup>e</sup> dossier</strong> est confirmé, vos 2 premiers filleuls passent <strong>de 500 € à 1 500 € chacun</strong>.
+          <span class="it" style="font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--pc-gold-d);">Vous recevez un complément de 2 000 €</span> (+ 1 500 € sur le 3<sup>e</sup>) — soit <strong>4 500 € au total</strong> dès le 3<sup>e</sup> filleul.
+        </div>
+      </div>
     </div>
 
     <p class="bonus-note">
       <sup>*</sup> Cadeaux bonus (séjour, expérience, coffret cadeau) attribués
-      aux parrains atteignant le sommet — 10 filleuls confirmés sur une année civile.
+      aux parrains atteignant le sommet — 10 filleuls confirmés sur une année civile (plafond 15 000 €).
     </p>
   </section>
 
@@ -564,7 +635,7 @@
   <section class="form-section" id="formulaire">
     <div class="form-card">
       <span class="sec-eyebrow">IV · Le moteur</span>
-      <h2>Chaque ajout illumine <span class="it" style="color:var(--pc-gold);">votre pyramide</span></h2>
+      <h2>Chaque ajout illumine <span class="it" style="color:var(--pc-gold);">votre constellation</span></h2>
       <p class="sub">Vous pouvez ajouter autant de filleuls que vous souhaitez. À droite, votre potentiel monte en temps réel.</p>
 
       <div class="form-grid">
@@ -595,18 +666,28 @@
           </div>
           <input type="hidden" id="conseiller_id" name="conseiller_id" value="">
 
-          <div class="form-section-title">RIB (facultatif)</div>
-          <div class="form-group"><label for="iban">IBAN</label>
-            <input id="iban" placeholder="FR76 0000 0000 0000 0000 0000 000"
-                   style="font-family:'Courier New',monospace;letter-spacing:1px;">
-          </div>
-
-          <div class="consent-row"><input type="checkbox" id="cgu_rib">
-            <label for="cgu_rib" style="font-size:13px;color:var(--muted);margin:0;font-weight:400;">
-              <strong>RGPD :</strong> j'autorise Paris Conseils à conserver mon IBAN pour le versement.
-              Suppression à <a href="mailto:contact@parisconseils.fr">contact@parisconseils.fr</a> &middot; <a href="https://paris-conseils-dashboard.netlify.app/equipe.html" style="color:inherit;text-decoration:none;opacity:.5;font-size:11px;" title="Espace pro conseiller">Espace conseiller &rarr;</a>.
-            </label>
-          </div>
+          <!-- v273 : RIB dans un bloc replié, clairement optionnel, rassurance explicite -->
+          <details style="margin:18px 0 8px 0;background:#faf6ec;border:1px solid #e6d9b8;border-radius:10px;padding:0;">
+            <summary style="cursor:pointer;padding:14px 18px;font-weight:600;color:var(--pc-navy);font-size:14px;list-style:none;display:flex;justify-content:space-between;align-items:center;">
+              <span>Renseigner mon RIB maintenant <span style="font-weight:400;color:var(--muted);font-size:13px;font-style:italic;">— facultatif, à faire plus tard si vous préférez</span></span>
+              <span style="color:var(--pc-gold);font-size:18px;">+</span>
+            </summary>
+            <div style="padding:8px 18px 18px 18px;border-top:1px dashed #e6d9b8;">
+              <div style="font-size:13px;color:var(--muted);margin:10px 0 14px 0;line-height:1.55;">
+                Votre RIB sert uniquement au versement de votre prime, une fois qu'un filleul a validé. <b>Vous pouvez le communiquer plus tard</b> par retour de mail à <a href="mailto:contact@parisconseils.fr" style="color:var(--pc-navy);">contact@parisconseils.fr</a> — ça n'a aucun impact sur l'enregistrement de votre parrainage.
+              </div>
+              <div class="form-group"><label for="iban">IBAN</label>
+                <input id="iban" placeholder="FR76 0000 0000 0000 0000 0000 000"
+                       style="font-family:'Courier New',monospace;letter-spacing:1px;">
+              </div>
+              <div class="consent-row"><input type="checkbox" id="cgu_rib">
+                <label for="cgu_rib" style="font-size:13px;color:var(--muted);margin:0;font-weight:400;">
+                  <strong>RGPD :</strong> j'autorise Paris Conseils à conserver mon IBAN pour le versement.
+                  Suppression à <a href="mailto:contact@parisconseils.fr">contact@parisconseils.fr</a>.
+                </label>
+              </div>
+            </div>
+          </details>
           <div class="consent-row"><input type="checkbox" id="cgu_filleul" required>
             <label for="cgu_filleul" style="font-size:13px;color:var(--muted);margin:0;font-weight:400;">
               J'ai informé mes filleuls et j'accepte le
@@ -641,16 +722,132 @@
             <span>0 €</span><span>15 000 €</span>
           </div>
 
-          
-
           <div class="dash-pyr-mini">
-            <div class="dash-mini-stars">
-              <div class="dms-item" data-threshold="1"><div class="dms-star">&#9733;</div><div class="dms-amt">500 &euro;</div></div>
-              <div class="dms-item" data-threshold="2"><div class="dms-star">&#9733;</div><div class="dms-amt">1 000 &euro;</div></div>
-              <div class="dms-item major" data-threshold="3"><div class="dms-star">&#9733;</div><div class="dms-amt">4 500 &euro;</div></div>
-              <div class="dms-item" data-threshold="5"><div class="dms-star">&#9733;</div><div class="dms-amt">7 500 &euro;</div></div>
-              <div class="dms-item sommet" data-threshold="10"><div class="dms-star">&#9733;</div><div class="dms-amt">15 000 &euro;</div></div>
-            </div>
+            <!-- ===== Constellation des 10 étoiles : ciel navy, étoiles qui s'allument ===== -->
+            <svg viewBox="0 0 380 290" style="width:100%;height:auto;display:block;border-radius:14px;">
+              <defs>
+                <radialGradient id="pcSky" cx="50%" cy="60%" r="75%">
+                  <stop offset="0%"   stop-color="#16315c"/>
+                  <stop offset="60%"  stop-color="#0c1e3a"/>
+                  <stop offset="100%" stop-color="#06122a"/>
+                </radialGradient>
+                <linearGradient id="pcGoldStar" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%"   stop-color="#fff6c2"/>
+                  <stop offset="45%"  stop-color="#f5d57a"/>
+                  <stop offset="100%" stop-color="#c79a3a"/>
+                </linearGradient>
+                <linearGradient id="pcSilverStar" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%"   stop-color="#eef4ff"/>
+                  <stop offset="100%" stop-color="#b8c4dc"/>
+                </linearGradient>
+                <linearGradient id="pcGoldLink" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%"   stop-color="#c9a542" stop-opacity="0.2"/>
+                  <stop offset="50%"  stop-color="#f0d077" stop-opacity="0.95"/>
+                  <stop offset="100%" stop-color="#c9a542" stop-opacity="0.2"/>
+                </linearGradient>
+                <radialGradient id="pcHalo" cx="50%" cy="50%" r="60%">
+                  <stop offset="0%"   stop-color="#fff3c4" stop-opacity="0.55"/>
+                  <stop offset="70%"  stop-color="#c9a961" stop-opacity="0.10"/>
+                  <stop offset="100%" stop-color="#c9a961" stop-opacity="0"/>
+                </radialGradient>
+              </defs>
+
+              <!-- Ciel -->
+              <rect x="0" y="0" width="380" height="290" rx="14" fill="url(#pcSky)"/>
+
+              <!-- Poussière d'étoiles décoratives -->
+              <g fill="#ffffff">
+                <circle cx="22"  cy="42"  r="0.6" opacity=".5"/>
+                <circle cx="55"  cy="78"  r="0.5" opacity=".4"/>
+                <circle cx="98"  cy="40"  r="0.7" opacity=".55"/>
+                <circle cx="155" cy="68"  r="0.5" opacity=".45"/>
+                <circle cx="220" cy="32"  r="0.7" opacity=".6"/>
+                <circle cx="284" cy="58"  r="0.5" opacity=".5"/>
+                <circle cx="338" cy="22"  r="0.6" opacity=".5"/>
+                <circle cx="42"  cy="200" r="0.5" opacity=".4"/>
+                <circle cx="118" cy="248" r="0.7" opacity=".5"/>
+                <circle cx="200" cy="260" r="0.5" opacity=".4"/>
+                <circle cx="290" cy="248" r="0.5" opacity=".45"/>
+                <circle cx="352" cy="200" r="0.6" opacity=".5"/>
+              </g>
+
+              <!-- Lignes reliant les étoiles (s'allument progressivement) -->
+              <g>
+                <line id="cl1" class="star-link" x1="38"  y1="240" x2="78"  y2="222"/>
+                <line id="cl2" class="star-link" x1="78"  y1="222" x2="120" y2="198"/>
+                <line id="cl3" class="star-link" x1="120" y1="198" x2="162" y2="170"/>
+                <line id="cl4" class="star-link" x1="162" y1="170" x2="205" y2="142"/>
+                <line id="cl5" class="star-link" x1="205" y1="142" x2="240" y2="118"/>
+                <line id="cl6" class="star-link" x1="240" y1="118" x2="270" y2="96"/>
+                <line id="cl7" class="star-link" x1="270" y1="96"  x2="297" y2="77"/>
+                <line id="cl8" class="star-link" x1="297" y1="77"  x2="322" y2="60"/>
+                <line id="cl9" class="star-link" x1="322" y1="60"  x2="348" y2="40"/>
+              </g>
+
+              <!-- Étoiles palier (1, 3, 5, 10) — grandes + dorées + halo -->
+              <!-- Étoile #1 — Palier I (500 €) -->
+              <g transform="translate(38,240)">
+                <circle id="ch1" class="star-halo" r="14" fill="url(#pcHalo)" opacity="0"/>
+                <path id="cs1" class="star-base star-tier dim"
+                      d="M0,-11 L2.7,-3.4 L11,-3.4 L4.4,1.3 L7,9 L0,4.4 L-7,9 L-4.4,1.3 L-11,-3.4 L-2.7,-3.4 Z"/>
+              </g>
+              <text id="cv1" class="star-label" x="38" y="265" font-size="11">500 €</text>
+
+              <!-- Étoile #3 — Palier II (2 250 €) -->
+              <g transform="translate(120,198)">
+                <circle id="ch3" class="star-halo" r="14" fill="url(#pcHalo)" opacity="0"/>
+                <path id="cs3" class="star-base star-tier dim"
+                      d="M0,-11 L2.7,-3.4 L11,-3.4 L4.4,1.3 L7,9 L0,4.4 L-7,9 L-4.4,1.3 L-11,-3.4 L-2.7,-3.4 Z"/>
+              </g>
+              <text id="cv3" class="star-label" x="120" y="223" font-size="11">4 500 €</text>
+
+              <!-- Étoile #5 — Palier III (5 000 €) -->
+              <g transform="translate(205,142)">
+                <circle id="ch5" class="star-halo" r="15" fill="url(#pcHalo)" opacity="0"/>
+                <path id="cs5" class="star-base star-tier dim"
+                      d="M0,-12 L3,-3.7 L12,-3.7 L4.8,1.4 L7.6,10 L0,4.8 L-7.6,10 L-4.8,1.4 L-12,-3.7 L-3,-3.7 Z"/>
+              </g>
+              <text id="cv5" class="star-label" x="205" y="168" font-size="11">7 500 €</text>
+
+              <!-- Étoile #10 — Sommet (15 000 €) - la plus grande -->
+              <g transform="translate(348,40)">
+                <circle id="ch10" class="star-halo" r="20" fill="url(#pcHalo)" opacity="0"/>
+                <path id="cs10" class="star-base star-tier dim"
+                      d="M0,-15 L3.7,-4.6 L15,-4.6 L6,1.8 L9.5,12.5 L0,6 L-9.5,12.5 L-6,1.8 L-15,-4.6 L-3.7,-4.6 Z"/>
+              </g>
+              <text id="cv10" class="star-label" x="348" y="20" font-size="11">15 000 €</text>
+
+              <!-- Étoiles intermédiaires (2,4,6,7,8,9) — petites, argentées -->
+              <g transform="translate(78,222)">
+                <path id="cs2" class="star-base dim"
+                      d="M0,-7 L1.7,-2.2 L7,-2.2 L2.8,0.8 L4.4,5.7 L0,2.8 L-4.4,5.7 L-2.8,0.8 L-7,-2.2 L-1.7,-2.2 Z"/>
+              </g>
+              <g transform="translate(162,170)">
+                <path id="cs4" class="star-base dim"
+                      d="M0,-7 L1.7,-2.2 L7,-2.2 L2.8,0.8 L4.4,5.7 L0,2.8 L-4.4,5.7 L-2.8,0.8 L-7,-2.2 L-1.7,-2.2 Z"/>
+              </g>
+              <g transform="translate(240,118)">
+                <path id="cs6" class="star-base dim"
+                      d="M0,-7 L1.7,-2.2 L7,-2.2 L2.8,0.8 L4.4,5.7 L0,2.8 L-4.4,5.7 L-2.8,0.8 L-7,-2.2 L-1.7,-2.2 Z"/>
+              </g>
+              <g transform="translate(270,96)">
+                <path id="cs7" class="star-base dim"
+                      d="M0,-7 L1.7,-2.2 L7,-2.2 L2.8,0.8 L4.4,5.7 L0,2.8 L-4.4,5.7 L-2.8,0.8 L-7,-2.2 L-1.7,-2.2 Z"/>
+              </g>
+              <g transform="translate(297,77)">
+                <path id="cs8" class="star-base dim"
+                      d="M0,-7 L1.7,-2.2 L7,-2.2 L2.8,0.8 L4.4,5.7 L0,2.8 L-4.4,5.7 L-2.8,0.8 L-7,-2.2 L-1.7,-2.2 Z"/>
+              </g>
+              <g transform="translate(322,60)">
+                <path id="cs9" class="star-base dim"
+                      d="M0,-7 L1.7,-2.2 L7,-2.2 L2.8,0.8 L4.4,5.7 L0,2.8 L-4.4,5.7 L-2.8,0.8 L-7,-2.2 L-1.7,-2.2 Z"/>
+              </g>
+
+              <!-- Légende discrète en pied -->
+              <text x="190" y="282" text-anchor="middle"
+                    font-family="'Inter',system-ui,sans-serif" font-size="8" letter-spacing="3"
+                    fill="#7a8aa8" opacity="0.7">CONSTELLATION DE LA RECONNAISSANCE</text>
+            </svg>
           </div>
 
           <div class="dash-label">Gratitude</div>
@@ -774,9 +971,22 @@
   (function(){
     document.getElementById('yy').textContent = new Date().getFullYear();
 
-    var REWARDS = [500,750,1000,1250,500,500,1000,1000,1500,5500];
+    // v200t — Règle corrigée (18/06/2026) : 500 € pour le 1er, 500 € pour le 2e,
+    // v200av-fix — Règle corrigée 20/06/2026 : 500 € pour le 1er et le 2e, puis le 3e
+    // DÉCLENCHE une rétroactivité de 1 000 € CHACUN pour les 2 premiers (qui passent
+    // à 1 500 € chacun) + 1 500 € pour le 3e lui-même → cumul 4 500 € au 3e.
+    // Ensuite +1 500 € par filleul jusqu'au 10e → naturellement 15 000 € au 10e.
+    // REWARDS[i] = ce que le filleul N°(i+1) DÉCLENCHE (incluant la rétro du 3e qui
+    //   ajoute 2 × 1 000 € = 2 000 € au déclenchement, soit 3 500 € de gain au 3e filleul).
+    var REWARDS = [500, 500, 3500, 1500, 1500, 1500, 1500, 1500, 1500, 1500];
+    // Total cumulé : 500, 1000, 4500, 6000, 7500, 9000, 10500, 12000, 13500, 15000
     var cumAt = function(n){ var s=0; for(var i=0;i<n;i++) s+=REWARDS[i]; return s; };
-    var TARGETS = [{n:1,label:'500 €'},{n:3,label:'2 250 €'},{n:5,label:'5 000 €'},{n:10,label:'15 000 €'}];
+    var TARGETS = [
+      {n:1,  label:'500 €'},
+      {n:3,  label:'4 500 €'},    // palier majeur : 1500+1500+1500 avec rétroactivité
+      {n:5,  label:'7 500 €'},
+      {n:10, label:'15 000 €'}    // sommet : 10 × 1500 = 15 000 €
+    ];
     var ICONS = ['♥','★','✦','✿','✻','✿','✽','✾','✿','♛'];
 
     var canvas = document.getElementById('scratch-canvas');
@@ -839,8 +1049,15 @@
     if (preset){ var m = document.querySelector('.cons-card[data-id="'+preset+'"]'); if(m) m.click(); }
 
     var list = document.getElementById('filleuls-list');
-    var stones = [document.getElementById('ms1'),document.getElementById('ms2'),document.getElementById('ms3'),document.getElementById('ms4')];
-    var texts  = [document.getElementById('mt1'),document.getElementById('mt2'),document.getElementById('mt3'),document.getElementById('mt4')];
+    // Constellation : 10 étoiles + 9 lignes + 4 labels (paliers 1,3,5,10)
+    var stars = [];
+    for (var si=1; si<=10; si++) stars.push(document.getElementById('cs'+si));
+    var links = [];
+    for (var li=1; li<=9; li++) links.push(document.getElementById('cl'+li));
+    var halos = {1:document.getElementById('ch1'), 3:document.getElementById('ch3'),
+                 5:document.getElementById('ch5'), 10:document.getElementById('ch10')};
+    var labels = {1:document.getElementById('cv1'), 3:document.getElementById('cv3'),
+                  5:document.getElementById('cv5'), 10:document.getElementById('cv10')};
     var thresholds = [1,3,5,10];
     var cumEl = document.getElementById('dash-cum');
     var nextEl = document.getElementById('dash-next');
@@ -880,8 +1097,28 @@
       counterZone.classList.remove('pulse-once'); void counterZone.offsetWidth; counterZone.classList.add('pulse-once');
       var tier = -1;
       thresholds.forEach(function(th,i){ if (count >= th) tier = i; });
-      stones.forEach(function(s,i){ if (i <= tier) s.classList.add('lit'); else s.classList.remove('lit'); });
-      texts.forEach(function(t,i){ if (t && i <= tier) t.classList.add('lit'); else if (t) t.classList.remove('lit'); });
+      // Étoiles : on illumine les `count` premières (de 1 à 10)
+      stars.forEach(function(s,i){
+        if (!s) return;
+        if (i < count) {
+          s.classList.add('lit');
+          s.setAttribute('fill', s.classList.contains('star-tier') ? 'url(#pcGoldStar)' : 'url(#pcSilverStar)');
+        } else {
+          s.classList.remove('lit');
+          s.setAttribute('fill', s.classList.contains('star-tier') ? '#13294a' : '#0e2240');
+        }
+      });
+      // Lignes : on dessine les `count-1` premières
+      links.forEach(function(l,i){
+        if (!l) return;
+        if (i < count - 1) l.classList.add('on'); else l.classList.remove('on');
+      });
+      // Halos & labels paliers : actifs si seuil atteint
+      [1,3,5,10].forEach(function(th){
+        var reached = count >= th;
+        if (halos[th])  halos[th].setAttribute('opacity', reached ? '1' : '0');
+        if (labels[th]) { if (reached) labels[th].classList.add('lit'); else labels[th].classList.remove('lit'); }
+      });
       if (tier > lastTier){
         var labels = ['PALIER I DÉBLOQUÉ','PALIER II DÉBLOQUÉ','PALIER III DÉBLOQUÉ','SOMMET ATTEINT'];
         var t = document.createElement('div'); t.className='dash-toast'; t.textContent='✦ '+labels[tier];
@@ -952,94 +1189,277 @@
       });
     }
 
-    document.getElementById('submit-btn').addEventListener('click', function(){
-      var flash = document.getElementById('flash');
-      var missing = [];
-      ['p_prenom','p_nom','p_email'].forEach(function(id){ if (!document.getElementById(id).value.trim()) missing.push(id); });
-      Array.prototype.forEach.call(list.children, function(b, i){
-        ['fi-prenom','fi-nom','fi-email','fi-tel'].forEach(function(cls){
-          var el = b.querySelector('.'+cls);
-          if (!el.value.trim()) missing.push('filleul '+(i+1)+' / '+cls.replace('fi-',''));
-        });
-      });
-      if (!consHidden.value) missing.push('conseiller');
-      if (!document.getElementById('cgu_filleul').checked) missing.push('consentement');
-      if (missing.length){
-        flash.className='flash error'; flash.style.display='block';
-        flash.innerHTML = 'Merci de compléter : <strong>'+missing.join(', ')+'</strong>.';
-        return;
-      }
-
-      var filleuls = [];
-      var recapLines = [];
-      Array.prototype.forEach.call(list.children, function(b, i){
-        var f = {
-          prenom: b.querySelector('.fi-prenom').value.trim(),
-          nom:    b.querySelector('.fi-nom').value.trim(),
-          email:  b.querySelector('.fi-email').value.trim(),
-          tel:    b.querySelector('.fi-tel').value.trim(),
-          message:(b.querySelector('.fi-msg') && b.querySelector('.fi-msg').value || '').trim()
-        };
-        filleuls.push(f);
-        recapLines.push('Filleul '+(i+1)+' : '+f.prenom+' '+f.nom+' — '+f.email+(f.tel?' — '+f.tel:'')+(f.message?'\n  Projet : '+f.message:''));
-      });
-
-      var consId = consHidden.value;
-      var consName = document.querySelector('.cons-card[data-id="'+consId+'"] .nom') ? document.querySelector('.cons-card[data-id="'+consId+'"] .nom').textContent : consId;
-
-      var payload = new URLSearchParams();
-      payload.append('form-name', 'parrainage');
-      payload.append('parrain_prenom', document.getElementById('p_prenom').value.trim());
-      payload.append('parrain_nom',    document.getElementById('p_nom').value.trim());
-      payload.append('parrain_email',  document.getElementById('p_email').value.trim());
-      payload.append('parrain_telephone', document.getElementById('p_tel').value.trim());
-      payload.append('conseiller',     consName);
-      payload.append('iban',           document.getElementById('iban').value.trim());
-      payload.append('nb_filleuls',    String(filleuls.length));
-      payload.append('filleuls_json',  JSON.stringify(filleuls));
-      payload.append('recap',          recapLines.join('\n\n'));
-
-      flash.className='flash info'; flash.style.display='block';
-      flash.innerHTML = 'Envoi en cours...';
-
-      fetch('/', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: payload.toString()})
-        .then(function(r){
-          if (!r.ok) throw new Error('HTTP '+r.status);
-          flash.className='flash success';
-          flash.innerHTML = '✓ Merci ! Vos <strong>'+filleuls.length+'</strong> recommandation(s) sont bien envoyées. '+
-                            'Le conseiller <strong>'+consName+'</strong> est notifié et reviendra vers chaque filleul sous 48 h. '+
-                            'Vous recevrez un email à chaque palier débloqué.';
-        })
-        .catch(function(err){
-          flash.className='flash error';
-          flash.innerHTML = '⚠ Erreur d\'envoi ('+err.message+'). Réessayez ou écrivez à <a href="mailto:contact@parisconseils.fr">contact@parisconseils.fr</a>.';
-        });
-    });
-  })();
-  
-  
-    // ===== Mini etoiles dorees: animation dynamique =====
-    (function(){
-      const list = document.getElementById('filleuls-list');
-      if (!list) return;
-      const items = document.querySelectorAll('.dms-item');
-      if (!items.length) return;
-      function update(){
-        const n = list.querySelectorAll('.filleul-block').length;
-        items.forEach(it => {
-          const th = parseInt(it.dataset.threshold, 10);
-          if (n >= th) it.classList.add('lit'); else it.classList.remove('lit');
-        });
-      }
-      new MutationObserver(update).observe(list, {childList: true});
-      update();
-      setTimeout(update, 100);
-      setTimeout(update, 500);
-      setTimeout(update, 1500);
+    // v200u — handler déplacé dans un <script> séparé en fin de body (voir bas de page)
+    // pour qu'il survive même si l'IIFE principal échoue plus haut. Bloc vide ici.
+    (function attachSubmit_disabled(){
+      var btn = document.getElementById('submit-btn');
+      if (!btn) { return; }
+      btn.dataset.iife = 'ok';
     })();
+    /* HANDLER MOVED OUT — placeholder
+    (function _orig(){
+      var btn = document.getElementById('submit-btn');
+      btn.onclick = async function(){
+        var flash = document.getElementById('flash');
+        function showFlash(cls, html){
+          if (!flash) { alert(html.replace(/<[^>]+>/g,'')); return; }
+          flash.className = 'flash ' + cls;
+          flash.style.display = 'block';
+          flash.innerHTML = html;
+          try { flash.scrollIntoView({behavior:'smooth', block:'center'}); } catch(e){}
+        }
+        try {
+          var listEl = document.getElementById('filleuls-list');
+          var cgu = document.getElementById('cgu_filleul');
+          var consH = document.getElementById('conseiller_id');
+          // Validation : champs parrain
+          var missing = [];
+          ['p_prenom','p_nom','p_email'].forEach(function(id){
+            var el = document.getElementById(id);
+            if (!el || !el.value.trim()) missing.push(id);
+          });
+          // Validation : champs filleuls (prénom + nom + email + téléphone)
+          Array.prototype.forEach.call(listEl ? listEl.children : [], function(b, i){
+            ['fi-prenom','fi-nom','fi-email','fi-tel'].forEach(function(cls){
+              var el = b.querySelector('.'+cls);
+              if (!el || !el.value.trim()) missing.push('filleul ' + (i+1) + ' · ' + cls.replace('fi-',''));
+            });
+          });
+          if (!consH || !consH.value) missing.push('conseiller souhaité (à sélectionner ci-dessus)');
+          if (!cgu || !cgu.checked) missing.push('consentement RGPD');
+          if (missing.length){
+            showFlash('error', 'Merci de compléter : <strong>' + missing.join(', ') + '</strong>.');
+            return;
+          }
 
+          // Construction payload
+          var filleuls = Array.prototype.map.call(listEl.children, function(b){
+            return {
+              prenom: b.querySelector('.fi-prenom').value.trim(),
+              nom:    b.querySelector('.fi-nom').value.trim(),
+              email:  b.querySelector('.fi-email').value.trim(),
+              tel:    b.querySelector('.fi-tel').value.trim(),
+              message:(b.querySelector('.fi-msg') ? b.querySelector('.fi-msg').value : '').trim()
+            };
+          });
+          var parrain = {
+            prenom: document.getElementById('p_prenom').value.trim(),
+            nom:    document.getElementById('p_nom').value.trim(),
+            email:  document.getElementById('p_email').value.trim(),
+            tel:    document.getElementById('p_tel').value.trim()
+          };
+          var consId = consH.value;
+          var consNameEl = document.querySelector('.cons-card[data-id="' + consId + '"] .nom');
+          var consName = consNameEl ? consNameEl.textContent.trim() : consId;
+
+          btn.disabled = true;
+          btn.textContent = 'ENVOI EN COURS...';
+          showFlash('info', 'Envoi en cours…');
+
+          // Appel unique au relay (mails + Blobs)
+          var resp, json;
+          try {
+            resp = await fetch('/.netlify/functions/parrainage-relay', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ parrain: parrain, conseiller: consName, filleuls: filleuls })
+            });
+            json = await resp.json();
+          } catch (netErr) {
+            btn.disabled = false;
+            btn.textContent = 'ENVOYER MA RECOMMANDATION →';
+            showFlash('error', '⚠ Connexion impossible (' + (netErr.message || 'réseau') + '). Réessayez ou écrivez à <a href="mailto:contact@parisconseils.fr">contact@parisconseils.fr</a>.');
+            return;
+          }
+
+          if (!resp.ok || !json.ok){
+            btn.disabled = false;
+            btn.textContent = 'ENVOYER MA RECOMMANDATION →';
+            var why = (json && json.error) || ('HTTP ' + resp.status);
+            showFlash('error', '⚠ Erreur d’envoi (' + why + '). Vos données ne sont pas perdues : copiez-les avant de réessayer, ou écrivez à <a href="mailto:contact@parisconseils.fr">contact@parisconseils.fr</a>.');
+            return;
+          }
+
+          showFlash('success',
+            '✓ Merci ! Vos <strong>' + filleuls.length + '</strong> recommandation' + (filleuls.length>1?'s sont':' est') + ' bien enregistrée' + (filleuls.length>1?'s':'') + '.<br>' +
+            'Le conseiller <strong>' + consName + '</strong> est notifié et reviendra vers chaque filleul sous 48 h.<br>' +
+            'Vous allez recevoir un e‑mail de confirmation avec votre rang dans le programme.'
+          );
+          btn.textContent = '✓ ENVOYÉ';
+        } catch (err){
+          // Filet de sécurité global : toute exception inattendue est affichée
+          console.error('[v200u] submit error:', err);
+          var fl = document.getElementById('flash');
+          if (fl){
+            fl.className = 'flash error';
+            fl.style.display = 'block';
+            fl.innerHTML = '⚠ Une erreur inattendue est survenue (' + (err && err.message || 'inconnue') + '). ' +
+              'Vos données ne sont pas perdues : copiez-les et écrivez à <a href="mailto:contact@parisconseils.fr">contact@parisconseils.fr</a>.';
+          } else {
+            alert('Erreur : ' + (err && err.message || 'inconnue') + '. Écrivez à contact@parisconseils.fr');
+          }
+          try { btn.disabled = false; btn.textContent = 'ENVOYER MA RECOMMANDATION →'; } catch(e){}
+        }
+      };
+    })();
+    */ // end placeholder
+  })();
+  </script>
+
+  <!-- v200u — Handlers ENVOYER + AJOUTER UN FILLEUL en script séparé (isolé pour robustesse) -->
+  <script>
+  (function(){
+    function attachAddFilleul(){
+      var addBtn = document.getElementById('add-filleul');
+      var listEl = document.getElementById('filleuls-list');
+      if (!addBtn || !listEl) return;
+      // Si l'ancien handler est déjà actif et fait le job, on ne fait rien
+      if (addBtn.dataset.v200u === 'add-ok') return;
+      addBtn.dataset.v200u = 'add-ok';
+      addBtn.onclick = function(){
+        try {
+          if (listEl.children.length >= 10){
+            alert('Le programme est plafonne a 10 filleuls par parrain et par an.');
+            return;
+          }
+          var num = listEl.children.length + 1;
+          var w = document.createElement('div');
+          w.className = 'filleul-block';
+          w.innerHTML =
+            '<div class="fb-title">'+
+              '<div class="fb-name">Filleul n&deg;' + num + '</div>'+
+            '</div>'+
+            '<div class="grid2">'+
+              '<div class="form-group"><label>Prenom *</label><input class="fi-prenom" required></div>'+
+              '<div class="form-group"><label>Nom *</label><input class="fi-nom" required></div>'+
+              '<div class="form-group"><label>Email *</label><input class="fi-email" type="email" required></div>'+
+              '<div class="form-group"><label>Telephone <span style="color:var(--muted);font-weight:400;">(facultatif)</span></label><input class="fi-tel" type="tel"></div>'+
+            '</div>'+
+            '<button type="button" class="fb-del">&mdash; Supprimer ce filleul</button>';
+          listEl.appendChild(w);
+          w.querySelector('.fb-del').onclick = function(){
+            if (listEl.children.length <= 1){
+              alert('Au moins un filleul est requis.');
+              return;
+            }
+            w.remove();
+            // Renumeroter
+            [].slice.call(listEl.children).forEach(function(b, i){
+              var nameEl = b.querySelector('.fb-name');
+              if (nameEl) nameEl.textContent = 'Filleul n°' + (i+1);
+            });
+          };
+        } catch(err) {
+          alert('Erreur lors de l\'ajout d\'un filleul : ' + (err.message || 'inconnue') + '. Ecrivez a contact@parisconseils.fr');
+        }
+      };
+    }
+
+    function init(){
+      attachAddFilleul();
+      var btn = document.getElementById('submit-btn');
+      if (!btn) { console.warn('[v200u] submit-btn introuvable au DOMContentLoaded'); return; }
+      var flash = document.getElementById('flash');
+      function showFlash(cls, html){
+        var f = document.getElementById('flash');
+        if (!f){ alert(html.replace(/<[^>]+>/g,'')); return; }
+        f.className = 'flash ' + cls;
+        f.style.display = 'block';
+        f.innerHTML = html;
+        try { f.scrollIntoView({behavior:'smooth', block:'center'}); } catch(e){}
+      }
+      btn.onclick = function(){
+        try {
+          var listEl = document.getElementById('filleuls-list');
+          var cgu = document.getElementById('cgu_filleul');
+          var consH = document.getElementById('conseiller_id');
+          var missing = [];
+          ['p_prenom','p_nom','p_email'].forEach(function(id){
+            var el = document.getElementById(id);
+            if (!el || !el.value.trim()) missing.push(id);
+          });
+          // v273 : téléphone du filleul devient OPTIONNEL (rendre plus permissif — la cliente Attia bloquait dessus)
+          Array.prototype.forEach.call(listEl ? listEl.children : [], function(b, i){
+            ['fi-prenom','fi-nom','fi-email'].forEach(function(cls){
+              var el = b.querySelector('.'+cls);
+              if (!el || !el.value.trim()) missing.push('filleul ' + (i+1) + ' / ' + cls.replace('fi-',''));
+            });
+          });
+          if (!consH || !consH.value) missing.push('conseiller souhaité (à sélectionner)');
+          if (!cgu || !cgu.checked) missing.push('consentement RGPD');
+          if (missing.length){
+            showFlash('error', 'Merci de compléter : <strong>' + missing.join(', ') + '</strong>.');
+            return;
+          }
+
+          var filleuls = Array.prototype.map.call(listEl.children, function(b){
+            return {
+              prenom: b.querySelector('.fi-prenom').value.trim(),
+              nom:    b.querySelector('.fi-nom').value.trim(),
+              email:  b.querySelector('.fi-email').value.trim(),
+              tel:    b.querySelector('.fi-tel').value.trim(),
+              message:(b.querySelector('.fi-msg') ? b.querySelector('.fi-msg').value : '').trim()
+            };
+          });
+          var parrain = {
+            prenom: document.getElementById('p_prenom').value.trim(),
+            nom:    document.getElementById('p_nom').value.trim(),
+            email:  document.getElementById('p_email').value.trim(),
+            tel:    document.getElementById('p_tel').value.trim()
+          };
+          var consId = consH.value;
+          var consNameEl = document.querySelector('.cons-card[data-id="' + consId + '"] .nom');
+          var consName = consNameEl ? consNameEl.textContent.trim() : consId;
+
+          btn.disabled = true;
+          var originalLabel = btn.textContent;
+          btn.textContent = 'ENVOI EN COURS...';
+          showFlash('info', 'Envoi en cours...');
+
+          fetch('/.netlify/functions/parrainage-relay', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ parrain: parrain, conseiller: consName, filleuls: filleuls })
+          })
+          .then(function(resp){
+            return resp.json().then(function(j){
+              if (!resp.ok || !j.ok){
+                var why = (j && j.error) || ('HTTP ' + resp.status);
+                throw new Error(why);
+              }
+              return j;
+            });
+          })
+          .then(function(j){
+            showFlash('success',
+              '<div style="font-size:18px;font-weight:700;margin-bottom:6px">Merci ' + (parrain.prenom || '') + ' !</div>' +
+              'Vos <strong>' + filleuls.length + '</strong> recommandation' + (filleuls.length>1?'s sont':' est') + ' bien enregistrée' + (filleuls.length>1?'s':'') + '.<br>' +
+              'Le conseiller <strong>' + consName + '</strong> est notifié et reviendra vers chaque filleul sous 48 h.<br>' +
+              'Vous allez recevoir un e-mail de confirmation avec votre rang dans le programme.'
+            );
+            btn.textContent = 'ENVOYE';
+          })
+          .catch(function(err){
+            btn.disabled = false;
+            btn.textContent = originalLabel;
+            showFlash('error', 'Erreur d\'envoi (' + (err.message || 'inconnue') + '). Vos donnees ne sont pas perdues : copiez-les et reessayez, ou ecrivez a <a href="mailto:contact@parisconseils.fr">contact@parisconseils.fr</a>.');
+          });
+
+        } catch (err) {
+          showFlash('error', 'Une erreur inattendue est survenue (' + (err && err.message || 'inconnue') + '). Ecrivez a <a href="mailto:contact@parisconseils.fr">contact@parisconseils.fr</a>.');
+          try { btn.disabled = false; } catch(e){}
+        }
+      };
+      // Marqueur de réussite pour debug
+      btn.dataset.v200u = 'attached';
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  })();
   </script>
 
 </body>
 </html>
-
