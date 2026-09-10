@@ -19,8 +19,8 @@
 //                          Sinon, l'email conseiller fallback vers contact@parisconseils.fr
 
 // v200am — Bascule Resend → SMTP direct via parisconseils.fr
-// build-stamp: 2026-09-09-v284-RIP-SECRET-STORE-HEALTHCHECK
-const BUILD_STAMP = '2026-09-09-v284-RIP-SECRET-STORE-HEALTHCHECK';
+// build-stamp: 2026-09-10-v285-RDV-PAGE
+const BUILD_STAMP = '2026-09-10-v285-RDV-PAGE';
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 
@@ -595,6 +595,9 @@ async function handleHealthcheck(event) {
   await checkPage('/parrainage.html', formOpts);
   await checkPage('/espace-pro.html', { minBytes: 30000, minScripts: 1, checkScripts: true, mustContain: ['pro-login', 'primeStart'] });
   await checkPage('/prime.html', { minBytes: 15000, minScripts: 1, checkScripts: true, mustContain: ['prime-sign', 'jspdf'] });
+  // v285 — pages de rendez-vous liées depuis les mails filleuls (étaient en 404 → « lien mort » signalé par un client)
+  for (const c of ['corentin', 'david', 'nicolas']) await checkPage(`/rdv-${c}.html`, { minBytes: 800, minScripts: 1, checkScripts: true, mustContain: ['rdv-shared.js', `PC_CONSEILLER='${c}'`] });
+  await checkPage('/rdv-shared.js', { minBytes: 5000, mustContain: ['action=rdv', 'Demander ce rendez-vous'] });
   // index.html doit être identique à parrainage.html (la racine est la page que tapent les clients)
   if (pages['/'].bytes && pages['/parrainage.html'].bytes && pages['/'].bytes !== pages['/parrainage.html'].bytes) problems.push(`/ et /parrainage.html diffèrent (${pages['/'].bytes} o vs ${pages['/parrainage.html'].bytes} o)`);
   const pingResp = await handlePing();
@@ -821,8 +824,15 @@ function resolveConseillerEmail(env, conseillerName) {
       const map = JSON.parse(env.CONSEILLERS_JSON);
       // Cherche par nom exact, puis par sous-chaîne insensible à la casse
       if (map[conseillerName]) return map[conseillerName];
-      const key = Object.keys(map).find(k => k.toLowerCase() === (conseillerName||'').toLowerCase());
+      const name = (conseillerName || '').toLowerCase();
+      const key = Object.keys(map).find(k => k.toLowerCase() === name);
       if (key) return map[key];
+      // v285 — CONSEILLERS_JSON est indexé par nom de famille ("curtet", "pereira", "moreau") alors que le site
+      // envoie "Corentin Curtet" : sans ceci, David et Nicolas ne recevaient jamais leurs notifications (repli MAIL_CONTACT).
+      const partial = name.length >= 3 ? Object.keys(map).find(k => k && (name.includes(k.toLowerCase()) || k.toLowerCase().includes(name))) : null;
+      if (partial) return map[partial];
+      const slugs = conseillerSlugs(conseillerName);
+      if (slugs) { const last = slugs.rip.split('-')[1]; const k2 = Object.keys(map).find(k => k.toLowerCase().includes(last)); if (k2) return map[k2]; }
     }
   } catch (e) { /* ignore */ }
   return env.MAIL_CONTACT || 'contact@parisconseils.fr';
@@ -1440,6 +1450,60 @@ async function handlePrimeDoc(event) {
   } catch (err) { return jsonResp(500, { ok: false, error: err.message }); }
 }
 
+// v285 — Demande de rendez-vous depuis rdv-<conseiller>.html (page autonome : le visiteur propose jusqu'à 3 créneaux,
+// le conseiller reçoit un mail avec liens « ajouter à l'agenda » et confirme lui-même). Aucun mail au visiteur : la page confirme.
+function gcalLink(iso, minutes, title, details, location) {
+  // iso = 'YYYY-MM-DDTHH:MM' en heure de Paris → conversion en UTC (été +2 / hiver +1, approximation par Intl)
+  try {
+    const [d, t] = iso.split('T'); const [Y, M, D] = d.split('-').map(Number); const [h, m] = t.split(':').map(Number);
+    const guess = new Date(Date.UTC(Y, M - 1, D, h, m));
+    const parisOffsetMin = (() => { const f = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Paris', timeZoneName: 'shortOffset' }); const p = f.formatToParts(guess).find(x => x.type === 'timeZoneName'); const mm = /GMT([+-]\d+)/.exec(p ? p.value : 'GMT+1'); return (mm ? Number(mm[1]) : 1) * 60; })();
+    const start = new Date(guess.getTime() - parisOffsetMin * 60000); const end = new Date(start.getTime() + minutes * 60000);
+    const fmt = (x) => x.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${fmt(start)}/${fmt(end)}&details=${encodeURIComponent(details)}&location=${encodeURIComponent(location || '')}`;
+  } catch (_e) { return null; }
+}
+async function handleRdv(event) {
+  let body; try { body = JSON.parse(event.body || '{}'); } catch (e) { return jsonResp(400, { ok: false, error: 'Invalid JSON' }); }
+  const clean = (v, n) => String(v == null ? '' : v).trim().slice(0, n || 200);
+  const consKey = clean(body.conseiller, 20).toLowerCase();
+  const slugsRdv = conseillerSlugs(consKey);
+  if (!slugsRdv) return jsonResp(400, { ok: false, error: 'Conseiller inconnu.' });
+  const consNom = conseillerComplet(slugsRdv.rip.split('-')[1]); // 'corentin' → 'curtet' → 'Corentin Curtet'
+  const prenom = clean(body.prenom, 60), nom = clean(body.nom, 60), email = clean(body.email, 120), tel = clean(body.tel, 40), message = clean(body.message, 2000);
+  const format = clean(body.format, 10) === 'visio' ? 'visio' : 'tel';
+  const creneaux = (Array.isArray(body.creneaux) ? body.creneaux : []).map(x => String(x)).filter(x => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(x)).slice(0, 3);
+  if (prenom.length < 2 || nom.length < 2) return jsonResp(400, { ok: false, error: 'Prénom et nom requis.' });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return jsonResp(400, { ok: false, error: 'E-mail invalide.' });
+  if (tel.replace(/\D/g, '').length < 9) return jsonResp(400, { ok: false, error: 'Téléphone requis.' });
+  if (!creneaux.length) return jsonResp(400, { ok: false, error: 'Choisissez au moins un créneau.' });
+  const env = process.env;
+  const id = crypto.randomUUID();
+  const rec = { id, createdAt: new Date().toISOString(), conseiller: consNom, conseillerKey: consKey, format, creneaux, prenom, nom, email, tel, message, source: clean(body.source, 200), ip: event.headers['x-nf-client-connection-ip'] || '' };
+  try { await getBlobStore('parrainages-rdv').setJSON(id, rec); } catch (e) { console.warn('[rdv] blob', e.message); }
+  // Lien parrainage éventuel (le visiteur est-il un filleul connu ?)
+  let parrainInfo = '';
+  try {
+    const store = getBlobStore('parrainages'); const listing = await store.list();
+    for (const b of (listing.blobs || [])) { const r = await store.get(b.key, { type: 'json' }); if (!r || !r.filleuls) continue; const f = r.filleuls.find(x => (x.email || '').toLowerCase() === email.toLowerCase()); if (f) { parrainInfo = `Filleul de <b>${escapeHtml(r.parrain.prenom || '')} ${escapeHtml(r.parrain.nom || '')}</b> (parrainage du ${fmtDateFr(r.createdAt)})`; break; } }
+  } catch (_e) {}
+  const JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+  const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+  const labelOf = (iso) => { const [d, t] = iso.split('T'); const [Y, M, D] = d.split('-').map(Number); const dt = new Date(Date.UTC(Y, M - 1, D, 12)); return `${JOURS[dt.getUTCDay()]} ${D} ${MOIS[M - 1]} à ${t.replace(':', 'h')}`; };
+  const title = `RDV ${format === 'visio' ? 'visio' : 'tél.'} — ${prenom} ${nom} (Paris Conseils)`;
+  const details = `${prenom} ${nom} · ${tel} · ${email}${message ? '\n' + message : ''}`;
+  const rows = creneaux.map((c, i) => { const g = gcalLink(c, 30, title, details, format === 'visio' ? 'Visioconférence' : 'Téléphone'); return `<tr><td style="padding:6px 0;font-family:${FONT_BODY};font-size:14.5px;color:${RIP_TEXT};"><b>${i + 1}.</b> ${escapeHtml(labelOf(c))}</td><td align="right" style="padding:6px 0;">${g ? `<a href="${g}" style="color:${RIP_NAVY};font-family:${FONT_BODY};font-size:13px;font-weight:600;">＋ Ajouter à l'agenda</a>` : ''}</td></tr>`; }).join('');
+  const html = baseShell({ title: `${escapeHtml(prenom)} ${escapeHtml(nom)} demande un rendez-vous`, eyebrow: 'Demande de rendez-vous · ' + (format === 'visio' ? 'visioconférence' : 'téléphone'), body: `
+${p(`Bonjour ${escapeHtml(conseillerPrenom(consKey) || '')},`)}
+${p(`<b>${escapeHtml(prenom)} ${escapeHtml(nom)}</b> a choisi ${creneaux.length > 1 ? 'ces créneaux' : 'ce créneau'} depuis votre page de rendez-vous. À vous de confirmer celui que vous retenez (répondez simplement à cet e-mail : il part vers ${escapeHtml(email)}).`)}
+${heroCream('Créneaux proposés', `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">${rows}</table>`, '')}
+${infoBeige(`<b>Contact</b>&nbsp;: <a href="tel:${escapeHtml(tel.replace(/\s/g, ''))}" style="color:${RIP_NAVY};">${escapeHtml(tel)}</a> · <a href="mailto:${escapeHtml(email)}" style="color:${RIP_NAVY};">${escapeHtml(email)}</a><br><b>Format</b>&nbsp;: ${format === 'visio' ? 'visioconférence (pensez à joindre le lien Meet)' : 'appel téléphonique'}${parrainInfo ? '<br>' + parrainInfo : ''}${message ? `<br><b>Message</b>&nbsp;: ${escapeHtml(message).replace(/\n/g, '<br>')}` : ''}`)}
+${pSoft('Aucun e-mail automatique n\'a été envoyé au client : la page lui indique que vous confirmez rapidement.', 'margin-top:14px;')}` });
+  const to = resolveConseillerEmail(env, consNom);
+  const r = await sendEmail({ apiKey: env.RESEND_API_KEY, from: env.MAIL_FROM, to, subject: `📅 ${prenom} ${nom} — ${creneaux.length} créneau${creneaux.length > 1 ? 'x' : ''} proposé${creneaux.length > 1 ? 's' : ''} (${format === 'visio' ? 'visio' : 'tél.'})`, html, replyTo: `${prenom} ${nom} <${email}>`, bcc: env.MAIL_CC_OPS });
+  return jsonResp(r.ok ? 200 : 502, { ok: !!r.ok, id, via: r.via, status: r.status });
+}
+
 // v283 — Formulaire contact du site (Netlify Forms est désactivé sur ce site → sans ceci, les messages étaient perdus).
 async function handleContact(event) {
   let body; try { body = JSON.parse(event.body || '{}'); } catch (e) { return jsonResp(400, { ok: false, error: 'Invalid JSON' }); }
@@ -1564,6 +1628,7 @@ const innerHandler = async (event) => {
   if (event.httpMethod === 'POST' && action === 'prime-sign')   return handlePrimeSign(event);
   if (event.httpMethod === 'GET'  && action === 'prime-doc')    return handlePrimeDoc(event);
   if (event.httpMethod === 'POST' && action === 'contact')      return handleContact(event);
+  if (event.httpMethod === 'POST' && action === 'rdv')          return handleRdv(event);
   // v284 — intégration RIP + surveillance
   if (event.httpMethod === 'POST' && action === 'set-rip-secret') return handleSetRipSecret(event);
   if (event.httpMethod === 'POST' && action === 'rip-resync')     return handleRipResync(event);
