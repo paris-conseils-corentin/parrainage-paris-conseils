@@ -10,7 +10,8 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.20/700.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/cormorant-garamond@5.0.16/600.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/cormorant-garamond@5.0.16/700.css">
-  <!-- v283 — Page de finalisation de prime : RIB + pièce d'identité + attestation signée (PDF généré côté navigateur) -->
+  <!-- v286 — Page de finalisation de prime : RIB + pièce d'identité + attestation validée électroniquement
+       (nom saisi + case cochée + code à usage unique reçu par e-mail ; PDF généré côté navigateur). Plus de tracé manuscrit. -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous"></script>
   <style>
     :root{--navy:#0A1E3F;--navy-2:#142d5a;--blue:#4870AF;--gold:#b8860b;--gold-s:#d4a94a;--cream:#faf5e6;--cream-l:#e8d9b5;--bg:#F7F9FC;--ink:#1a1a1a;--ink-2:#4A5A75;--muted:#64748b;--line:#e2e8f0;--ok:#059669;--err:#b91c1c;}
@@ -44,11 +45,16 @@
     .attest .t{font-family:'Cormorant Garamond',Georgia,serif;font-size:22px;font-weight:700;color:var(--navy);text-align:center;margin:0 0 12px;letter-spacing:.5px}
     .attest ul{margin:8px 0 10px 18px;padding:0}
     .attest li{margin:0 0 6px}
-    .sig{position:relative;border:1.5px solid var(--line);border-radius:12px;background:#fff;height:190px;touch-action:none;overflow:hidden}
-    .sig canvas{width:100%;height:100%;display:block;cursor:crosshair}
-    .sig .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#b8c0cc;font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-size:20px;pointer-events:none}
-    .sig-tools{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:13px;color:var(--muted)}
-    .btn-link{background:none;border:0;color:var(--blue);cursor:pointer;font-size:13px;text-decoration:underline;font-family:inherit}
+    .sig-preview{margin-top:8px;border:1.5px solid var(--line);border-radius:12px;background:#fff;padding:14px 18px;font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-size:26px;color:var(--navy);min-height:58px;line-height:1.1}
+    .sig-preview.empty{color:#b8c0cc;font-size:18px}
+    .otp{border:1px solid var(--line);border-radius:12px;background:#fafbfc;padding:16px 18px;margin-top:16px}
+    .otp .h{font-weight:600;color:var(--navy);margin-bottom:6px}
+    .otp .s{font-size:13px;color:var(--muted);margin-bottom:10px}
+    .btn-outline{display:inline-block;background:#fff;color:var(--navy);border:1.5px solid var(--navy);border-radius:10px;padding:12px 18px;font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;font-family:inherit;transition:.15s}
+    .btn-outline:hover{background:var(--navy);color:#fff}
+    .btn-outline[disabled]{opacity:.55;cursor:not-allowed}
+    #otp{font-size:24px;letter-spacing:8px;text-align:center;max-width:260px}
+    .btn-link{background:none;border:0;color:var(--blue);cursor:pointer;font-size:13px;text-decoration:underline;font-family:inherit;padding:0}
     .consent{display:flex;gap:10px;align-items:flex-start;margin:16px 0 6px;font-size:14px;color:var(--ink-2)}
     .consent input{margin-top:4px;width:18px;height:18px}
     .btn{display:inline-block;width:100%;background:var(--navy);color:#fff;border:0;border-radius:12px;padding:17px 24px;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;font-family:inherit;transition:.15s}
@@ -85,7 +91,7 @@
         </div>
         <div class="step"><div class="num">1</div><div><b>Votre RIB</b> — le compte sur lequel vous recevrez le virement.</div></div>
         <div class="step"><div class="num">2</div><div><b>Votre pièce d'identité</b> en cours de validité (photo ou PDF).</div></div>
-        <div class="step"><div class="num">3</div><div><b>Votre signature</b> au bas de l'attestation de réception de prime.</div></div>
+        <div class="step"><div class="num">3</div><div><b>Votre validation électronique</b> de l'attestation de réception : votre nom, une case à cocher et un code reçu par e-mail. Rien à imprimer.</div></div>
       </div>
 
       <form id="form" novalidate>
@@ -111,7 +117,7 @@
         </div>
 
         <div class="card">
-          <h2>3 · Attestation et signature</h2>
+          <h2>3 · Attestation et validation électronique</h2>
           <div class="attest" id="attest">
             <div class="t">ATTESTATION DE RÉCEPTION DE PRIME DE PARRAINAGE</div>
             <p>Je soussigné(e) <b id="a-nom"></b>, demeurant <b id="a-adresse">—</b>, atteste sur l'honneur :</p>
@@ -121,16 +127,27 @@
               <li>que le compte bancaire indiqué ci-dessus (IBAN <b id="a-iban">—</b>, titulaire <b id="a-titulaire">—</b>) est celui sur lequel je souhaite recevoir ce versement ;</li>
               <li>que la pièce d'identité jointe est en cours de validité et que les informations communiquées sont exactes.</li>
             </ul>
-            <p>Je reconnais que cette prime constitue une gratification versée par Paris Conseils au titre du programme de parrainage, et qu'il m'appartient, le cas échéant, de la déclarer conformément à la réglementation en vigueur. La présente attestation, signée électroniquement, vaut reçu et justificatif comptable du versement.</p>
+            <p>Je reconnais que cette prime constitue une gratification versée par Paris Conseils au titre du programme de parrainage, et qu'il m'appartient, le cas échéant, de la déclarer conformément à la réglementation en vigueur. La présente attestation, validée électroniquement (nom, horodatage et code de validation à usage unique reçu sur mon adresse e-mail), vaut reçu et justificatif comptable du versement.</p>
             <p style="margin:0">Fait à <b id="a-lieu">—</b>, le <b id="a-date"></b>.</p>
           </div>
           <label for="lieu">Lieu de signature</label>
           <input type="text" id="lieu" placeholder="Ville">
-          <label>Signature manuscrite</label>
-          <div class="sig" id="sig-box"><canvas id="sig"></canvas><div class="ph" id="sig-ph">Signez ici, au doigt ou à la souris</div></div>
-          <div class="sig-tools"><span>Votre signature est intégrée à l'attestation PDF.</span><button type="button" class="btn-link" id="sig-clear">Effacer</button></div>
-          <div class="consent"><input type="checkbox" id="consent"><label for="consent" style="margin:0;font-size:14px;letter-spacing:0;text-transform:none;font-weight:400;color:var(--ink-2)">Je certifie l'exactitude des informations ci-dessus et j'accepte que Paris Conseils conserve ces documents pour le versement de ma prime (RGPD — suppression sur demande à contact@parisconseils.fr).</label></div>
-          <button type="submit" class="btn" id="submit">Signer et envoyer</button>
+          <label for="nom-sign">Votre nom, en guise de signature</label>
+          <input type="text" id="nom-sign" autocomplete="name" placeholder="Prénom Nom">
+          <div class="sig-preview empty" id="sig-preview">Votre nom apparaîtra ici, apposé sur l'attestation</div>
+          <div class="hint">Tapez votre nom tel qu'il figure sur l'attestation. Il est apposé sur le PDF avec la date, l'heure et le code de validation.</div>
+          <div class="consent"><input type="checkbox" id="consent"><label for="consent" style="margin:0;font-size:14px;letter-spacing:0;text-transform:none;font-weight:400;color:var(--ink-2)">Je certifie l'exactitude des informations ci-dessus, je valide l'attestation en mon nom et j'accepte que Paris Conseils conserve ces documents pour le versement de ma prime (RGPD — suppression sur demande à contact@parisconseils.fr).</label></div>
+          <div class="otp" id="otp-box">
+            <div class="h">Code de validation par e-mail</div>
+            <div class="s" id="otp-s">Pour finaliser, nous vous envoyons un code à 6 chiffres sur <b id="otp-email">votre adresse e-mail</b>. Il confirme que c'est bien vous.</div>
+            <button type="button" class="btn-outline" id="otp-send">Recevoir mon code par e-mail</button>
+            <div id="otp-entry" style="display:none">
+              <label for="otp">Code reçu (6 chiffres)</label>
+              <input type="text" id="otp" class="mono" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="000000">
+              <div class="hint" id="otp-hint">Valable 15 minutes. Pas reçu ? Vérifiez vos courriers indésirables, ou <button type="button" class="btn-link" id="otp-resend">renvoyer un code</button>.</div>
+            </div>
+          </div>
+          <button type="submit" class="btn" id="submit" style="margin-top:16px">Valider et signer électroniquement</button>
           <div id="flash" class="flash"></div>
         </div>
       </form>
@@ -179,22 +196,38 @@
   };
   var spaced = function(v){ return normIban(v).replace(/(.{4})/g, '$1 ').trim(); };
 
-  // ---------- Signature ----------
-  var canvas = $('sig'), ctx = canvas.getContext('2d'), drawing = false, hasInk = false, last = null;
-  function fitCanvas(){
-    var r = canvas.getBoundingClientRect(); var dpr = window.devicePixelRatio || 1;
-    var img = hasInk ? canvas.toDataURL() : null;
-    canvas.width = Math.round(r.width * dpr); canvas.height = Math.round(r.height * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#0A1E3F';
-    if (img) { var im = new Image(); im.onload = function(){ ctx.drawImage(im, 0, 0, r.width, r.height); }; im.src = img; }
+  // ---------- Signature électronique : nom saisi + code reçu par e-mail (v286) ----------
+  var normName = function(s){ return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z\s'-]/g, ' ').replace(/\s+/g, ' ').trim(); };
+  var nameOk = function(typed){
+    if (!info) return false;
+    var t = normName(typed).split(' '), nom = normName(info.parrain.nom).split(' '), prenom = normName(info.parrain.prenom).split(' ');
+    var nomOk = nom.every(function(w){ return !w || t.indexOf(w) >= 0; });
+    var preOk = !info.parrain.prenom || prenom.some(function(w){ return w && t.indexOf(w) >= 0; });
+    return normName(typed).length >= 3 && nomOk && preOk;
+  };
+  var maskEmail = function(e){ var s = String(e || ''); var i = s.indexOf('@'); return i < 1 ? '•••' : s.slice(0, Math.min(2, i)) + '•••' + s.slice(i); };
+  $('nom-sign').addEventListener('input', function(){
+    var v = this.value.trim(); var pv = $('sig-preview');
+    if (!v) { pv.className = 'sig-preview empty'; pv.textContent = 'Votre nom apparaîtra ici, apposé sur l\'attestation'; }
+    else { pv.className = 'sig-preview'; pv.textContent = v; }
+  });
+  var otpSent = false, otpSentTo = '';
+  function sendOtp(){
+    var b = $('otp-send'); b.disabled = true; b.textContent = 'Envoi du code…';
+    fetch(API + '?action=prime-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ t: token }) })
+      .then(function(r){ return r.json().then(function(j){ return { status: r.status, j: j }; }); })
+      .then(function(res){
+        if (!res.j.ok) throw new Error(res.j.error || ('HTTP ' + res.status));
+        otpSent = true; otpSentTo = res.j.sentTo || '';
+        $('otp-entry').style.display = ''; b.style.display = 'none';
+        $('otp-s').innerHTML = 'Code envoyé à <b>' + otpSentTo + '</b> — saisissez-le ci-dessous (valable ' + (res.j.ttlMinutes || 15) + ' minutes).';
+        try { $('otp').focus(); } catch(e){}
+      })
+      .catch(function(err){ b.disabled = false; b.textContent = 'Recevoir mon code par e-mail'; flash('error', err.message || 'Envoi du code impossible.'); });
   }
-  function pos(e){ var r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
-  canvas.addEventListener('pointerdown', function(e){ e.preventDefault(); drawing = true; last = pos(e); canvas.setPointerCapture(e.pointerId); });
-  canvas.addEventListener('pointermove', function(e){ if (!drawing) return; e.preventDefault(); var p = pos(e); ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke(); last = p; hasInk = true; $('sig-ph').style.display = 'none'; });
-  var end = function(){ drawing = false; last = null; };
-  canvas.addEventListener('pointerup', end); canvas.addEventListener('pointercancel', end); canvas.addEventListener('pointerleave', end);
-  $('sig-clear').addEventListener('click', function(){ ctx.clearRect(0, 0, canvas.width, canvas.height); hasInk = false; $('sig-ph').style.display = ''; });
-  window.addEventListener('resize', fitCanvas);
+  $('otp-send').addEventListener('click', sendOtp);
+  $('otp-resend').addEventListener('click', function(){ $('otp-hint').textContent = 'Nouveau code demandé…'; fetch(API + '?action=prime-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ t: token }) }).then(function(r){ return r.json(); }).then(function(j){ $('otp-hint').textContent = j.ok ? ('Nouveau code envoyé à ' + (j.sentTo || '') + ' (valable 15 minutes).') : (j.error || 'Impossible pour le moment.'); $('otp').value = ''; }).catch(function(){ $('otp-hint').textContent = 'Impossible pour le moment — réessayez dans un instant.'; }); });
+  $('otp').addEventListener('input', function(){ this.value = this.value.replace(/\D/g, '').slice(0, 6); });
 
   // ---------- Pièce d'identité ----------
   var piece = null; // { name, type, dataBase64 }
@@ -241,7 +274,7 @@
   $('iban').addEventListener('blur', function(){ this.value = spaced(this.value); refreshAttest(); });
 
   // ---------- PDF ----------
-  function buildPdf(sigDataUrl, signedAt){
+  function buildPdf(nomSign, signedAt){
     var jsPDF = window.jspdf.jsPDF; var doc = new jsPDF({ unit: 'mm', format: 'a4' });
     var W = 210, M = 20, y = 0;
     doc.setFillColor(10, 30, 63); doc.rect(0, 0, W, 26, 'F');
@@ -258,18 +291,21 @@
     bullet('que cette recommandation s\'est concrétisée et ouvre droit au versement d\'une prime de parrainage d\'un montant de ' + fmtEur(info.montant) + ' € (échelon ' + info.echelon + ' du programme) ;');
     bullet('que le compte bancaire indiqué ci-dessous, dont je suis titulaire, est celui sur lequel je souhaite recevoir ce versement ;');
     bullet('que la pièce d\'identité jointe à ce dossier est en cours de validité et que les informations communiquées sont exactes.');
-    y += 2; para('Je reconnais que cette prime constitue une gratification versée par Paris Conseils au titre du programme de parrainage, et qu\'il m\'appartient, le cas échéant, de la déclarer conformément à la réglementation en vigueur. La présente attestation, signée électroniquement, vaut reçu et justificatif comptable du versement.');
+    y += 2; para('Je reconnais que cette prime constitue une gratification versée par Paris Conseils au titre du programme de parrainage, et qu\'il m\'appartient, le cas échéant, de la déclarer conformément à la réglementation en vigueur. La présente attestation, validée électroniquement (nom, horodatage et code de validation à usage unique reçu sur mon adresse e-mail), vaut reçu et justificatif comptable du versement.');
     y += 2; doc.setFillColor(250, 245, 230); doc.setDrawColor(232, 217, 181); doc.roundedRect(M, y, W - 2 * M, 30, 2, 2, 'FD');
     doc.setFont('helvetica', 'bold'); doc.setTextColor(184, 134, 11); doc.setFontSize(8); doc.text('COORDONNÉES DE VERSEMENT', M + 5, y + 7);
     doc.setTextColor(26, 26, 26); doc.setFontSize(10.5); doc.text('Titulaire : ' + $('titulaire').value.trim(), M + 5, y + 14);
     doc.setFont('courier', 'bold'); doc.text('IBAN : ' + spaced($('iban').value), M + 5, y + 21);
     doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(74, 90, 117); doc.text('Montant : ' + fmtEur(info.montant) + ' € · Conseiller : ' + info.conseiller, M + 5, y + 27);
     y += 40; doc.setTextColor(26, 26, 26); doc.setFontSize(10.5); doc.text('Fait à ' + $('lieu').value.trim() + ', le ' + todayFr() + '.', M, y);
-    y += 8; doc.setFontSize(9); doc.setTextColor(74, 90, 117); doc.text('Signature du parrain :', M, y);
-    doc.setDrawColor(226, 232, 240); doc.roundedRect(M, y + 3, 80, 34, 2, 2, 'S');
-    doc.addImage(sigDataUrl, 'PNG', M + 2, y + 5, 76, 30, undefined, 'FAST');
+    y += 8; doc.setFontSize(9); doc.setTextColor(74, 90, 117); doc.text('Signature électronique du parrain :', M, y);
+    doc.setDrawColor(226, 232, 240); doc.setFillColor(252, 252, 253); doc.roundedRect(M, y + 3, W - 2 * M, 34, 2, 2, 'FD');
+    doc.setFont('times', 'italic'); doc.setFontSize(20); doc.setTextColor(10, 30, 63); doc.text(nomSign, M + 6, y + 17);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(74, 90, 117);
+    doc.text('Signé électroniquement le ' + signedAt + ' (heure de Paris)', M + 6, y + 25);
+    doc.text('Identité confirmée par code à usage unique envoyé à ' + (otpSentTo || maskEmail(info.parrain.email)) + ' · pièce d\'identité jointe au dossier', M + 6, y + 31);
     y += 46; doc.setFontSize(7.5); doc.setTextColor(100, 116, 139);
-    var meta = 'Signature électronique simple — horodatage ' + signedAt + ' · document généré sur parrainage.parisconseils.fr · réf. ' + (token.split('.')[1] || '').slice(0, 12);
+    var meta = 'Signature électronique simple (règlement eIDAS, art. 1367 du Code civil) — nom saisi par le signataire, case de certification cochée, code de validation vérifié par Paris Conseils, horodatage ' + signedAt + ' · document généré sur parrainage.parisconseils.fr · réf. dossier ' + (token.split('.')[1] || '').slice(0, 12) + ' · empreinte SHA-256 du fichier conservée par Paris Conseils.';
     doc.text(doc.splitTextToSize(meta, W - 2 * M), M, y);
     doc.setFillColor(10, 30, 63); doc.rect(0, 283, W, 14, 'F'); doc.setTextColor(212, 169, 74); doc.setFontSize(8); doc.text('Paris Conseils · Confidentialité absolue · Secret professionnel · contact@parisconseils.fr', W / 2, 291.5, { align: 'center' });
     return doc.output('datauristring');
@@ -284,27 +320,36 @@
     if ($('adresse').value.trim().length < 8) missing.push('adresse postale');
     if (!piece) missing.push('pièce d\'identité');
     if ($('lieu').value.trim().length < 2) missing.push('lieu de signature');
-    if (!hasInk) missing.push('signature');
+    var nomSign = $('nom-sign').value.trim().replace(/\s+/g, ' ');
+    if (nomSign.length < 3) missing.push('votre nom');
+    else if (!nameOk(nomSign)) { flash('error', 'Le nom saisi doit correspondre au vôtre : <b>' + info.parrain.prenom + ' ' + info.parrain.nom + '</b>.'); return; }
     if (!$('consent').checked) missing.push('case de certification');
+    if (!otpSent) missing.push('code de validation (cliquez sur « Recevoir mon code par e-mail »)');
+    else if (!/^\d{6}$/.test($('otp').value.trim())) missing.push('code de validation à 6 chiffres');
     if (missing.length) { flash('error', 'Merci de compléter : <b>' + missing.join(', ') + '</b>.'); return; }
     var btn = $('submit'); btn.disabled = true; btn.textContent = 'Génération de l\'attestation…';
     flash('info', 'Génération de votre attestation PDF…');
+    var BTN_LABEL = 'Valider et signer électroniquement';
     try {
-      var sigPng = canvas.toDataURL('image/png');
-      var signedAt = new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris' });
-      var pdfDataUri = buildPdf(sigPng, signedAt);
-      btn.textContent = 'Envoi sécurisé…'; flash('info', 'Envoi sécurisé de votre dossier…');
+      var signedAt = new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      var pdfDataUri = buildPdf(nomSign, signedAt);
+      btn.textContent = 'Envoi sécurisé…'; flash('info', 'Vérification du code et envoi sécurisé de votre dossier…');
       fetch(API + '?action=prime-sign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
         t: token, iban: normIban($('iban').value), titulaire: $('titulaire').value.trim(), adresse: $('adresse').value.trim(), lieu: $('lieu').value.trim(), consent: true,
-        signaturePng: sigPng, attestationPdf: { name: 'attestation.pdf', type: 'application/pdf', dataBase64: pdfDataUri.replace(/^data:[^,]+,/, '') }, piece: piece
+        signatureMode: 'otp', nomSignataire: nomSign, otp: $('otp').value.trim(),
+        attestationPdf: { name: 'attestation.pdf', type: 'application/pdf', dataBase64: pdfDataUri.replace(/^data:[^,]+,/, '') }, piece: piece
       }) }).then(function(r){ return r.json().then(function(j){ return { status: r.status, j: j }; }); })
       .then(function(res){
-        if (!res.j.ok) throw new Error(res.j.error || ('HTTP ' + res.status));
+        if (!res.j.ok) { var e = new Error(res.j.error || ('HTTP ' + res.status)); e.otp = !!res.j.otp; throw e; }
         $('app').style.display = 'none'; $('done').style.display = ''; $('d-prenom').textContent = info.parrain.prenom; $('d-montant').textContent = fmtEur(res.j.montant || info.montant);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       })
-      .catch(function(err){ btn.disabled = false; btn.textContent = 'Signer et envoyer'; flash('error', 'Envoi impossible (' + (err.message || 'inconnu') + '). Rien n\'est perdu : réessayez, ou écrivez à <a href="mailto:contact@parisconseils.fr">contact@parisconseils.fr</a>.'); });
-    } catch (err) { btn.disabled = false; btn.textContent = 'Signer et envoyer'; flash('error', 'Erreur : ' + (err.message || 'inconnue')); }
+      .catch(function(err){
+        btn.disabled = false; btn.textContent = BTN_LABEL;
+        if (err.otp) { flash('error', (err.message || 'Code refusé.') + ' <button type="button" class="btn-link" onclick="document.getElementById(\'otp-resend\').click();document.getElementById(\'otp\').focus();">Renvoyer un code</button>'); try { $('otp').focus(); $('otp').select(); } catch(e){} return; }
+        flash('error', 'Envoi impossible (' + (err.message || 'inconnu') + '). Rien n\'est perdu : réessayez, ou écrivez à <a href="mailto:contact@parisconseils.fr">contact@parisconseils.fr</a>.');
+      });
+    } catch (err) { btn.disabled = false; btn.textContent = BTN_LABEL; flash('error', 'Erreur : ' + (err.message || 'inconnue')); }
   });
 
   // ---------- Init ----------
@@ -318,7 +363,8 @@
     $('a-nom').textContent = j.parrain.prenom + ' ' + j.parrain.nom; $('a-filleul').textContent = j.filleul.prenom + ' ' + j.filleul.nom; $('a-annee').textContent = j.annee;
     $('a-montant').textContent = fmtEur(j.montant); $('a-echelon').textContent = j.echelon; $('a-date').textContent = todayFr();
     $('titulaire').value = j.parrain.titulaire || (j.parrain.prenom + ' ' + j.parrain.nom); $('adresse').value = j.parrain.adresse || '';
-    $('loading').style.display = 'none'; $('app').style.display = ''; refreshAttest(); setTimeout(fitCanvas, 50);
+    $('otp-email').textContent = maskEmail(j.parrain.email); $('nom-sign').placeholder = j.parrain.prenom + ' ' + j.parrain.nom;
+    $('loading').style.display = 'none'; $('app').style.display = ''; refreshAttest();
   }).catch(function(){ showError('Impossible de charger le dossier. Réessayez dans un instant.'); });
 })();
 </script>
