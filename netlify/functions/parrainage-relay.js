@@ -19,8 +19,8 @@
 //                          Sinon, l'email conseiller fallback vers contact@parisconseils.fr
 
 // v200am — Bascule Resend → SMTP direct via parisconseils.fr
-// build-stamp: 2026-09-10-v285-RDV-PAGE
-const BUILD_STAMP = '2026-09-10-v285-RDV-PAGE';
+// build-stamp: 2026-09-10-v286-SIGNATURE-OTP
+const BUILD_STAMP = '2026-09-10-v286-SIGNATURE-OTP';
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 
@@ -594,7 +594,7 @@ async function handleHealthcheck(event) {
   await checkPage('/', formOpts);
   await checkPage('/parrainage.html', formOpts);
   await checkPage('/espace-pro.html', { minBytes: 30000, minScripts: 1, checkScripts: true, mustContain: ['pro-login', 'primeStart'] });
-  await checkPage('/prime.html', { minBytes: 15000, minScripts: 1, checkScripts: true, mustContain: ['prime-sign', 'jspdf'] });
+  await checkPage('/prime.html', { minBytes: 15000, minScripts: 1, checkScripts: true, mustContain: ['prime-sign', 'prime-otp', 'jspdf'] });
   // v285 — pages de rendez-vous liées depuis les mails filleuls (étaient en 404 → « lien mort » signalé par un client)
   for (const c of ['corentin', 'david', 'nicolas']) await checkPage(`/rdv-${c}.html`, { minBytes: 800, minScripts: 1, checkScripts: true, mustContain: ['rdv-shared.js', `PC_CONSEILLER='${c}'`] });
   await checkPage('/rdv-shared.js', { minBytes: 5000, mustContain: ['action=rdv', 'Demander ce rendez-vous'] });
@@ -1178,6 +1178,8 @@ async function handleUpdate(event) {
 //   POST ?action=prime-sign    (public, token signé) { t, iban, titulaire, adresse, lieu,
 //                                signaturePng, attestationPdf:{name,dataBase64}, piece:{name,type,dataBase64} }
 //   GET  ?action=prime-doc&id=&fi=&kind=attestation|piece|signature (admin)
+//   POST ?action=prime-otp   { t }  → envoie un code à 6 chiffres (15 min) sur la boîte du parrain (v286)
+//   prime-sign accepte { signatureMode:'otp', nomSignataire, otp } à la place de signaturePng (v286)
 // Aucun mail n'est envoyé sans clic explicite de l'admin dans l'espace pro.
 // ═══════════════════════════════════════════════════════════════════════════
 const PRIME_TOKEN_TTL_DAYS = 60;
@@ -1261,9 +1263,9 @@ ${p(`Bonjour ${escapeHtml(parrain.prenom)},`)}
 ${p(`Bonne nouvelle&nbsp;: <b>${fNom}</b> nous a rejoints grâce à votre recommandation. Votre parrainage est <b>concrétisé</b>, et nous tenions à vous en remercier sincèrement.`)}
 ${heroCream(`Votre prime de parrainage · échelon ${echelon}`, `${eur(montant)}`, `${ordinal(echelon)} parrainage concrétisé en ${year}`)}
 ${p(`Pour déclencher le versement, il nous reste une formalité simple, à faire en <b>trois minutes</b> depuis votre téléphone ou votre ordinateur&nbsp;:`)}
-${p(`<b>1.</b> Indiquer le RIB sur lequel vous souhaitez recevoir la prime.<br><b>2.</b> Joindre une pièce d'identité en cours de validité.<br><b>3.</b> Signer l'attestation de réception de prime (elle vaut justificatif comptable — vous en recevez une copie).`)}
+${p(`<b>1.</b> Indiquer le RIB sur lequel vous souhaitez recevoir la prime.<br><b>2.</b> Joindre une pièce d'identité en cours de validité.<br><b>3.</b> Valider électroniquement l'attestation de réception de prime — votre nom et un code reçu par e-mail, aucune impression (elle vaut justificatif comptable, vous en recevez une copie).`)}
 ${ctaNavy(lien, 'Compléter mon dossier de prime')}
-${pSoft(`Ce lien vous est personnel et reste valable ${PRIME_TOKEN_TTL_DAYS} jours. Le versement intervient après réception de l'attestation signée.`)}
+${pSoft(`Ce lien vous est personnel et reste valable ${PRIME_TOKEN_TTL_DAYS} jours. Le versement intervient après réception de l'attestation validée.`)}
 ${infoBeige(`<b>Rappel du programme ${year}</b>&nbsp;: ${eur(500)} pour chacun de vos deux premiers parrainages concrétisés, puis dès le 3<sup>e</sup>, ${eur(1500)} par parrainage avec revalorisation rétroactive des deux premiers (${eur(4500)} cumulés au 3<sup>e</sup>). Le programme court jusqu'au 31&nbsp;décembre.<br><br><b>Confidentialité</b>&nbsp;: vos documents sont stockés de manière chiffrée, réservés à la comptabilité de Paris Conseils, et supprimables sur simple demande à <a href="mailto:contact@parisconseils.fr" style="color:${RIP_NAVY};">contact@parisconseils.fr</a>.`)}
 ${signature(`Avec toute notre reconnaissance`)}
 ${pSoft(`${escapeHtml(consNom)} reste votre interlocuteur pour toute question.`, 'margin-top:6px;')}`;
@@ -1274,7 +1276,7 @@ function emailPrimeSigneeParrain({ parrain, filleul, montant, echelon, signedAt 
   const fNom = `${escapeHtml(filleul.prenom || '')} ${escapeHtml(filleul.nom || '')}`.trim();
   const body = `
 ${p(`Bonjour ${escapeHtml(parrain.prenom)},`)}
-${p(`Nous avons bien reçu votre attestation signée le <b>${fmtDateFr(signedAt)}</b> pour le parrainage de <b>${fNom}</b>. Vous en trouverez une copie en pièce jointe.`)}
+${p(`Nous avons bien reçu votre attestation validée électroniquement le <b>${fmtDateFr(signedAt)}</b> pour le parrainage de <b>${fNom}</b>. Vous en trouverez une copie en pièce jointe.`)}
 ${heroCream('Versement en préparation', `${eur(montant)}`, `échelon ${echelon} · sur le compte ${escapeHtml(maskIban(parrain.iban))}`)}
 ${p(`Notre comptabilité procède au virement dans les prochains jours. Vous n'avez plus rien à faire.`)}
 ${infoBeige(`Un doute, une question sur ce versement&nbsp;? Répondez simplement à cet e-mail ou écrivez à <a href="mailto:contact@parisconseils.fr" style="color:${RIP_NAVY};">contact@parisconseils.fr</a>.`)}
@@ -1286,11 +1288,89 @@ function emailPrimeSigneeCompta({ parrain, filleul, record, montant, echelon, si
   const fNom = `${escapeHtml(filleul.prenom || '')} ${escapeHtml(filleul.nom || '')}`.trim();
   const pNom = `${escapeHtml(parrain.prenom || '')} ${escapeHtml(parrain.nom || '')}`.trim();
   const body = `
-${p(`Attestation de prime <b>signée</b> par le parrain. PDF en pièce jointe (RIB complet dans le PDF). La pièce d'identité est consultable dans l'espace pro (fiche du parrainage), elle n'est pas envoyée par e-mail.`)}
+${p(`Attestation de prime <b>validée électroniquement</b> par le parrain. PDF en pièce jointe (RIB complet dans le PDF). La pièce d'identité est consultable dans l'espace pro (fiche du parrainage), elle n'est pas envoyée par e-mail.`)}
 ${heroCream('À virer', `${eur(montant)}`, `échelon ${echelon} · ${pNom} → ${fNom}`)}
-${infoBeige(`<b>Parrain</b>&nbsp;: ${pNom} · ${escapeHtml(parrain.email || '')} · ${escapeHtml(parrain.tel || '')}<br><b>Titulaire du compte</b>&nbsp;: ${escapeHtml(meta.titulaire || '')}<br><b>IBAN</b>&nbsp;: ${escapeHtml(meta.ibanSpaced || '')}<br><b>Adresse</b>&nbsp;: ${escapeHtml(meta.adresse || '')}<br><b>Signé le</b>&nbsp;: ${fmtDateFr(signedAt)} à ${escapeHtml(meta.lieu || '')} · IP ${escapeHtml(meta.ip || '')}<br><b>Empreinte PDF</b>&nbsp;: ${escapeHtml((meta.pdfSha256 || '').slice(0, 16))}…<br><b>Conseiller</b>&nbsp;: ${escapeHtml(record.conseiller || '')} · ID ${escapeHtml(record.id)}`)}
+${infoBeige(`<b>Parrain</b>&nbsp;: ${pNom} · ${escapeHtml(parrain.email || '')} · ${escapeHtml(parrain.tel || '')}<br><b>Titulaire du compte</b>&nbsp;: ${escapeHtml(meta.titulaire || '')}<br><b>IBAN</b>&nbsp;: ${escapeHtml(meta.ibanSpaced || '')}<br><b>Adresse</b>&nbsp;: ${escapeHtml(meta.adresse || '')}<br><b>Signé le</b>&nbsp;: ${fmtDateFr(signedAt)} à ${escapeHtml(meta.lieu || '')} · IP ${escapeHtml(meta.ip || '')}<br><b>Signature</b>&nbsp;: ${escapeHtml(meta.signatureLine || 'tracé manuscrit intégré au PDF')}<br><b>Empreinte SHA-256 du PDF</b>&nbsp;: <span style="font-family:'Courier New',monospace;font-size:12px;">${escapeHtml(meta.pdfSha256 || '')}</span><br><b>Conseiller</b>&nbsp;: ${escapeHtml(record.conseiller || '')} · ID ${escapeHtml(record.id)}`)}
 ${ctaNavy('https://parrainage.parisconseils.fr/espace-pro.html', 'Ouvrir l\'espace pro')}`;
   return baseShell({ title: `Prime à virer — ${pNom}`, eyebrow: 'Comptabilité · parrainage', body });
+}
+
+// ── v286 — Validation électronique de l'attestation : nom saisi + case cochée + code à usage unique reçu par e-mail.
+// Le code (6 chiffres, 15 min, 5 essais) est stocké haché dans parrainages-docs/<id>/<fi>/otp.json ; il prouve, au moment
+// de la signature, le contrôle de la boîte mail à laquelle le lien personnel a été envoyé (signature électronique simple).
+const OTP_TTL_MIN = 15, OTP_MAX_ATTEMPTS = 5, OTP_MIN_INTERVAL_S = 45, OTP_MAX_SENDS_24H = 6;
+const maskEmail = (e) => { const s = String(e || ''); const i = s.indexOf('@'); if (i < 1) return '•••'; return s.slice(0, Math.min(2, i)) + '•••' + s.slice(i); };
+const otpHash = (code, id, fi) => crypto.createHash('sha256').update(`${code}|${id}|${fi}|${primeSecret()}`).digest('hex');
+const normName = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z\s'-]/g, ' ').replace(/\s+/g, ' ').trim();
+function nameMatchesParrain(typed, parrain) {
+  const t = normName(typed); const nom = normName((parrain || {}).nom); const prenom = normName((parrain || {}).prenom);
+  if (t.length < 3 || !nom) return false;
+  const tokens = t.split(' ');
+  const nomOk = nom.split(' ').every(w => !w || tokens.includes(w));           // tous les mots du nom de famille
+  const prenomOk = !prenom || prenom.split(' ').some(w => w && tokens.includes(w)); // au moins un mot du prénom
+  return nomOk && prenomOk;
+}
+function emailPrimeOtp({ parrain, code, filleul, montant }) {
+  const fNom = `${escapeHtml((filleul || {}).prenom || '')} ${escapeHtml((filleul || {}).nom || '')}`.trim();
+  const pretty = String(code).replace(/(\d{3})(\d{3})/, '$1 $2');
+  const body = `
+${p(`Bonjour ${escapeHtml(parrain.prenom)},`)}
+${p(`Voici votre code de validation pour signer électroniquement l'attestation de réception de votre prime de parrainage${fNom ? ` (${fNom})` : ''}${montant ? ` — ${eur(montant)}` : ''}&nbsp;:`)}
+${heroCream('Code de validation', `<span style="letter-spacing:6px;font-family:'Courier New',monospace;">${pretty}</span>`, `valable ${OTP_TTL_MIN} minutes · à saisir sur la page ouverte`)}
+${pSoft(`Ce code est à usage unique. Ne le communiquez à personne — Paris Conseils ne vous le demandera jamais par téléphone. Si vous n'êtes pas à l'origine de cette demande, ignorez simplement ce message.`)}
+${signature('Bien à vous')}`;
+  return baseShell({ title: 'Votre code de validation', eyebrow: 'Prime de parrainage · signature électronique', body });
+}
+async function handlePrimeOtp(event) {
+  let body; try { body = JSON.parse(event.body || '{}'); } catch (e) { return jsonResp(400, { ok: false, error: 'Invalid JSON' }); }
+  const v = verifyPrimeToken(body.t);
+  if (!v) return jsonResp(401, { ok: false, error: 'Lien invalide.' });
+  if (v.expired) return jsonResp(410, { ok: false, error: 'Ce lien a expiré.' });
+  try {
+    const store = getBlobStore('parrainages');
+    const record = await store.get(v.payload.id, { type: 'json' });
+    const fi = v.payload.fi;
+    const f = record && (record.filleuls || [])[fi];
+    if (!record || !f) return jsonResp(404, { ok: false, error: 'Parrainage introuvable.' });
+    if (f.prime && f.prime.status === 'signe') return jsonResp(409, { ok: false, error: 'Cette attestation a déjà été validée.' });
+    const email = String((record.parrain || {}).email || '').trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return jsonResp(400, { ok: false, error: 'Adresse e-mail du parrain absente — écrivez à contact@parisconseils.fr.' });
+    const docs = getBlobStore('parrainages-docs');
+    const key = `${record.id}/${fi}/otp.json`;
+    const now = Date.now();
+    const prev = (await docs.get(key, { type: 'json' })) || {};
+    const sends = (prev.sends || []).filter(ts => now - ts < 24 * 3600 * 1000);
+    if (sends.length && now - sends[sends.length - 1] < OTP_MIN_INTERVAL_S * 1000) return jsonResp(429, { ok: false, error: `Un code vient d'être envoyé à ${maskEmail(email)} — patientez ${OTP_MIN_INTERVAL_S} secondes avant d'en redemander un.` });
+    if (sends.length >= OTP_MAX_SENDS_24H) return jsonResp(429, { ok: false, error: 'Trop de codes demandés aujourd\'hui. Réessayez demain ou écrivez à contact@parisconseils.fr.' });
+    const code = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
+    sends.push(now);
+    await docs.setJSON(key, { hash: otpHash(code, record.id, fi), exp: now + OTP_TTL_MIN * 60 * 1000, attempts: 0, sends, sentTo: maskEmail(email), used: false });
+    const env = process.env;
+    const montant = (f.prime && f.prime.montant) || v.payload.m;
+    const r = await sendEmail({ apiKey: env.RESEND_API_KEY, from: env.MAIL_FROM, to: email,
+      subject: `${code.slice(0, 3)} ${code.slice(3)} — votre code de validation Paris Conseils`,
+      html: emailPrimeOtp({ parrain: record.parrain, code, filleul: f, montant }), replyTo: resolveConseillerEmail(env, record.conseiller) }); // pas de BCC : le code ne circule qu'entre le parrain et le relay
+    if (!r.ok) return jsonResp(502, { ok: false, error: 'Envoi du code impossible pour le moment — réessayez dans un instant.' });
+    return jsonResp(200, { ok: true, sentTo: maskEmail(email), ttlMinutes: OTP_TTL_MIN });
+  } catch (err) { return jsonResp(500, { ok: false, error: err.message }); }
+}
+// Vérifie le code saisi ; consomme une tentative à chaque échec, invalide le code après succès.
+async function verifyPrimeOtp(docs, id, fi, code) {
+  const key = `${id}/${fi}/otp.json`;
+  const o = await docs.get(key, { type: 'json' });
+  const c = String(code || '').replace(/\D/g, '');
+  if (!o || !o.hash) return { ok: false, error: 'Demandez d\'abord votre code de validation par e-mail.' };
+  if (o.used) return { ok: false, error: 'Ce code a déjà été utilisé — demandez-en un nouveau.' };
+  if (Date.now() > (o.exp || 0)) return { ok: false, error: 'Code expiré (15 minutes) — demandez-en un nouveau.' };
+  if ((o.attempts || 0) >= OTP_MAX_ATTEMPTS) return { ok: false, error: 'Trop d\'essais — demandez un nouveau code.' };
+  const expect = Buffer.from(o.hash, 'hex'); const got = Buffer.from(c.length === 6 ? otpHash(c, id, fi) : otpHash('x', id, fi), 'hex');
+  if (expect.length !== got.length || !crypto.timingSafeEqual(expect, got)) {
+    o.attempts = (o.attempts || 0) + 1; await docs.setJSON(key, o);
+    const left = OTP_MAX_ATTEMPTS - o.attempts;
+    return { ok: false, error: left > 0 ? `Code incorrect (${left} essai${left > 1 ? 's' : ''} restant${left > 1 ? 's' : ''}).` : 'Code incorrect — demandez un nouveau code.' };
+  }
+  o.used = true; o.usedAt = new Date().toISOString(); await docs.setJSON(key, o);
+  return { ok: true, sentTo: o.sentTo || '' };
 }
 
 async function handlePrimeNotify(event) {
@@ -1371,10 +1451,15 @@ async function handlePrimeSign(event) {
   if (adresse.length < 8)   return jsonResp(400, { ok: false, error: 'Adresse postale requise.' });
   if (lieu.length < 2)      return jsonResp(400, { ok: false, error: 'Lieu de signature requis.' });
   if (body.consent !== true) return jsonResp(400, { ok: false, error: 'Vous devez certifier l\'exactitude des informations.' });
-  const sig   = b64Payload({ dataBase64: body.signaturePng, name: 'signature.png', type: 'image/png' }, B64_MAX.signature);
+  // v286 — mode « otp » (nom saisi + code reçu par e-mail) ; le tracé manuscrit (signaturePng) reste accepté pour compatibilité.
+  const otpMode = body.signatureMode === 'otp' || (body.otp !== undefined && !body.signaturePng);
+  const nomSignataire = String(body.nomSignataire || '').trim().replace(/\s+/g, ' ').slice(0, 120);
+  const sig   = otpMode ? null : b64Payload({ dataBase64: body.signaturePng, name: 'signature.png', type: 'image/png' }, B64_MAX.signature);
   const pdf   = b64Payload(body.attestationPdf, B64_MAX.attestation);
   const piece = b64Payload(body.piece, B64_MAX.piece);
-  if (!sig)   return jsonResp(400, { ok: false, error: 'Signature manuscrite requise.' });
+  if (!otpMode && !sig) return jsonResp(400, { ok: false, error: 'Signature manuscrite requise.' });
+  if (otpMode && nomSignataire.length < 3) return jsonResp(400, { ok: false, error: 'Saisissez votre nom pour valider l\'attestation.' });
+  if (otpMode && !/^\d{6}$/.test(String(body.otp || '').replace(/\D/g, ''))) return jsonResp(400, { ok: false, error: 'Saisissez le code de validation à 6 chiffres reçu par e-mail.' });
   if (!pdf)   return jsonResp(400, { ok: false, error: 'Attestation PDF manquante ou trop lourde (max 4 Mo).' });
   if (!piece) return jsonResp(400, { ok: false, error: 'Pièce d\'identité manquante ou trop lourde (max 4 Mo).' });
   if (!/^(image\/(jpeg|png|webp|heic)|application\/pdf)$/.test(piece.type)) return jsonResp(400, { ok: false, error: 'Pièce d\'identité : formats acceptés JPG, PNG, WEBP ou PDF.' });
@@ -1384,34 +1469,51 @@ async function handlePrimeSign(event) {
     const fi = v.payload.fi;
     const f = record && (record.filleuls || [])[fi];
     if (!record || !f) return jsonResp(404, { ok: false, error: 'Parrainage introuvable.' });
-    if (f.prime && f.prime.status === 'signe') return jsonResp(409, { ok: false, error: 'Cette attestation a déjà été signée.' });
+    if (f.prime && f.prime.status === 'signe') return jsonResp(409, { ok: false, error: 'Cette attestation a déjà été validée.' });
     const docs = getBlobStore('parrainages-docs');
     const prefix = `${record.id}/${fi}/`;
+    // v286 — signature électronique : le nom saisi doit correspondre au parrain, puis le code e-mail est consommé.
+    let otpInfo = null;
+    if (otpMode) {
+      if (!nameMatchesParrain(nomSignataire, record.parrain)) return jsonResp(400, { ok: false, error: `Le nom saisi doit correspondre au vôtre : ${(record.parrain || {}).prenom || ''} ${(record.parrain || {}).nom || ''}.`.replace(/\s+/g, ' ') });
+      const chk = await verifyPrimeOtp(docs, record.id, fi, body.otp);
+      if (!chk.ok) return jsonResp(400, { ok: false, error: chk.error, otp: true });
+      otpInfo = chk;
+    }
     const pdfBuf = Buffer.from(pdf.data, 'base64');
     const pieceBuf = Buffer.from(piece.data, 'base64');
-    const sigBuf = Buffer.from(sig.data, 'base64');
+    const sigBuf = sig ? Buffer.from(sig.data, 'base64') : null;
     const sha = (b) => crypto.createHash('sha256').update(b).digest('hex');
     const pieceExt = piece.type === 'application/pdf' ? 'pdf' : (piece.type.split('/')[1] || 'bin').replace('jpeg', 'jpg');
     await docs.set(prefix + 'attestation.pdf', pdfBuf, { metadata: { type: 'application/pdf' } });
     await docs.set(prefix + 'piece-identite.' + pieceExt, pieceBuf, { metadata: { type: piece.type, name: piece.name } });
-    await docs.set(prefix + 'signature.png', sigBuf, { metadata: { type: 'image/png' } });
+    if (sigBuf) await docs.set(prefix + 'signature.png', sigBuf, { metadata: { type: 'image/png' } });
     const signedAt = new Date().toISOString();
     const ip = event.headers['x-nf-client-connection-ip'] || event.headers['client-ip'] || (event.headers['x-forwarded-for'] || '').split(',')[0].trim() || '';
     const ua = String(event.headers['user-agent'] || '').slice(0, 200);
     const montant = (f.prime && f.prime.montant) || v.payload.m;
     const echelon = (f.prime && f.prime.echelon) || v.payload.e;
     const ibanSpaced = iban.replace(/(.{4})/g, '$1 ').trim();
+    const signatureInfo = otpMode
+      ? { mode: 'electronique-otp', nom: nomSignataire, otpVerified: true, otpSentTo: otpInfo.sentTo || maskEmail((record.parrain || {}).email) }
+      : { mode: 'manuscrite', nom: `${(record.parrain || {}).prenom || ''} ${(record.parrain || {}).nom || ''}`.trim() };
+    const signedAtFr = new Date(signedAt).toLocaleString('fr-FR', { timeZone: 'Europe/Paris', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const signatureLine = otpMode
+      ? `électronique — nom saisi « ${nomSignataire} », code à usage unique vérifié (envoyé à ${signatureInfo.otpSentTo}) le ${signedAtFr}`
+      : `tracé manuscrit intégré au PDF le ${signedAtFr}`;
     record.parrain = Object.assign({}, record.parrain || {}, { iban, titulaire, adresse });
-    f.prime = Object.assign({}, f.prime || {}, { montant, echelon, status: 'signe', signedAt, lieu, ip, ua,
-      docs: { attestation: prefix + 'attestation.pdf', piece: prefix + 'piece-identite.' + pieceExt, signature: prefix + 'signature.png' },
-      sha256: { attestation: sha(pdfBuf), piece: sha(pieceBuf), signature: sha(sigBuf) }, pieceType: piece.type, pieceBytes: piece.bytes });
+    const docsMap = { attestation: prefix + 'attestation.pdf', piece: prefix + 'piece-identite.' + pieceExt };
+    const shaMap = { attestation: sha(pdfBuf), piece: sha(pieceBuf) };
+    if (sigBuf) { docsMap.signature = prefix + 'signature.png'; shaMap.signature = sha(sigBuf); }
+    f.prime = Object.assign({}, f.prime || {}, { montant, echelon, status: 'signe', signedAt, lieu, ip, ua, signature: signatureInfo,
+      docs: docsMap, sha256: shaMap, pieceType: piece.type, pieceBytes: piece.bytes });
     record.filleuls[fi] = f;
     record.updatedAt = signedAt;
     await store.setJSON(record.id, record);
-    await docs.setJSON(prefix + 'meta.json', { id: record.id, fi, signedAt, ip, ua, lieu, titulaire, adresse, montant, echelon, sha256: f.prime.sha256, ibanMasque: maskIban(iban) });
+    await docs.setJSON(prefix + 'meta.json', { id: record.id, fi, signedAt, ip, ua, lieu, titulaire, adresse, montant, echelon, signature: signatureInfo, signatureLine, sha256: f.prime.sha256, ibanMasque: maskIban(iban) });
 
     const env = process.env;
-    const meta = { titulaire, adresse, lieu, ip, ibanSpaced, pdfSha256: f.prime.sha256.attestation };
+    const meta = { titulaire, adresse, lieu, ip, ibanSpaced, pdfSha256: f.prime.sha256.attestation, signatureLine };
     const pdfName = `Attestation-prime-parrainage-${(record.parrain.nom || 'parrain').replace(/[^\w\-]+/g, '_')}-${signedAt.slice(0, 10)}.pdf`;
     const compta = env.MAIL_COMPTA || env.MAIL_CONTACT || 'contact@parisconseils.fr';
     const mails = [];
@@ -1423,7 +1525,7 @@ async function handlePrimeSign(event) {
       subject: `Votre attestation de prime est bien reçue — ${Number(montant).toLocaleString('fr-FR')} €`,
       html: emailPrimeSigneeParrain({ parrain: record.parrain, filleul: f, montant, echelon, signedAt }),
       replyTo: resolveConseillerEmail(env, record.conseiller), bcc: env.MAIL_CC_OPS, attachments: [{ filename: pdfName, contentBase64: pdf.data, contentType: 'application/pdf' }] })));
-    return jsonResp(200, { ok: true, signedAt, montant, echelon, mails: mails.map(m => ({ kind: m.kind, ok: m.ok, status: m.status, via: m.via })) });
+    return jsonResp(200, { ok: true, signedAt, montant, echelon, signature: signatureInfo.mode, pdfSha256: f.prime.sha256.attestation, mails: mails.map(m => ({ kind: m.kind, ok: m.ok, status: m.status, via: m.via })) });
   } catch (err) { return jsonResp(500, { ok: false, error: err.message }); }
 }
 
@@ -1626,6 +1728,7 @@ const innerHandler = async (event) => {
   if (event.httpMethod === 'POST' && action === 'prime-notify') return handlePrimeNotify(event);
   if (event.httpMethod === 'GET'  && action === 'prime-info')   return handlePrimeInfo(event);
   if (event.httpMethod === 'POST' && action === 'prime-sign')   return handlePrimeSign(event);
+  if (event.httpMethod === 'POST' && action === 'prime-otp')    return handlePrimeOtp(event);
   if (event.httpMethod === 'GET'  && action === 'prime-doc')    return handlePrimeDoc(event);
   if (event.httpMethod === 'POST' && action === 'contact')      return handleContact(event);
   if (event.httpMethod === 'POST' && action === 'rdv')          return handleRdv(event);
