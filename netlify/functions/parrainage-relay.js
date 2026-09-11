@@ -19,8 +19,8 @@
 //                          Sinon, l'email conseiller fallback vers contact@parisconseils.fr
 
 // v200am — Bascule Resend → SMTP direct via parisconseils.fr
-// build-stamp: 2026-09-11-v287-ADRESSE-LOGO
-const BUILD_STAMP = '2026-09-11-v287-ADRESSE-LOGO';
+// build-stamp: 2026-09-11-v288-PRIME-AUTO
+const BUILD_STAMP = '2026-09-11-v288-PRIME-AUTO';
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 
@@ -603,21 +603,33 @@ async function handleHealthcheck(event) {
   const pingResp = await handlePing();
   const ping = JSON.parse(pingResp.body);
   if (!ping.ok) problems.push('auto-diagnostic KO : ' + JSON.stringify(ping.checks));
+  // v288 — primes en attente : filleul signé jamais notifié, ou attestation signée pas encore virée.
+  let primes = { aNotifier: [], aVirer: [] };
+  try { primes = await primesEnAttente(getBlobStore('parrainages')); } catch (_e) {}
   const ok = problems.length === 0;
   const isMonday = new Date().getUTCDay() === 1;
   const forceMail = !!((event.queryStringParameters || {}).mail);
+  const primesEnCours = primes.aNotifier.length + primes.aVirer.length;
   const alertTo = (env.HEALTH_ALERT_TO || [env.MAIL_CONTACT || 'contact@parisconseils.fr', 'curtet@parisconseils.fr'].join(',')).split(',').map(s => s.trim()).filter(Boolean);
   let mail = null;
-  if (!ok || isMonday || forceMail) {
-    const title = ok ? 'Parrainage : tout fonctionne' : `Parrainage : ${problems.length} problème${problems.length > 1 ? 's' : ''} détecté${problems.length > 1 ? 's' : ''}`;
+  // Bloc « primes » : rappel tant qu'une action reste à faire (notifier un parrain, ou virer une prime signée).
+  const lienPro = 'https://parrainage.parisconseils.fr/espace-pro.html';
+  const primesBlock = primesEnCours ? (
+    (primes.aVirer.length ? infoBeige(`<b>💶 ${primes.aVirer.length} prime${primes.aVirer.length > 1 ? 's' : ''} à virer</b> — attestation signée, RIB et pièce d'identité reçus&nbsp;:<br>${primes.aVirer.map(x => `• ${escapeHtml(x.parrain)} — ${eur(x.montant || 500)} (parrainage de ${escapeHtml(x.filleul)})`).join('<br>')}`) : '')
+    + (primes.aNotifier.length ? infoBeige(`<b>✉️ ${primes.aNotifier.length} parrainage${primes.aNotifier.length > 1 ? 's' : ''} concrétisé${primes.aNotifier.length > 1 ? 's' : ''} sans prime envoyée</b> — le parrain n'a pas encore reçu sa demande de RIB&nbsp;:<br>${primes.aNotifier.map(x => `• ${escapeHtml(x.parrain)} — parrainage de ${escapeHtml(x.filleul)}`).join('<br>')}`) : '')
+    + ctaNavy(lienPro, 'Ouvrir l\'espace pro')
+  ) : '';
+  if (!ok || isMonday || forceMail || primesEnCours) {
+    const title = !ok ? `Parrainage : ${problems.length} problème${problems.length > 1 ? 's' : ''} détecté${problems.length > 1 ? 's' : ''}`
+      : (primesEnCours ? `Parrainage : ${primesEnCours} prime${primesEnCours > 1 ? 's' : ''} en attente` : 'Parrainage : tout fonctionne');
     const body = ok
       ? `${p(`Contrôle automatique du ${fmtDateFr(new Date().toISOString())} : formulaire, espace pro, page prime, base et messagerie répondent normalement.`)}${infoBeige(`${ping.checks.blobs && ping.checks.blobs.records} parrainage(s) en base · mail : ${escapeHtml((ping.checks.mail || {}).provider || '?')} · RIP : ${ping.checks.rip && ping.checks.rip.configured ? 'connecté' : '<b>non connecté</b>'}`)}`
       : `${p(`Le contrôle automatique du ${fmtDateFr(new Date().toISOString())} a détecté&nbsp;:`)}${infoBeige(problems.map(x => '• ' + escapeHtml(x)).join('<br>'))}${p(`Le formulaire de recommandation est peut-être <b>inutilisable</b>. À vérifier tout de suite sur <a href="${SITE_URL}" style="color:${RIP_NAVY};">${SITE_URL}</a>.`, 'margin-top:14px;')}`;
-    const html = baseShell({ title: escapeHtml(title), eyebrow: ok ? 'Surveillance · OK' : 'Surveillance · ALERTE', body });
-    mail = await sendEmail({ apiKey: env.RESEND_API_KEY, from: env.MAIL_FROM, to: alertTo, subject: (ok ? '✅ ' : '🚨 ') + title, html });
+    const html = baseShell({ title: escapeHtml(title), eyebrow: ok ? (primesEnCours ? 'Parrainage · à faire' : 'Surveillance · OK') : 'Surveillance · ALERTE', body: body + primesBlock });
+    mail = await sendEmail({ apiKey: env.RESEND_API_KEY, from: env.MAIL_FROM, to: alertTo, subject: (ok ? (primesEnCours ? '💶 ' : '✅ ') : '🚨 ') + title, html });
     mail = { ok: mail.ok, status: mail.status, to: alertTo };
   }
-  return jsonResp(ok ? 200 : 503, { ok, build: BUILD_STAMP, problems, pages, ping: ping.checks, mail });
+  return jsonResp(ok ? 200 : 503, { ok, build: BUILD_STAMP, problems, pages, ping: ping.checks, primes: { aNotifier: primes.aNotifier.length, aVirer: primes.aVirer.length, detail: primes }, mail });
 }
 
 async function countFilleulsAnneeParrain(parrainEmail, excludeId) {
@@ -1407,6 +1419,129 @@ async function handlePrimeNotify(event) {
   } catch (err) { return jsonResp(500, { ok: false, error: err.message }); }
 }
 
+// ── v288 — Déclenchement automatique depuis le RIP ────────────────────────────
+// Quand un dossier est marqué « validé / client signé » côté rip.parisconseils.fr, le RIP appelle :
+//   POST /.netlify/functions/parrainage-relay?action=prime-auto
+//   en-tête  X-Parrainage-Secret: <le secret déjà partagé pour le webhook>
+//   corps    { filleulEmail } ou { filleulPrenom, filleulNom } ou { id, filleulIndex }
+// Le relay retrouve le parrainage, passe le filleul en « signé » et envoie la prime au parrain.
+// Rejouable sans risque : si la prime a déjà été notifiée, rien n'est renvoyé (already:true).
+function normPersonne(s) {
+  return String(s == null ? '' : s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+async function findFilleul(store, q) {
+  const email = String(q.filleulEmail || '').trim().toLowerCase();
+  const nomComplet = normPersonne(`${q.filleulPrenom || ''} ${q.filleulNom || ''}`);
+  const parrainEmail = String(q.parrainEmail || '').trim().toLowerCase();
+  const listing = await store.list();
+  const hits = [];
+  for (const blob of (listing.blobs || [])) {
+    const r = await store.get(blob.key, { type: 'json' });
+    if (!r || r.deleted || !Array.isArray(r.filleuls)) continue;
+    if (parrainEmail && String((r.parrain || {}).email || '').toLowerCase() !== parrainEmail) continue;
+    r.filleuls.forEach((f, i) => {
+      if (!f) return;
+      const fEmail = String(f.email || '').trim().toLowerCase();
+      const fNom = normPersonne(`${f.prenom || ''} ${f.nom || ''}`);
+      const matchEmail = email && fEmail && fEmail === email;
+      const matchNom = !email && nomComplet && fNom && (fNom === nomComplet || normPersonne(`${f.nom || ''} ${f.prenom || ''}`) === nomComplet);
+      if (matchEmail || matchNom) hits.push({ record: r, fi: i, exact: !!matchEmail });
+    });
+  }
+  if (!hits.length) return null;
+  const exact = hits.filter(h => h.exact);
+  return (exact.length ? exact : hits)[0];
+}
+async function handlePrimeAuto(event) {
+  const env = process.env;
+  let body; try { body = JSON.parse(event.body || '{}'); } catch (e) { return jsonResp(400, { ok: false, error: 'Invalid JSON' }); }
+  // Authentification : secret partagé avec le RIP (celui du webhook) ou jeton admin.
+  const hdr = event.headers || {};
+  const given = String(hdr['x-parrainage-secret'] || hdr['X-Parrainage-Secret'] || hdr['x-pc-secret'] || '').trim();
+  let authorized = isAdminEvent(event);
+  if (!authorized && given) {
+    try {
+      const cfg = await getRipConfig(env);
+      const expected = String(cfg.secret || '');
+      authorized = !!expected && given.length === expected.length && crypto.timingSafeEqual(Buffer.from(given), Buffer.from(expected));
+    } catch (_e) { authorized = false; }
+  }
+  if (!authorized) return jsonResp(401, { ok: false, error: 'Unauthorized' });
+  try {
+    const store = getBlobStore('parrainages');
+    let record = null, fi = -1;
+    if (body.id) {
+      record = await store.get(String(body.id), { type: 'json' });
+      fi = Number.isInteger(body.filleulIndex) ? body.filleulIndex : 0;
+    } else {
+      const hit = await findFilleul(store, body);
+      if (hit) { record = hit.record; fi = hit.fi; }
+    }
+    const f = record && (record.filleuls || [])[fi];
+    if (!record || !f) return jsonResp(404, { ok: false, error: 'Aucun parrainage ne correspond à ce filleul.', cherche: body.filleulEmail || `${body.filleulPrenom || ''} ${body.filleulNom || ''}`.trim() });
+    // Déjà notifié (ou déjà signé par le parrain) : on ne renvoie rien.
+    if (f.prime && f.prime.status) return jsonResp(200, { ok: true, already: true, status: f.prime.status, id: record.id, filleulIndex: fi, montant: f.prime.montant, echelon: f.prime.echelon });
+    const now = new Date().toISOString();
+    if (f.status !== 'signe') { f.status = 'signe'; f.status_updated_at = now; f.status_updated_by = 'rip-auto'; }
+    record.filleuls[fi] = f;
+    await store.setJSON(record.id, record);
+    const def = await computePrimeDefault(store, record, fi);
+    const montant = Number(body.montant) > 0 ? Math.round(Number(body.montant)) : def.montant;
+    const echelon = Number(body.echelon) > 0 ? Math.round(Number(body.echelon)) : def.echelon;
+    const exp = Date.now() + PRIME_TOKEN_TTL_DAYS * 24 * 3600 * 1000;
+    const token = signPrimeToken({ id: record.id, fi, m: montant, e: echelon, exp });
+    const lien = `https://parrainage.parisconseils.fr/prime.html?t=${encodeURIComponent(token)}`;
+    const html = emailPrimeParrain({ parrain: record.parrain, filleul: f, conseiller: record.conseiller, montant, echelon, lien });
+    const sendRes = await sendEmail({
+      apiKey: env.RESEND_API_KEY, from: env.MAIL_FROM, to: record.parrain.email,
+      subject: `Votre prime de parrainage de ${montant.toLocaleString('fr-FR')} € — une formalité à compléter`,
+      html, replyTo: resolveConseillerEmail(env, record.conseiller), bcc: env.MAIL_CC_OPS
+    });
+    f.prime = Object.assign({}, f.prime || {}, { montant, echelon, status: 'notifie', notifiedAt: now, notifiedBy: String(body.source || 'rip'), tokenExp: new Date(exp).toISOString(), mail: { ok: !!sendRes.ok, status: sendRes.status, via: sendRes.via } });
+    record.filleuls[fi] = f;
+    record.updatedAt = now;
+    await store.setJSON(record.id, record);
+    return jsonResp(sendRes.ok ? 200 : 502, { ok: !!sendRes.ok, already: false, id: record.id, filleulIndex: fi, parrain: `${record.parrain.prenom} ${record.parrain.nom}`, montant, echelon });
+  } catch (err) { return jsonResp(500, { ok: false, error: err.message }); }
+}
+
+// Marque une prime comme virée (bouton « Virement effectué » de l'espace pro) → stoppe le rappel quotidien.
+async function handlePrimePaid(event) {
+  if (!isAdminEvent(event)) return jsonResp(401, { ok: false, error: 'Unauthorized (admin only)' });
+  let body; try { body = JSON.parse(event.body || '{}'); } catch (e) { return jsonResp(400, { ok: false, error: 'Invalid JSON' }); }
+  if (!body.id || !Number.isInteger(body.filleulIndex)) return jsonResp(400, { ok: false, error: 'id / filleulIndex requis' });
+  try {
+    const store = getBlobStore('parrainages');
+    const record = await store.get(String(body.id), { type: 'json' });
+    const f = record && (record.filleuls || [])[body.filleulIndex];
+    if (!record || !f || !f.prime) return jsonResp(404, { ok: false, error: 'Prime introuvable.' });
+    f.prime.status = body.undo ? 'signe' : 'vire';
+    f.prime.paidAt = body.undo ? null : new Date().toISOString();
+    record.filleuls[body.filleulIndex] = f;
+    record.updatedAt = new Date().toISOString();
+    await store.setJSON(record.id, record);
+    return jsonResp(200, { ok: true, status: f.prime.status });
+  } catch (err) { return jsonResp(500, { ok: false, error: err.message }); }
+}
+
+// Inventaire des primes : à notifier (filleul signé, parrain pas encore prévenu) et à virer (attestation signée).
+async function primesEnAttente(store) {
+  const aNotifier = [], aVirer = [];
+  const listing = await store.list();
+  for (const blob of (listing.blobs || [])) {
+    const r = await store.get(blob.key, { type: 'json' });
+    if (!r || r.deleted || !Array.isArray(r.filleuls)) continue;
+    r.filleuls.forEach((f, i) => {
+      if (!f || f.status !== 'signe') return;
+      const p = f.prime || {};
+      const item = { id: r.id, fi: i, parrain: `${(r.parrain || {}).prenom || ''} ${(r.parrain || {}).nom || ''}`.trim(), parrainEmail: (r.parrain || {}).email || '', filleul: `${f.prenom || ''} ${f.nom || ''}`.trim(), montant: p.montant || null, echelon: p.echelon || null, signedAt: p.signedAt || null };
+      if (!p.status) aNotifier.push(item);
+      else if (p.status === 'signe') aVirer.push(item);
+    });
+  }
+  return { aNotifier, aVirer };
+}
+
 async function handlePrimeInfo(event) {
   const t = (event.queryStringParameters || {}).t || '';
   const v = verifyPrimeToken(t);
@@ -1731,6 +1866,8 @@ const innerHandler = async (event) => {
   if (event.httpMethod === 'GET'  && action === 'prime-info')   return handlePrimeInfo(event);
   if (event.httpMethod === 'POST' && action === 'prime-sign')   return handlePrimeSign(event);
   if (event.httpMethod === 'POST' && action === 'prime-otp')    return handlePrimeOtp(event);
+  if (event.httpMethod === 'POST' && action === 'prime-auto')   return handlePrimeAuto(event);
+  if (event.httpMethod === 'POST' && action === 'prime-paid')   return handlePrimePaid(event);
   if (event.httpMethod === 'GET'  && action === 'prime-doc')    return handlePrimeDoc(event);
   if (event.httpMethod === 'POST' && action === 'contact')      return handleContact(event);
   if (event.httpMethod === 'POST' && action === 'rdv')          return handleRdv(event);
