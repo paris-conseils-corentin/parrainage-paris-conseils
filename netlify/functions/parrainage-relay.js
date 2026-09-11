@@ -19,8 +19,8 @@
 //                          Sinon, l'email conseiller fallback vers contact@parisconseils.fr
 
 // v200am — Bascule Resend → SMTP direct via parisconseils.fr
-// build-stamp: 2026-09-10-v286-SIGNATURE-OTP
-const BUILD_STAMP = '2026-09-10-v286-SIGNATURE-OTP';
+// build-stamp: 2026-09-11-v287-ADRESSE-LOGO
+const BUILD_STAMP = '2026-09-11-v287-ADRESSE-LOGO';
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 
@@ -131,8 +131,8 @@ function baseShell(opts) {
   <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:${RIP_BG};padding:28px 12px;">
     <tr><td align="center">
       <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="620" ${whiteTd} style="max-width:620px;${whiteStyle}border-radius:14px;overflow:hidden;border:1px solid ${RIP_LINE};">
-        <tr><td class="pc-navy-bg" bgcolor="${RIP_NAVY}" background="${PX_NAVY_ATTR}" style="background:${RIP_NAVY};background-color:${RIP_NAVY};background-image:${PX_NAVY_PNG};background-repeat:repeat;padding:28px 32px;text-align:center;">
-          <img src="${RIP_LOGO}" alt="Paris Conseils — Ingénierie financière & optimisation fiscale" width="240" height="96" style="display:block;height:auto;max-width:240px;width:100%;border:0;outline:none;text-decoration:none;margin:0 auto;">
+        <tr><td class="pc-navy-bg" bgcolor="${RIP_NAVY}" background="${PX_NAVY_ATTR}" style="background:${RIP_NAVY};background-color:${RIP_NAVY};background-image:${PX_NAVY_PNG};background-repeat:repeat;padding:34px 32px 32px 32px;text-align:center;">
+          <img src="${RIP_LOGO}" alt="Paris Conseils — Ingénierie financière & optimisation fiscale" width="300" height="109" style="display:block;height:auto;max-width:300px;width:100%;border:0;outline:none;text-decoration:none;margin:0 auto;">
         </td></tr>
         <tr><td bgcolor="${RIP_GOLD}" style="height:3px;background:${RIP_GOLD};background-color:${RIP_GOLD};background-image:${PX_GOLD_PNG};line-height:0;font-size:0;">&nbsp;</td></tr>
         <tr><td ${whiteTd} style="${whiteStyle}padding:30px 38px 0 38px;">
@@ -1514,7 +1514,9 @@ async function handlePrimeSign(event) {
 
     const env = process.env;
     const meta = { titulaire, adresse, lieu, ip, ibanSpaced, pdfSha256: f.prime.sha256.attestation, signatureLine };
-    const pdfName = `Attestation-prime-parrainage-${(record.parrain.nom || 'parrain').replace(/[^\w\-]+/g, '_')}-${signedAt.slice(0, 10)}.pdf`;
+    // Nom de fichier daté à l'heure de Paris (cohérent avec la date imprimée sur l'attestation).
+    const dateParis = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(signedAt));
+    const pdfName = `Attestation-prime-parrainage-${(record.parrain.nom || 'parrain').replace(/[^\w\-]+/g, '_')}-${dateParis}.pdf`;
     const compta = env.MAIL_COMPTA || env.MAIL_CONTACT || 'contact@parisconseils.fr';
     const mails = [];
     mails.push(Object.assign({ kind: 'compta', to: compta }, await sendEmail({ apiKey: env.RESEND_API_KEY, from: env.MAIL_FROM, to: compta,
