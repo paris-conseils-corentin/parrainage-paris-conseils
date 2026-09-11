@@ -2,8 +2,8 @@
 :root{--navy:#0A1E3F;--navy-2:#142d5a;--blue:#4870AF;--gold:#b8860b;--gold-s:#d4a94a;--cream:#faf5e6;--cream-l:#e8d9b5;--bg:#F7F9FC;--ink:#1a1a1a;--ink-2:#4A5A75;--muted:#64748b;--line:#e2e8f0;--ok:#059669;--err:#b91c1c}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,'Segoe UI',sans-serif;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
-.top{background:var(--navy);padding:22px 16px;text-align:center;border-bottom:3px solid var(--gold)}
-.top img{width:220px;max-width:70%;height:auto;display:block;margin:0 auto}
+.top{background:var(--navy);padding:32px 16px 30px;text-align:center;border-bottom:3px solid var(--gold)}
+.top img{width:300px;max-width:80%;height:auto;display:block;margin:0 auto}
 .wrap{max-width:760px;margin:0 auto;padding:26px 16px 60px}
 .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:26px 26px 22px;margin-bottom:18px;box-shadow:0 6px 24px rgba(10,30,63,.05)}
 .eyebrow{font-size:11.5px;letter-spacing:2px;color:var(--gold);font-weight:700;text-transform:uppercase;margin:0 0 8px}
