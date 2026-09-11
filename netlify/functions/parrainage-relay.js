@@ -20,7 +20,7 @@
 
 // v200am — Bascule Resend → SMTP direct via parisconseils.fr
 // build-stamp: 2026-09-11-v288-PRIME-AUTO
-const BUILD_STAMP = '2026-09-11-v288-PRIME-AUTO';
+const BUILD_STAMP = '2026-09-11-v289-PRIME-BILAN';
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 
@@ -1296,6 +1296,40 @@ ${signature('Merci encore pour votre confiance')}`;
   return baseShell({ title: 'Attestation bien reçue', eyebrow: 'Prime de parrainage', body });
 }
 
+// v289 — Mail « virement effectué + où vous en êtes ».
+// Envoyé MANUELLEMENT depuis l'espace pro, uniquement après le virement.
+// Ton sobre : on confirme le versement, on rappelle le niveau atteint et ce qui
+// reste possible d'ici le 31/12 — toujours SOUS RÉSERVE de concrétisation.
+function suiteEchelon(echelon) {
+  const n = Number(echelon) || 0;
+  if (n <= 1) {
+    return `Un <b>2<sup>e</sup> parrainage</b> concrétisé vous apporterait ${eur(500)} de plus (${eur(1000)} cumulés). Et dès le <b>3<sup>e</sup></b>, le programme change de dimension&nbsp;: ${eur(1500)} pour celui-ci <i>et</i> vos deux premiers revalorisés rétroactivement à ${eur(1500)} chacun — soit <b>${eur(4500)}</b> cumulés.`;
+  }
+  if (n === 2) {
+    return `Dès le <b>3<sup>e</sup> parrainage</b> concrétisé, tout bascule&nbsp;: ${eur(1500)} pour celui-ci <i>et</i> vos deux premiers revalorisés rétroactivement à ${eur(1500)} chacun — soit <b>${eur(4500)}</b> cumulés.`;
+  }
+  if (n < 10) {
+    return `Chaque parrainage concrétisé supplémentaire ajoute <b>${eur(1500)}</b>, soit <b>${eur(cumulAt(n + 1))}</b> cumulés au ${ordinal(n + 1)}. Le programme est plafonné à ${eur(15000)} au 10<sup>e</sup>.`;
+  }
+  return `Vous avez atteint le <b>plafond de ${eur(15000)}</b> du programme. Bravo.`;
+}
+
+function emailPrimeVireeParrain({ parrain, filleul, montant, echelon, paidAt, cumul }) {
+  const fNom = `${escapeHtml(filleul.prenom || '')} ${escapeHtml(filleul.nom || '')}`.trim();
+  const year = new Date().getFullYear();
+  const n = Number(echelon) || 1;
+  const cum = Number(cumul) > 0 ? Number(cumul) : cumulAt(n);
+  const iban = parrain && parrain.iban ? ` sur le compte ${escapeHtml(maskIban(parrain.iban))}` : '';
+  const body = `
+${p(`Bonjour ${escapeHtml(parrain.prenom)},`)}
+${p(`Votre prime de parrainage pour <b>${fNom}</b> a été <b>virée</b> le ${fmtDateFr(paidAt)}${iban}. Merci encore pour cette recommandation.`)}
+${heroCream(`Où vous en êtes · ${year}`, `${eur(cum)}`, `${ordinal(n)} parrainage concrétisé · prime versée`)}
+${infoBeige(`<b>Ce qui reste possible d'ici le 31&nbsp;décembre.</b><br>${suiteEchelon(n)}<br><br>Chaque prime est acquise <b>à la concrétisation du projet</b> du filleul — la recommandation ouvre le droit, la signature le déclenche.`)}
+${ctaNavy('https://parrainage.parisconseils.fr', 'Recommander quelqu\'un')}
+${signature('Merci de votre confiance')}`;
+  return baseShell({ title: 'Votre prime a été virée', eyebrow: 'Prime de parrainage', body });
+}
+
 function emailPrimeSigneeCompta({ parrain, filleul, record, montant, echelon, signedAt, meta }) {
   const fNom = `${escapeHtml(filleul.prenom || '')} ${escapeHtml(filleul.nom || '')}`.trim();
   const pNom = `${escapeHtml(parrain.prenom || '')} ${escapeHtml(parrain.nom || '')}`.trim();
@@ -1514,7 +1548,20 @@ async function handlePrimePaid(event) {
     const store = getBlobStore('parrainages');
     const record = await store.get(String(body.id), { type: 'json' });
     const f = record && (record.filleuls || [])[body.filleulIndex];
-    if (!record || !f || !f.prime) return jsonResp(404, { ok: false, error: 'Prime introuvable.' });
+    if (!record || !f) return jsonResp(404, { ok: false, error: 'Parrainage introuvable.' });
+    // v289 — prime réglée hors circuit (virement fait avant la mise en place du suivi) :
+    // on crée la fiche prime sans jamais envoyer de mail au parrain.
+    if (!f.prime) {
+      if (body.undo) return jsonResp(404, { ok: false, error: 'Prime introuvable.' });
+      if (!body.horsCircuit) return jsonResp(404, { ok: false, error: 'Prime introuvable. Utilisez horsCircuit:true pour enregistrer un virement déjà effectué.' });
+      const def = await computePrimeDefault(store, record, body.filleulIndex);
+      f.prime = {
+        montant: Number(body.montant) > 0 ? Math.round(Number(body.montant)) : def.montant,
+        echelon: Number(body.echelon) > 0 ? Math.round(Number(body.echelon)) : def.echelon,
+        notifiedBy: 'hors-circuit',
+        note: String(body.note || 'Prime réglée hors circuit, aucun mail envoyé au parrain.').slice(0, 300),
+      };
+    }
     f.prime.status = body.undo ? 'signe' : 'vire';
     f.prime.paidAt = body.undo ? null : new Date().toISOString();
     record.filleuls[body.filleulIndex] = f;
@@ -1525,6 +1572,42 @@ async function handlePrimePaid(event) {
 }
 
 // Inventaire des primes : à notifier (filleul signé, parrain pas encore prévenu) et à virer (attestation signée).
+// v289 — Mail « virement effectué + où vous en êtes », déclenché MANUELLEMENT
+// depuis l'espace pro, et uniquement une fois la prime marquée comme virée.
+// preview:true renvoie le HTML sans rien envoyer.
+async function handlePrimeBilan(event) {
+  if (!isAdminEvent(event)) return jsonResp(401, { ok: false, error: 'Unauthorized (admin only)' });
+  let body; try { body = JSON.parse(event.body || '{}'); } catch (e) { return jsonResp(400, { ok: false, error: 'Invalid JSON' }); }
+  if (!body.id || !Number.isInteger(body.filleulIndex)) return jsonResp(400, { ok: false, error: 'id / filleulIndex requis' });
+  const env = process.env;
+  try {
+    const store = getBlobStore('parrainages');
+    const record = await store.get(String(body.id), { type: 'json' });
+    const f = record && (record.filleuls || [])[body.filleulIndex];
+    if (!record || !f) return jsonResp(404, { ok: false, error: 'Parrainage introuvable.' });
+    const pr = f.prime || null;
+    if (!pr || pr.status !== 'vire') {
+      return jsonResp(400, { ok: false, error: 'Ce mail ne peut partir qu\'après avoir marqué le virement comme effectué.' });
+    }
+    if (!record.parrain || !record.parrain.email) return jsonResp(400, { ok: false, error: 'Aucune adresse e-mail pour ce parrain.' });
+    const montant = pr.montant, echelon = pr.echelon;
+    const cumul = cumulAt(Number(echelon) || 1);
+    const html = emailPrimeVireeParrain({ parrain: record.parrain, filleul: f, montant, echelon, paidAt: pr.paidAt, cumul });
+    const subject = `Votre prime de parrainage a été virée — ${Number(montant).toLocaleString('fr-FR')} €`;
+    if (body.preview) {
+      return jsonResp(200, { ok: true, preview: true, to: record.parrain.email, subject, html, montant, echelon, cumul, dejaEnvoye: pr.bilanSentAt || null });
+    }
+    const sent = await sendEmail({ apiKey: env.RESEND_API_KEY, from: env.MAIL_FROM, to: record.parrain.email,
+      subject, html, replyTo: resolveConseillerEmail(env, record.conseiller), bcc: env.MAIL_CC_OPS });
+    f.prime.bilanSentAt = new Date().toISOString();
+    f.prime.bilanMail = { ok: sent.ok, status: sent.status, via: sent.via };
+    record.filleuls[body.filleulIndex] = f;
+    record.updatedAt = new Date().toISOString();
+    await store.setJSON(record.id, record);
+    return jsonResp(200, { ok: true, to: record.parrain.email, mail: { ok: sent.ok, status: sent.status, via: sent.via }, montant, echelon, cumul });
+  } catch (err) { return jsonResp(500, { ok: false, error: err.message }); }
+}
+
 async function primesEnAttente(store) {
   const aNotifier = [], aVirer = [];
   const listing = await store.list();
@@ -1868,6 +1951,7 @@ const innerHandler = async (event) => {
   if (event.httpMethod === 'POST' && action === 'prime-otp')    return handlePrimeOtp(event);
   if (event.httpMethod === 'POST' && action === 'prime-auto')   return handlePrimeAuto(event);
   if (event.httpMethod === 'POST' && action === 'prime-paid')   return handlePrimePaid(event);
+  if (event.httpMethod === 'POST' && action === 'prime-bilan')  return handlePrimeBilan(event);
   if (event.httpMethod === 'GET'  && action === 'prime-doc')    return handlePrimeDoc(event);
   if (event.httpMethod === 'POST' && action === 'contact')      return handleContact(event);
   if (event.httpMethod === 'POST' && action === 'rdv')          return handleRdv(event);
