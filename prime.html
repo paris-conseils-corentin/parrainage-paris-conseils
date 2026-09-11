@@ -329,15 +329,42 @@
     inp.addEventListener('blur', function(){ setTimeout(close, 150); });
   })();
 
+  // ---------- Logo du PDF ----------
+  // v289 — le PDF reprend le vrai logo Paris Conseils (le même que les e-mails).
+  // Image servie par le site lui-même : pas de dépendance externe, pas de CORS.
+  // Si elle n'est pas disponible, l'en-tête retombe sur la version texte.
+  var LOGO_PDF = null;
+  (function preloadLogo(){
+    try {
+      fetch('/logo-pdf.jpg', { cache: 'force-cache' })
+        .then(function(r){ if (!r.ok) throw new Error(r.status); return r.blob(); })
+        .then(function(b){ return new Promise(function(res, rej){ var fr = new FileReader(); fr.onload = function(){ res(fr.result); }; fr.onerror = rej; fr.readAsDataURL(b); }); })
+        .then(function(d){ LOGO_PDF = d; })
+        .catch(function(){ LOGO_PDF = null; });
+    } catch (_e) { LOGO_PDF = null; }
+  })();
+
   // ---------- PDF ----------
   function buildPdf(nomSign, signedAt){
     var jsPDF = window.jspdf.jsPDF; var doc = new jsPDF({ unit: 'mm', format: 'a4' });
     var W = 210, M = 20, y = 0;
-    doc.setFillColor(10, 30, 63); doc.rect(0, 0, W, 26, 'F');
-    doc.setTextColor(212, 169, 74); doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.text('PARIS CONSEILS', M, 12);
-    doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.text('Ingénierie financière & optimisation fiscale · Programme de parrainage', M, 18.5);
-    doc.setDrawColor(184, 134, 11); doc.setLineWidth(0.8); doc.line(0, 26, W, 26);
-    y = 42; doc.setTextColor(10, 30, 63); doc.setFont('times', 'bold'); doc.setFontSize(17); doc.text('ATTESTATION DE RÉCEPTION', W / 2, y, { align: 'center' }); y += 8; doc.text('DE PRIME DE PARRAINAGE', W / 2, y, { align: 'center' });
+    var BAND = LOGO_PDF ? 32 : 26;
+    doc.setFillColor(10, 30, 63); doc.rect(0, 0, W, BAND, 'F');
+    if (LOGO_PDF) {
+      var lw = 62, lh = lw / 2.433;
+      try { doc.addImage(LOGO_PDF, 'JPEG', M - 2.5, (BAND - lh) / 2, lw, lh); }
+      catch (_e) {
+        doc.setTextColor(212, 169, 74); doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.text('PARIS CONSEILS', M, 14);
+        doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.text('Ingénierie financière & optimisation fiscale', M, 20.5);
+      }
+      doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
+      doc.text('Programme de parrainage', W - M, BAND / 2 + 1, { align: 'right' });
+    } else {
+      doc.setTextColor(212, 169, 74); doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.text('PARIS CONSEILS', M, 12);
+      doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.text('Ingénierie financière & optimisation fiscale · Programme de parrainage', M, 18.5);
+    }
+    doc.setDrawColor(184, 134, 11); doc.setLineWidth(0.8); doc.line(0, BAND, W, BAND);
+    y = BAND + 16; doc.setTextColor(10, 30, 63); doc.setFont('times', 'bold'); doc.setFontSize(17); doc.text('ATTESTATION DE RÉCEPTION', W / 2, y, { align: 'center' }); y += 8; doc.text('DE PRIME DE PARRAINAGE', W / 2, y, { align: 'center' });
     y += 12; doc.setFont('helvetica', 'normal'); doc.setFontSize(10.5); doc.setTextColor(26, 26, 26);
     var para = function(t){ var lines = doc.splitTextToSize(t, W - 2 * M); doc.text(lines, M, y); y += lines.length * 5.4 + 3; };
     var bullet = function(t){ var lines = doc.splitTextToSize(t, W - 2 * M - 6); doc.text('•', M + 1, y); doc.text(lines, M + 6, y); y += lines.length * 5.4 + 2; };
