@@ -550,13 +550,17 @@ function primeBlock(rec, f, i, isAdminNow) {
       <div style="font-size:12px;color:var(--muted);margin-top:8px;">Tant que le virement n'est pas marqué, un rappel arrive chaque matin par e-mail.</div></div>`;
   }
   if (pr.status === 'vire') {
+    const bilan = pr.bilanSentAt
+      ? `<div style="font-size:12px;color:var(--muted);margin-top:8px;">✅ Mail « virement effectué + paliers restants » envoyé le ${fmtDate(pr.bilanSentAt)}.</div>`
+      : `<div style="font-size:12px;color:var(--muted);margin-top:8px;">Le parrain n'a pas encore été informé du virement. Le mail rappelle son niveau et ce qu'il peut atteindre jusqu'au 31/12, sous réserve de concrétisation.</div>`;
     return head + `<div style="font-size:13px;color:var(--ink-2);line-height:1.6;">
-        <b>${fmtEur(pr.montant)}</b> · échelon ${esc(pr.echelon)} · <b>virement effectué</b> le ${fmtDate(pr.paidAt)}. Dossier clos.
+        <b>${fmtEur(pr.montant)}</b> · échelon ${esc(pr.echelon)} · <b>virement effectué</b> le ${fmtDate(pr.paidAt)}.${pr.notifiedBy === 'hors-circuit' ? ' <span style="color:var(--muted);">(réglée hors circuit)</span>' : ''}
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
-        <button class="btn" style="padding:7px 12px;font-size:12px;" onclick="openPrimeDoc('${esc(rec.id)}', ${i}, 'attestation')">📄 Attestation PDF</button>
+        ${pr.notifiedBy === 'hors-circuit' ? '' : `<button class="btn" style="padding:7px 12px;font-size:12px;" onclick="openPrimeDoc('${esc(rec.id)}', ${i}, 'attestation')">📄 Attestation PDF</button>`}
+        <button class="btn" style="padding:7px 12px;font-size:12px;background:${pr.bilanSentAt ? '#fff' : 'var(--pc-gold)'};${pr.bilanSentAt ? 'color:var(--navy);border:1px solid var(--line);' : ''}" onclick="primeBilan('${esc(rec.id)}', ${i})">✉️ ${pr.bilanSentAt ? 'Renvoyer' : 'Informer'} le parrain du virement</button>
         <button class="btn" style="padding:7px 12px;font-size:12px;background:#fff;color:var(--navy);border:1px solid var(--line);" onclick="primeMarkPaid('${esc(rec.id)}', ${i}, true)">↩︎ Annuler « virée »</button>
-      </div></div>`;
+      </div>${bilan}</div>`;
   }
   if (pr.status === 'notifie') {
     return head + `<div style="font-size:13px;color:var(--ink-2);line-height:1.6;">
@@ -576,6 +580,36 @@ async function primeMarkPaid(id, fi, undo) {
     if (!j.ok) throw new Error(j.error || ('HTTP ' + r.status));
     await loadData();
   } catch (e) { alert('Impossible d\'enregistrer : ' + (e.message || 'erreur inconnue')); }
+}
+// v289 — Mail « virement effectué + où vous en êtes » : aperçu obligatoire, puis envoi manuel.
+async function primeBilan(id, fi) {
+  const body = document.getElementById('modal-body');
+  body.innerHTML = `<div class="hint">Préparation de l'aperçu…</div>`;
+  try {
+    const r = await fetch(`${API}/parrainage-relay?action=prime-bilan`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() }, body: JSON.stringify({ id, filleulIndex: fi, preview: true }) });
+    const j = await r.json();
+    if (!j.ok) { alert('Erreur : ' + (j.error || 'inconnue')); openDetails(id); return; }
+    body.innerHTML = `
+      <button onclick="openDetails('${esc(id)}')" style="border:none;background:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0;margin-bottom:12px;">← Retour à la fiche</button>
+      <div style="font-size:11px;letter-spacing:2px;color:var(--pc-gold);font-weight:700;text-transform:uppercase;margin-bottom:6px;">Prime virée</div>
+      <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:22px;color:var(--navy);font-weight:600;margin-bottom:4px;">Informer le parrain</div>
+      <div class="hint" style="margin-bottom:12px;">Destinataire : <b>${esc(j.to)}</b> · Objet : <b>${esc(j.subject)}</b>${j.dejaEnvoye ? `<br><span style="color:#b45309;">⚠ Déjà envoyé le ${fmtDate(j.dejaEnvoye)} — ce serait un second envoi.</span>` : ''}</div>
+      <iframe style="width:100%;height:52vh;border:1px solid var(--line);border-radius:8px;background:#fff;" srcdoc="${esc(j.html).replace(/"/g,'&quot;')}"></iframe>
+      <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+        <button class="btn" onclick="primeBilanSend('${esc(id)}', ${fi}, this)">✉️ Envoyer ce mail</button>
+        <button class="btn" style="background:#fff;color:var(--navy);border:1px solid var(--line);" onclick="openDetails('${esc(id)}')">Annuler</button>
+      </div>`;
+  } catch (e) { body.innerHTML = `<div class="hint">Erreur : ${esc(e.message || 'inconnue')}</div>`; }
+}
+async function primeBilanSend(id, fi, btn) {
+  if (btn) { btn.disabled = true; btn.textContent = 'Envoi…'; }
+  try {
+    const r = await fetch(`${API}/parrainage-relay?action=prime-bilan`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() }, body: JSON.stringify({ id, filleulIndex: fi }) });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || ('HTTP ' + r.status));
+    alert('Mail envoyé à ' + j.to + '.');
+    await loadData(); openDetails(id);
+  } catch (e) { alert('Envoi impossible : ' + (e.message || 'erreur inconnue')); if (btn) { btn.disabled = false; btn.textContent = '✉️ Envoyer ce mail'; } }
 }
 async function primeStart(id, fi) {
   const rec = ALL_RECORDS.find(r => r.id === id); if (!rec) return;
