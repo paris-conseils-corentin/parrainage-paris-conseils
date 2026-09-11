@@ -527,7 +527,8 @@ function countsForTier(f) {
 function fmtEur(n) { return Number(n || 0).toLocaleString('fr-FR') + ' €'; }
 function primeChip(f) {
   const pr = f && f.prime; if (!pr) return '';
-  if (pr.status === 'signe')   return `<span class="chip" style="background:#d1fae5;color:#064e3b;">💶 Attestation signée · ${fmtEur(pr.montant)}</span>`;
+  if (pr.status === 'vire')    return `<span class="chip" style="background:#e2e8f0;color:#334155;">✅ Prime virée · ${fmtEur(pr.montant)}</span>`;
+  if (pr.status === 'signe')   return `<span class="chip" style="background:#d1fae5;color:#064e3b;">💶 À virer · ${fmtEur(pr.montant)}</span>`;
   if (pr.status === 'notifie') return `<span class="chip" style="background:var(--pc-gold-tint);color:var(--pc-gold);">💶 Prime notifiée · ${fmtEur(pr.montant)}</span>`;
   return '';
 }
@@ -544,6 +545,17 @@ function primeBlock(rec, f, i, isAdminNow) {
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
         <button class="btn" style="padding:7px 12px;font-size:12px;" onclick="openPrimeDoc('${esc(rec.id)}', ${i}, 'attestation')">📄 Attestation PDF</button>
         <button class="btn" style="padding:7px 12px;font-size:12px;background:var(--navy-2,#142d5a);" onclick="openPrimeDoc('${esc(rec.id)}', ${i}, 'piece')">🪪 Pièce d'identité</button>
+        <button class="btn" style="padding:7px 12px;font-size:12px;background:#059669;" onclick="primeMarkPaid('${esc(rec.id)}', ${i})">✅ Virement effectué</button>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;">Tant que le virement n'est pas marqué, un rappel arrive chaque matin par e-mail.</div></div>`;
+  }
+  if (pr.status === 'vire') {
+    return head + `<div style="font-size:13px;color:var(--ink-2);line-height:1.6;">
+        <b>${fmtEur(pr.montant)}</b> · échelon ${esc(pr.echelon)} · <b>virement effectué</b> le ${fmtDate(pr.paidAt)}. Dossier clos.
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+        <button class="btn" style="padding:7px 12px;font-size:12px;" onclick="openPrimeDoc('${esc(rec.id)}', ${i}, 'attestation')">📄 Attestation PDF</button>
+        <button class="btn" style="padding:7px 12px;font-size:12px;background:#fff;color:var(--navy);border:1px solid var(--line);" onclick="primeMarkPaid('${esc(rec.id)}', ${i}, true)">↩︎ Annuler « virée »</button>
       </div></div>`;
   }
   if (pr.status === 'notifie') {
@@ -554,6 +566,16 @@ function primeBlock(rec, f, i, isAdminNow) {
   }
   return head + `<div style="font-size:13px;color:var(--ink-2);line-height:1.6;">Filleul signé : vous pouvez notifier le parrain de sa prime (montant selon son échelon) et lui demander RIB, pièce d'identité et attestation signée.</div>
     <button class="btn" style="padding:8px 14px;font-size:12px;margin-top:10px;" onclick="primeStart('${esc(rec.id)}', ${i})">💶 Déclencher la prime</button></div>`;
+}
+// v288 — marquer la prime comme virée (stoppe le rappel quotidien), ou revenir en arrière.
+async function primeMarkPaid(id, fi, undo) {
+  if (!undo && !confirm('Confirmer que le virement de la prime a bien été effectué ?\n\nLe rappel quotidien s\'arrêtera pour ce parrainage.')) return;
+  try {
+    const r = await fetch(`${API}/parrainage-relay?action=prime-paid`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() }, body: JSON.stringify({ id, filleulIndex: fi, undo: !!undo }) });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || ('HTTP ' + r.status));
+    await loadData();
+  } catch (e) { alert('Impossible d\'enregistrer : ' + (e.message || 'erreur inconnue')); }
 }
 async function primeStart(id, fi) {
   const rec = ALL_RECORDS.find(r => r.id === id); if (!rec) return;
