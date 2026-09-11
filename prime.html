@@ -379,8 +379,15 @@
     doc.setFont('helvetica', 'bold'); doc.setTextColor(184, 134, 11); doc.setFontSize(8); doc.text('COORDONNÉES DE VERSEMENT', M + 5, y + 7);
     doc.setTextColor(26, 26, 26); doc.setFontSize(10.5); doc.text('Titulaire : ' + $('titulaire').value.trim(), M + 5, y + 14);
     doc.setFont('courier', 'bold'); doc.text('IBAN : ' + spaced($('iban').value), M + 5, y + 21);
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(74, 90, 117); doc.text('Montant : ' + fmtEur(info.montant) + ' € · Conseiller : ' + info.conseiller, M + 5, y + 27);
-    y += 40; doc.setTextColor(26, 26, 26); doc.setFontSize(10.5); doc.text('Fait à ' + $('lieu').value.trim() + ', le ' + todayFr() + '.', M, y);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(74, 90, 117); doc.text('Montant de la prime : ' + fmtEur(info.montant) + ' €', M + 5, y + 27);
+    // v291 — L'émetteur est Paris Conseils ; le conseiller encadre le dossier et
+    // figure comme superviseur (il n'est jamais partie au versement).
+    y += 36; doc.setFillColor(247, 249, 252); doc.setDrawColor(226, 232, 240); doc.roundedRect(M, y, W - 2 * M, 17, 2, 2, 'FD');
+    doc.setFont('helvetica', 'bold'); doc.setTextColor(10, 30, 63); doc.setFontSize(8); doc.text('ÉMETTEUR', M + 5, y + 6);
+    doc.setFont('helvetica', 'normal'); doc.setTextColor(26, 26, 26); doc.setFontSize(9.5);
+    doc.text('PARIS CONSEILS — la prime est versée par la société.', M + 5, y + 11.5);
+    doc.text('Conseiller superviseur du dossier : ' + (info.conseiller || '—'), M + 5, y + 15.5);
+    y += 27; doc.setTextColor(26, 26, 26); doc.setFontSize(10.5); doc.text('Fait à ' + $('lieu').value.trim() + ', le ' + todayFr() + '.', M, y);
     y += 8; doc.setFontSize(9); doc.setTextColor(74, 90, 117); doc.text('Signature électronique du parrain :', M, y);
     doc.setDrawColor(226, 232, 240); doc.setFillColor(252, 252, 253); doc.roundedRect(M, y + 3, W - 2 * M, 34, 2, 2, 'FD');
     doc.setFont('times', 'italic'); doc.setFontSize(20); doc.setTextColor(10, 30, 63); doc.text(nomSign, M + 6, y + 17);
