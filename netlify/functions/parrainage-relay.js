@@ -20,7 +20,7 @@
 
 // v200am — Bascule Resend → SMTP direct via parisconseils.fr
 // build-stamp: 2026-09-11-v288-PRIME-AUTO
-const BUILD_STAMP = '2026-09-11-v289-PRIME-BILAN';
+const BUILD_STAMP = '2026-09-12-v291-SUPERVISEUR';
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 
@@ -1336,7 +1336,7 @@ function emailPrimeSigneeCompta({ parrain, filleul, record, montant, echelon, si
   const body = `
 ${p(`Attestation de prime <b>validée électroniquement</b> par le parrain. PDF en pièce jointe (RIB complet dans le PDF). La pièce d'identité est consultable dans l'espace pro (fiche du parrainage), elle n'est pas envoyée par e-mail.`)}
 ${heroCream('À virer', `${eur(montant)}`, `échelon ${echelon} · ${pNom} → ${fNom}`)}
-${infoBeige(`<b>Parrain</b>&nbsp;: ${pNom} · ${escapeHtml(parrain.email || '')} · ${escapeHtml(parrain.tel || '')}<br><b>Titulaire du compte</b>&nbsp;: ${escapeHtml(meta.titulaire || '')}<br><b>IBAN</b>&nbsp;: ${escapeHtml(meta.ibanSpaced || '')}<br><b>Adresse</b>&nbsp;: ${escapeHtml(meta.adresse || '')}<br><b>Signé le</b>&nbsp;: ${fmtDateFr(signedAt)} à ${escapeHtml(meta.lieu || '')} · IP ${escapeHtml(meta.ip || '')}<br><b>Signature</b>&nbsp;: ${escapeHtml(meta.signatureLine || 'tracé manuscrit intégré au PDF')}<br><b>Empreinte SHA-256 du PDF</b>&nbsp;: <span style="font-family:'Courier New',monospace;font-size:12px;">${escapeHtml(meta.pdfSha256 || '')}</span><br><b>Conseiller</b>&nbsp;: ${escapeHtml(record.conseiller || '')} · ID ${escapeHtml(record.id)}`)}
+${infoBeige(`<b>Parrain</b>&nbsp;: ${pNom} · ${escapeHtml(parrain.email || '')} · ${escapeHtml(parrain.tel || '')}<br><b>Titulaire du compte</b>&nbsp;: ${escapeHtml(meta.titulaire || '')}<br><b>IBAN</b>&nbsp;: ${escapeHtml(meta.ibanSpaced || '')}<br><b>Adresse</b>&nbsp;: ${escapeHtml(meta.adresse || '')}<br><b>Signé le</b>&nbsp;: ${fmtDateFr(signedAt)} à ${escapeHtml(meta.lieu || '')} · IP ${escapeHtml(meta.ip || '')}<br><b>Signature</b>&nbsp;: ${escapeHtml(meta.signatureLine || 'tracé manuscrit intégré au PDF')}<br><b>Empreinte SHA-256 du PDF</b>&nbsp;: <span style="font-family:'Courier New',monospace;font-size:12px;">${escapeHtml(meta.pdfSha256 || '')}</span><br><b>Conseiller superviseur</b>&nbsp;: ${escapeHtml(conseillerComplet(record.conseiller) || record.conseiller || '—')} · ID ${escapeHtml(record.id)}<br><b>Émetteur de la prime</b>&nbsp;: Paris Conseils`)}
 ${ctaNavy('https://parrainage.parisconseils.fr/espace-pro.html', 'Ouvrir l\'espace pro')}`;
   return baseShell({ title: `Prime à virer — ${pNom}`, eyebrow: 'Comptabilité · parrainage', body });
 }
