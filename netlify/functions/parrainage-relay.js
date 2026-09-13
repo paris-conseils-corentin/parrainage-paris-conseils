@@ -20,7 +20,7 @@
 
 // v200am — Bascule Resend → SMTP direct via parisconseils.fr
 // build-stamp: 2026-09-11-v288-PRIME-AUTO
-const BUILD_STAMP = '2026-09-12-v291-SUPERVISEUR';
+const BUILD_STAMP = '2026-09-13-v292-LOGO-UNIQUE';
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 
@@ -51,7 +51,7 @@ function getSmtpTransporter() {
 //   --navy #0a1e3f  --navy-2 #142d5a  --gold #b8860b  --gold-soft #d4a94a
 //   --gold-tint #faf5e6  --bg #f7f8fb  --ink #0f172a  --ink-2 #334155
 //   --muted #64748b  --line #e2e8f0  --success #059669  --success-soft #d1fae5
-// Logo :  https://rip.parisconseils.fr/static/logo-blanc.png (fond navy)
+// Logo :  https://rip.parisconseils.fr/static/logo-pc.png (fond navy)
 // =====================================================================
 const RIP_NAVY   = '#0a1e3f';
 const RIP_NAVY2  = '#142d5a';
@@ -68,7 +68,7 @@ const RIP_SUCC   = '#059669';
 const RIP_SUCCS  = '#d1fae5';
 // v265 — Logo inline data URI PNG (5.8 KB, blanc sur fond navy). Zéro dépendance réseau : aucun email client ne bloquera le logo.
 // v269 — Retour au logo hébergé sur rip.parisconseils.fr (celui qui fonctionne parfaitement dans les mails RIP existants).
-const RIP_LOGO   = process.env.MAIL_LOGO_URL || 'https://rip.parisconseils.fr/static/logo-blanc.png';
+const RIP_LOGO   = process.env.MAIL_LOGO_URL || 'https://rip.parisconseils.fr/static/logo-pc.png';
 
 const escapeHtml = (s) => String(s||'').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 
@@ -1575,6 +1575,24 @@ async function handlePrimePaid(event) {
 // v289 — Mail « virement effectué + où vous en êtes », déclenché MANUELLEMENT
 // depuis l'espace pro, et uniquement une fois la prime marquée comme virée.
 // preview:true renvoie le HTML sans rien envoyer.
+// v292 — Le logo Paris Conseils, servi depuis notre domaine.
+// Une seule image de référence existe (celle des e-mails) ; ici on la relaie
+// pour que l'attestation PDF puisse la charger sans se heurter au CORS.
+let _logoCache = null;
+async function handleLogo() {
+  try {
+    if (!_logoCache) {
+      const r = await fetch(RIP_LOGO);
+      if (!r.ok) throw new Error('logo introuvable (HTTP ' + r.status + ')');
+      _logoCache = Buffer.from(await r.arrayBuffer()).toString('base64');
+    }
+    return { statusCode: 200, headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400', 'Access-Control-Allow-Origin': '*' },
+             body: _logoCache, isBase64Encoded: true };
+  } catch (err) {
+    return jsonResp(502, { ok: false, error: err.message });
+  }
+}
+
 async function handlePrimeBilan(event) {
   if (!isAdminEvent(event)) return jsonResp(401, { ok: false, error: 'Unauthorized (admin only)' });
   let body; try { body = JSON.parse(event.body || '{}'); } catch (e) { return jsonResp(400, { ok: false, error: 'Invalid JSON' }); }
@@ -1952,6 +1970,7 @@ const innerHandler = async (event) => {
   if (event.httpMethod === 'POST' && action === 'prime-auto')   return handlePrimeAuto(event);
   if (event.httpMethod === 'POST' && action === 'prime-paid')   return handlePrimePaid(event);
   if (event.httpMethod === 'POST' && action === 'prime-bilan')  return handlePrimeBilan(event);
+  if (event.httpMethod === 'GET'  && action === 'logo')         return handleLogo();
   if (event.httpMethod === 'GET'  && action === 'prime-doc')    return handlePrimeDoc(event);
   if (event.httpMethod === 'POST' && action === 'contact')      return handleContact(event);
   if (event.httpMethod === 'POST' && action === 'rdv')          return handleRdv(event);
