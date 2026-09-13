@@ -41,15 +41,15 @@
     h1,h2,h3{color:var(--pc-heading);}
 
     /* ===== Topbar ===== */
-    .pc-topbar{background:#fff;border-bottom:1px solid var(--border);
+    .pc-topbar{background:var(--pc-navy);border-bottom:2px solid var(--pc-gold);
       padding:14px 28px;display:flex;align-items:center;justify-content:space-between;
       position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(15,23,42,.04);}
     .pc-topbar .logo-wrap{height:68px;display:flex;align-items:center;}
     .pc-topbar .logo-wrap object,.pc-topbar .logo-wrap img{height:100%;width:auto;max-width:280px;display:block;overflow:visible;pointer-events:none;}
     .pc-topbar .links{display:flex;gap:26px;align-items:center;font-size:15px;font-family:Inter,sans-serif;}
     .pc-topbar .links a{color:var(--pc-blue);text-decoration:none;font-weight:500;transition:color .15s;}
-    .pc-topbar .links a:hover{color:var(--pc-navy);}
-    .pc-topbar .btn-mini{background:var(--pc-navy);color:#fff;padding:12px 24px;border-radius:12px;
+    .pc-topbar .links a:hover{color:#fff;}
+    .pc-topbar .btn-mini{background:var(--pc-gold);color:var(--pc-navy);padding:12px 24px;border-radius:12px;
       font-family:Inter,sans-serif;font-size:14px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
       border:0;transition:background .15s,transform .15s,box-shadow .15s;}
     .pc-topbar .btn-mini:hover{background:var(--pc-blue);transform:translateY(-1px);
@@ -383,7 +383,7 @@
     .pc-footer{background:var(--pc-navy-d);color:rgba(255,255,255,.7);padding:36px 24px;text-align:center;font-size:13px;}
     .pc-footer a{color:var(--pc-gold);text-decoration:none;}
     .pc-footer .logo-wrap{height:54px;margin-bottom:14px;display:inline-block;}
-    .pc-footer .logo-wrap object{height:100%;width:auto;max-width:300px;filter:brightness(0) invert(1) opacity(.9);}
+    .pc-footer .logo-wrap img{height:100%;width:auto;max-width:300px;opacity:.92;display:block;}
 
     @media (max-width:880px){
       .pc-hero-inner{grid-template-columns:1fr;gap:30px;}
@@ -405,10 +405,8 @@
 
   <header class="pc-topbar">
     <a aria-label="Paris Conseils — Accueil" class="logo-wrap" href="/parrainage">
-      <object data="logo-paris-conseils.png" type="image/png" aria-label="Logo Paris Conseils">
-        <object data="logo-paris-conseils.svg" type="image/svg+xml" aria-label="Logo Paris Conseils"></object>
-      </object>
-    </a>
+      <img src="https://rip.parisconseils.fr/static/logo-pc.png" alt="Paris Conseils — Ingénierie financière &amp; optimisation fiscale">
+      </a>
     <nav class="links">
       <a href="#paliers">Les paliers</a>
       <a href="#fonctionnement">Comment ça marche</a>
@@ -956,9 +954,7 @@
 
   <footer class="pc-footer">
     <div class="logo-wrap">
-      <object data="logo-paris-conseils.png" type="image/png" aria-label="Logo Paris Conseils">
-        <object data="logo-paris-conseils.svg" type="image/svg+xml" aria-label="Logo Paris Conseils"></object>
-      </object>
+      <img src="https://rip.parisconseils.fr/static/logo-pc.png" alt="Paris Conseils — Ingénierie financière &amp; optimisation fiscale">
     </div>
     <div>© <span id="yy"></span> Paris Conseils — Ingénierie financière &amp; optimisation fiscale</div>
     <div style="margin-top:8px;">
