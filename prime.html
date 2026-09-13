@@ -78,7 +78,7 @@
   </style>
 </head>
 <body>
-  <div class="top"><img src="https://rip.parisconseils.fr/static/logo-blanc.png" alt="Paris Conseils — Ingénierie financière & optimisation fiscale"></div>
+  <div class="top"><img src="https://rip.parisconseils.fr/static/logo-pc.png" alt="Paris Conseils — Ingénierie financière & optimisation fiscale"></div>
   <div class="wrap">
 
     <div class="card" id="loading">
@@ -336,7 +336,7 @@
   var LOGO_PDF = null;
   (function preloadLogo(){
     try {
-      fetch('/logo-pdf.jpg', { cache: 'force-cache' })
+      fetch(API + '?action=logo', { cache: 'force-cache' })
         .then(function(r){ if (!r.ok) throw new Error(r.status); return r.blob(); })
         .then(function(b){ return new Promise(function(res, rej){ var fr = new FileReader(); fr.onload = function(){ res(fr.result); }; fr.onerror = rej; fr.readAsDataURL(b); }); })
         .then(function(d){ LOGO_PDF = d; })
@@ -351,8 +351,8 @@
     var BAND = LOGO_PDF ? 32 : 26;
     doc.setFillColor(10, 30, 63); doc.rect(0, 0, W, BAND, 'F');
     if (LOGO_PDF) {
-      var lw = 62, lh = lw / 2.433;
-      try { doc.addImage(LOGO_PDF, 'JPEG', M - 2.5, (BAND - lh) / 2, lw, lh); }
+      var lw = 62, lh = lw / 2.793;
+      try { doc.addImage(LOGO_PDF, 'PNG', M - 3, (BAND - lh) / 2, lw, lh); }
       catch (_e) {
         doc.setTextColor(212, 169, 74); doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.text('PARIS CONSEILS', M, 14);
         doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.text('Ingénierie financière & optimisation fiscale', M, 20.5);
