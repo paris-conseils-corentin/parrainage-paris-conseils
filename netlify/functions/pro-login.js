@@ -211,7 +211,7 @@ function resetEmailHtml(user, tempPwd) {
   const firstName = user.label.split(' ')[0];
   return `<!DOCTYPE html><html><body style="font-family:Helvetica,Arial,sans-serif;color:#1a1a1a;line-height:1.6;max-width:600px;margin:20px auto;padding:0 20px;">
 <div style="background:#0A1E3F;padding:20px 24px;border-radius:12px 12px 0 0;text-align:center;">
-  <img src="https://rip.parisconseils.fr/static/logo-blanc.png" alt="Paris Conseils" style="height:64px;">
+  <img src="https://rip.parisconseils.fr/static/logo-pc.png" alt="Paris Conseils" style="height:64px;">
 </div>
 <div style="background:#fff;border:1px solid #e2e8f0;border-top:none;border-bottom:3px solid #B8860B;padding:28px 32px;border-radius:0 0 12px 12px;">
   <p>Bonjour ${firstName},</p>
