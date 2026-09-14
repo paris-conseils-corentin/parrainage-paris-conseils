@@ -20,7 +20,7 @@
 
 // v200am — Bascule Resend → SMTP direct via parisconseils.fr
 // build-stamp: 2026-09-11-v288-PRIME-AUTO
-const BUILD_STAMP = '2026-09-14-v293-CODE-PARRAIN';
+const BUILD_STAMP = '2026-09-14-v294-CODE-10MIN';
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 
@@ -1362,20 +1362,21 @@ function nameMatchesParrain(typed, parrain) {
 // bien ses e-mails : un code à six chiffres lui est envoyé, elle le recopie.
 // Cela ferme la porte aux soumissions à l'aveugle et aux faux parrainages.
 // ---------------------------------------------------------------------------
-const FORM_OTP_TTL_MIN = 20, FORM_OTP_MAX_ESSAIS = 5, FORM_OTP_INTERVALLE_S = 45, FORM_OTP_MAX_24H = 6;
+const FORM_OTP_TTL_MIN = 10, FORM_OTP_MAX_ESSAIS = 5, FORM_OTP_INTERVALLE_S = 45, FORM_OTP_MAX_24H = 6;
 const cleEmail = (e) => crypto.createHash('sha256').update(String(e || '').trim().toLowerCase()).digest('hex').slice(0, 32);
 const formOtpHash = (code, email) => crypto.createHash('sha256')
   .update(`form|${code}|${String(email || '').trim().toLowerCase()}|${primeSecret()}`).digest('hex');
 
 function emailFormOtp({ prenom, code }) {
+  const pretty = String(code).replace(/(\d{3})(\d{3})/, '$1 $2');
   const body = `
 ${p(`Bonjour ${escapeHtml(prenom || '')},`)}
-${p(`Voici votre code pour valider la recommandation que vous venez de saisir&nbsp;:`)}
-${goldBadge(String(code).split('').join(' '))}
-${p(`Recopiez-le sur la page, et votre recommandation sera transmise à votre conseiller.`)}
-${pSoft(`Ce code est valable ${FORM_OTP_TTL_MIN} minutes et ne sert qu'une fois. Si vous n'êtes pas à l'origine de cette demande, ignorez simplement ce message&nbsp;: rien ne sera enregistré.`)}
-${signature('À très vite')}`;
-  return baseShell({ title: 'Votre code de validation', eyebrow: 'Programme de parrainage', body });
+${p(`Voici votre code de validation pour confirmer la recommandation que vous venez de saisir&nbsp;:`)}
+${heroCream('Code de validation', `<span style="letter-spacing:6px;font-family:'Courier New',monospace;">${pretty}</span>`, `valable ${FORM_OTP_TTL_MIN} minutes · à saisir sur la page ouverte`)}
+${p(`Recopiez-le sur la page&nbsp;: votre recommandation sera alors transmise à votre conseiller.`)}
+${pSoft(`Ce code est à usage unique. Ne le communiquez à personne — Paris Conseils ne vous le demandera jamais par téléphone. Si vous n'êtes pas à l'origine de cette demande, ignorez simplement ce message&nbsp;: rien ne sera enregistré.`)}
+${signature('Bien à vous')}`;
+  return baseShell({ title: 'Votre code de validation', eyebrow: 'Programme de parrainage · confirmation', body });
 }
 
 async function handleFormOtp(event) {
