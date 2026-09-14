@@ -1264,6 +1264,39 @@
           var consNameEl = document.querySelector('.cons-card[data-id="' + consId + '"] .nom');
           var consName = consNameEl ? consNameEl.textContent.trim() : consId;
 
+          // v293 — Avant d'enregistrer quoi que ce soit, on s'assure que l'adresse
+          // du parrain est bien la sienne : un code à six chiffres lui est envoyé.
+          if (!window.__codeValide) {
+            var champCode = document.getElementById('otp-parrain');
+            if (!champCode) {
+              btn.disabled = true; btn.textContent = 'ENVOI DU CODE…';
+              var rOtp, jOtp;
+              try {
+                rOtp = await fetch('/.netlify/functions/parrainage-relay?action=form-otp', {
+                  method: 'POST', headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ email: parrain.email, prenom: parrain.prenom })
+                });
+                jOtp = await rOtp.json();
+              } catch (e) { jOtp = { ok: false, error: 'connexion impossible' }; }
+              btn.disabled = false;
+              if (!jOtp || !jOtp.ok) {
+                btn.textContent = 'ENVOYER MA RECOMMANDATION →';
+                showFlash('error', '⚠ ' + ((jOtp && jOtp.error) || 'Envoi du code impossible.') + ' Vérifiez votre adresse e-mail.');
+                return;
+              }
+              showFlash('info', 'Nous venons d\'envoyer un code à <strong>' + (jOtp.envoyeA || parrain.email) + '</strong>.<br>' +
+                'Recopiez-le ci-dessous pour transmettre votre recommandation — il est valable ' + (jOtp.validiteMin || 20) + ' minutes.' +
+                '<div style="margin-top:12px;"><input id="otp-parrain" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456" ' +
+                'style="font-size:22px;letter-spacing:8px;text-align:center;width:190px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;"></div>');
+              btn.textContent = 'VALIDER LE CODE →';
+              setTimeout(function(){ var c = document.getElementById('otp-parrain'); if (c) c.focus(); }, 120);
+              return;
+            }
+            var saisi = (champCode.value || '').replace(/\D/g, '');
+            if (saisi.length !== 6) { showFlash('error', '⚠ Saisissez les <strong>six chiffres</strong> du code reçu par e-mail.'); return; }
+            window.__codeSaisi = saisi;
+          }
+
           btn.disabled = true;
           btn.textContent = 'ENVOI EN COURS...';
           showFlash('info', 'Envoi en cours…');
@@ -1274,7 +1307,7 @@
             resp = await fetch('/.netlify/functions/parrainage-relay', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ parrain: parrain, conseiller: consName, filleuls: filleuls })
+              body: JSON.stringify({ parrain: parrain, conseiller: consName, filleuls: filleuls, otp: window.__codeSaisi || '' })
             });
             json = await resp.json();
           } catch (netErr) {
@@ -1286,6 +1319,12 @@
 
           if (!resp.ok || !json.ok){
             btn.disabled = false;
+            if (json && json.codeRequis) {
+              btn.textContent = 'VALIDER LE CODE →';
+              showFlash('error', '⚠ ' + (json.error || 'Code refusé.'));
+              var cc = document.getElementById('otp-parrain'); if (cc) { cc.value = ''; cc.focus(); }
+              return;
+            }
             btn.textContent = 'ENVOYER MA RECOMMANDATION →';
             var why = (json && json.error) || ('HTTP ' + resp.status);
             showFlash('error', '⚠ Erreur d’envoi (' + why + '). Vos données ne sont pas perdues : copiez-les avant de réessayer, ou écrivez à <a href="mailto:contact@parisconseils.fr">contact@parisconseils.fr</a>.');
