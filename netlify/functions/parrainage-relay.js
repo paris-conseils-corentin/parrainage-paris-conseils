@@ -20,7 +20,7 @@
 
 // v200am — Bascule Resend → SMTP direct via parisconseils.fr
 // build-stamp: 2026-09-11-v288-PRIME-AUTO
-const BUILD_STAMP = '2026-09-13-v292-LOGO-UNIQUE';
+const BUILD_STAMP = '2026-09-14-v293-CODE-PARRAIN';
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 
@@ -1356,6 +1356,80 @@ function nameMatchesParrain(typed, parrain) {
   const prenomOk = !prenom || prenom.split(' ').some(w => w && tokens.includes(w)); // au moins un mot du prénom
   return nomOk && prenomOk;
 }
+// ---------------------------------------------------------------------------
+// v293 — Vérification de l'adresse du parrain avant enregistrement.
+// Une recommandation n'est enregistrée que si la personne prouve qu'elle relève
+// bien ses e-mails : un code à six chiffres lui est envoyé, elle le recopie.
+// Cela ferme la porte aux soumissions à l'aveugle et aux faux parrainages.
+// ---------------------------------------------------------------------------
+const FORM_OTP_TTL_MIN = 20, FORM_OTP_MAX_ESSAIS = 5, FORM_OTP_INTERVALLE_S = 45, FORM_OTP_MAX_24H = 6;
+const cleEmail = (e) => crypto.createHash('sha256').update(String(e || '').trim().toLowerCase()).digest('hex').slice(0, 32);
+const formOtpHash = (code, email) => crypto.createHash('sha256')
+  .update(`form|${code}|${String(email || '').trim().toLowerCase()}|${primeSecret()}`).digest('hex');
+
+function emailFormOtp({ prenom, code }) {
+  const body = `
+${p(`Bonjour ${escapeHtml(prenom || '')},`)}
+${p(`Voici votre code pour valider la recommandation que vous venez de saisir&nbsp;:`)}
+${goldBadge(String(code).split('').join(' '))}
+${p(`Recopiez-le sur la page, et votre recommandation sera transmise à votre conseiller.`)}
+${pSoft(`Ce code est valable ${FORM_OTP_TTL_MIN} minutes et ne sert qu'une fois. Si vous n'êtes pas à l'origine de cette demande, ignorez simplement ce message&nbsp;: rien ne sera enregistré.`)}
+${signature('À très vite')}`;
+  return baseShell({ title: 'Votre code de validation', eyebrow: 'Programme de parrainage', body });
+}
+
+async function handleFormOtp(event) {
+  let body; try { body = JSON.parse(event.body || '{}'); } catch (e) { return jsonResp(400, { ok: false, error: 'Requête illisible.' }); }
+  const email = String(body.email || '').trim().toLowerCase();
+  const prenom = String(body.prenom || '').trim().slice(0, 60);
+  if (!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(email)) return jsonResp(400, { ok: false, error: 'Adresse e-mail invalide.' });
+  const env = process.env;
+  try {
+    const store = getBlobStore('parrainages-otp');
+    const cle = cleEmail(email);
+    const maintenant = Date.now();
+    let etat = null;
+    try { etat = await store.get(cle, { type: 'json' }); } catch (_e) {}
+    etat = etat || { envois: [], essais: 0 };
+    const recents = (etat.envois || []).filter(t => maintenant - t < 24 * 3600 * 1000);
+    if (recents.length >= FORM_OTP_MAX_24H) {
+      return jsonResp(429, { ok: false, error: 'Trop de codes demandés aujourd\'hui. Réessayez demain ou écrivez à contact@parisconseils.fr.' });
+    }
+    if (recents.length && maintenant - recents[recents.length - 1] < FORM_OTP_INTERVALLE_S * 1000) {
+      const reste = Math.ceil((FORM_OTP_INTERVALLE_S * 1000 - (maintenant - recents[recents.length - 1])) / 1000);
+      return jsonResp(429, { ok: false, error: `Un code vient d'être envoyé. Patientez ${reste} secondes.` });
+    }
+    const code = String(crypto.randomInt(100000, 1000000));
+    await store.setJSON(cle, { hash: formOtpHash(code, email), expire: maintenant + FORM_OTP_TTL_MIN * 60 * 1000,
+                               essais: 0, envois: recents.concat([maintenant]) });
+    const envoi = await sendEmail({ apiKey: env.RESEND_API_KEY, from: env.MAIL_FROM, to: email,
+      subject: 'Votre code de validation — Paris Conseils', html: emailFormOtp({ prenom, code }) });
+    if (!envoi.ok) return jsonResp(502, { ok: false, error: 'Envoi du code impossible. Vérifiez l\'adresse saisie.' });
+    return jsonResp(200, { ok: true, envoyeA: maskEmail(email), validiteMin: FORM_OTP_TTL_MIN });
+  } catch (err) { return jsonResp(500, { ok: false, error: err.message }); }
+}
+
+async function verifierFormOtp(email, code) {
+  const propre = String(code || '').replace(/\D/g, '');
+  if (propre.length !== 6) return { ok: false, error: 'Code à six chiffres attendu.' };
+  const store = getBlobStore('parrainages-otp');
+  const cle = cleEmail(email);
+  let etat = null;
+  try { etat = await store.get(cle, { type: 'json' }); } catch (_e) {}
+  if (!etat || !etat.hash) return { ok: false, error: 'Demandez d\'abord un code de validation.' };
+  if (Date.now() > (etat.expire || 0)) return { ok: false, error: 'Ce code a expiré. Demandez-en un nouveau.' };
+  if ((etat.essais || 0) >= FORM_OTP_MAX_ESSAIS) return { ok: false, error: 'Trop d\'essais. Demandez un nouveau code.' };
+  if (formOtpHash(propre, email) !== etat.hash) {
+    etat.essais = (etat.essais || 0) + 1;
+    try { await store.setJSON(cle, etat); } catch (_e) {}
+    const reste = Math.max(0, FORM_OTP_MAX_ESSAIS - etat.essais);
+    return { ok: false, error: `Code incorrect. ${reste} essai${reste > 1 ? 's' : ''} restant${reste > 1 ? 's' : ''}.` };
+  }
+  // Code correct : il est consommé immédiatement.
+  try { await store.setJSON(cle, { envois: etat.envois || [], essais: 0 }); } catch (_e) {}
+  return { ok: true };
+}
+
 function emailPrimeOtp({ parrain, code, filleul, montant }) {
   const fNom = `${escapeHtml((filleul || {}).prenom || '')} ${escapeHtml((filleul || {}).nom || '')}`.trim();
   const pretty = String(code).replace(/(\d{3})(\d{3})/, '$1 $2');
@@ -1971,6 +2045,7 @@ const innerHandler = async (event) => {
   if (event.httpMethod === 'POST' && action === 'prime-paid')   return handlePrimePaid(event);
   if (event.httpMethod === 'POST' && action === 'prime-bilan')  return handlePrimeBilan(event);
   if (event.httpMethod === 'GET'  && action === 'logo')         return handleLogo();
+  if (event.httpMethod === 'POST' && action === 'form-otp')     return handleFormOtp(event);
   if (event.httpMethod === 'GET'  && action === 'prime-doc')    return handlePrimeDoc(event);
   if (event.httpMethod === 'POST' && action === 'contact')      return handleContact(event);
   if (event.httpMethod === 'POST' && action === 'rdv')          return handleRdv(event);
@@ -2090,6 +2165,13 @@ const innerHandler = async (event) => {
       });
     } catch (_e) { /* silent */ }
     return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'Soumission refusée. Contactez contact@parisconseils.fr si besoin.' }) };
+  }
+
+  // v293 — Dernier verrou : l'adresse du parrain doit avoir été vérifiée par code.
+  // (Le dépôt manuel depuis l'espace pro, lui, passe par une autre route.)
+  {
+    const v = await verifierFormOtp(parrain.email, payload.otp);
+    if (!v.ok) return jsonResp(403, { ok: false, error: v.error, codeRequis: true });
   }
 
   // 1) Dashboard (best-effort, skip si non configuré)
