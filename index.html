@@ -697,6 +697,14 @@
           </div>
 
           <div class="submit-row">
+            <div style="margin:0 0 18px;padding:14px 16px;background:#fffbeb;border:1.5px solid #f59e0b;border-radius:10px;display:flex;gap:13px;align-items:flex-start;text-align:left;">
+              <div style="font-size:26px;line-height:1;flex:0 0 auto;">⚠️</div>
+              <div style="font-size:13.5px;color:#7c4a03;line-height:1.6;">
+                <strong style="display:block;margin-bottom:3px;color:#b45309;">Une dernière étape pour valider votre recommandation</strong>
+                Dès que vous cliquez, un <strong>code à six chiffres</strong> est envoyé à votre adresse e‑mail. Il confirme votre identité : sans lui, la recommandation n'est pas enregistrée.<br>
+                <strong>Saisissez-le dans les 10 minutes</strong> — c'est ce qui garantit que personne ne recommande à votre place.
+              </div>
+            </div>
             <button type="button" class="submit-btn" id="submit-btn">ENVOYER MA RECOMMANDATION →</button>
           </div>
           <div id="flash" style="display:none;"></div>
@@ -1284,8 +1292,8 @@
                 showFlash('error', '⚠ ' + ((jOtp && jOtp.error) || 'Envoi du code impossible.') + ' Vérifiez votre adresse e-mail.');
                 return;
               }
-              showFlash('info', 'Nous venons d\'envoyer un code à <strong>' + (jOtp.envoyeA || parrain.email) + '</strong>.<br>' +
-                'Recopiez-le ci-dessous pour transmettre votre recommandation — il est valable ' + (jOtp.validiteMin || 20) + ' minutes.' +
+              showFlash('info', '\u26a0\ufe0f <strong>Code envoyé à ' + (jOtp.envoyeA || parrain.email) + '</strong><br>' +
+                'Saisissez-le ci-dessous <strong>dans les ' + (jOtp.validiteMin || 10) + ' minutes</strong> pour confirmer votre identité et transmettre votre recommandation.' +
                 '<div style="margin-top:12px;"><input id="otp-parrain" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456" ' +
                 'style="font-size:22px;letter-spacing:8px;text-align:center;width:190px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;"></div>');
               btn.textContent = 'VALIDER LE CODE →';
