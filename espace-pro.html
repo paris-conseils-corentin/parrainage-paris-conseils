@@ -195,7 +195,8 @@ tr:hover td { background: var(--pc-bg); }
           <button type="button" class="btn btn-secondary" style="flex:1;padding:8px 14px;font-size:13px;" onclick="parseNote()">✨ Auto-remplir les champs</button>
           <button type="button" class="btn btn-secondary" style="padding:8px 14px;font-size:13px;" onclick="document.getElementById('paste-note').value='';">Vider</button>
         </div>
-        <div class="hint" style="margin-top:6px;">Le parser extrait emails, téléphones (FR) et devine les noms. Vérifiez toujours avant d'envoyer.</div>
+        <div class="hint" style="margin-top:6px;">La lecture repère le sens de la phrase : « X m'a recommandé Y » → X est le parrain, Y le filleul. Vérifiez toujours le récapitulatif avant d'envoyer.</div>
+        <div id="parse-msg"></div>
       </div>
 
       <form id="addForm" onsubmit="return doAdd(event)">
@@ -824,62 +825,112 @@ async function doDelete(id, parrainName) {
 function parseNote() {
   const raw = (document.getElementById('paste-note').value || '').trim();
   if (!raw) { alert('Collez d\'abord une note dans le champ ci-dessus.'); return; }
-  // Regex utilitaires
+
   const reEmail = /[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}/gi;
   const reTel   = /(?:\+33[\s.\-]?|0)[1-9](?:[\s.\-]?\d{2}){4}/g;
-  // Noms : séquence de 2 mots ou plus commençant par majuscule (ou tout majuscule)
-  const reName  = /\b([A-ZÉÈÊÀÂÎÔÛÇ][a-zàâäéèêëïîôöùûüç'\-]{1,}(?:[\s\-][A-ZÉÈÊÀÂÎÔÛÇ][a-zàâäéèêëïîôöùûüç'\-]{1,})+)\b/g;
 
-  const emails = [...new Set((raw.match(reEmail)||[]).map(s=>s.toLowerCase()))];
-  const tels   = [...new Set((raw.match(reTel)||[]).map(s=>s.replace(/\s+/g,' ').trim()))];
-  // Détection sections "parrain"/"filleul"
-  const lower = raw.toLowerCase();
-  const idxP = lower.search(/parrain\s*[:\-]/);
-  const idxF = lower.search(/filleul\s*[:\-]/);
-  let parrainBlock = raw, filleulBlock = '';
-  if (idxP >= 0 && idxF >= 0) {
-    if (idxP < idxF) { parrainBlock = raw.slice(idxP, idxF); filleulBlock = raw.slice(idxF); }
-    else             { filleulBlock = raw.slice(idxF, idxP); parrainBlock = raw.slice(idxP); }
-  }
-  function pickFrom(block) {
-    const em = (block.match(reEmail)||[]).map(s=>s.toLowerCase());
-    const te = (block.match(reTel)||[]).map(s=>s.replace(/\s+/g,' ').trim());
-    const nm = (block.match(reName)||[]);
-    return { email: em[0]||'', tel: te[0]||'', name: nm[0]||'' };
-  }
-  let parrainInfo, filleulInfo;
-  if (filleulBlock) {
-    parrainInfo = pickFrom(parrainBlock);
-    filleulInfo = pickFrom(filleulBlock);
+  // v295 — Un nom peut être écrit en Capitales ou en MAJUSCULES (« Béatrice SEL MOREAU »),
+  // avec particules, tirets et apostrophes. L'ancienne expression n'acceptait que
+  // « Majuscule + minuscules » : les noms en majuscules passaient à la trappe, et le
+  // parrain se retrouvait à la place du filleul.
+  const MOT  = "\\p{Lu}[\\p{L}'’\\-]*";
+  const PART = "(?:d[eu]|des|de\\s+la|le|la|van|von|di|da|del|dos)";
+  // Bornes en \p{L} (et non \b) : « \b » ignore les accents, ce qui coupait
+  // « d'Élodie Petit » ou « Émilie ROUX » en plein milieu.
+  const reNom = new RegExp("(?<!\\p{L})(" + MOT + "(?:\\s+(?:" + PART + "\\s+)?" + MOT + ")+)(?!\\p{L})", "gu");
+  const PARASITES = /^(bonjour|bonsoir|monsieur|madame|salut|merci|coucou|cher|chère|note|objet|appel|client|contact|rdv|rendez)\b/i;
+
+  const nomsDe = (txt) => (txt.match(reNom) || [])
+    .map(n => n.replace(/\s+/g, ' ').trim())
+    .filter(n => !PARASITES.test(n));
+  const mailsDe = (txt) => [...new Set((txt.match(reEmail) || []).map(x => x.toLowerCase()))];
+  const telsDe  = (txt) => [...new Set((txt.match(reTel) || []).map(x => x.replace(/\s+/g, ' ').trim()))];
+  const extrait = (txt) => ({ name: nomsDe(txt)[0] || '', email: mailsDe(txt)[0] || '', tel: telsDe(txt)[0] || '' });
+
+  // v295 — On lit la PHRASE, pas l'ordre d'apparition.
+  //   « Béatrice SEL m'a recommandé Amandine Dallègre » → avant = parrain, après = filleul
+  //   « Amandine Dallègre de la part de Béatrice SEL »  → avant = filleul, après = parrain
+  // \w ignore les lettres accentuees en JS : « recommand\w+ » ne reconnaissait pas
+  // « recommandé ». On complete donc les radicaux avec [a-zà-ÿ]*.
+  const VERBES = "(?:recommand|parrain|orient|adress|envoi|envoy|transmet|transmi)[a-z\u00e0-\u00ff]*";
+  const reActif  = new RegExp("\\s*(?:m['’]a|nous\\s+a|m['’]ont|nous\\s+ont|a|ont)?\\s*" + VERBES + "\\s+", "i");
+  const rePassif = new RegExp("\\s*(?:de\\s+la\\s+part\\s+d[eu'’]|" + VERBES + "\\s+par)\\s+", "i");
+
+  const bas = raw.toLowerCase();
+  const iP = bas.search(/parrain\s*[:\-]/), iF = bas.search(/filleul\s*[:\-]/);
+
+  let parrainInfo, filleulInfo, commentLu;
+
+  if (iP >= 0 && iF >= 0) {
+    // 1) La note dit explicitement qui est qui : on la croit.
+    const blocP = iP < iF ? raw.slice(iP, iF) : raw.slice(iP);
+    const blocF = iP < iF ? raw.slice(iF) : raw.slice(iF, iP);
+    parrainInfo = extrait(blocP); filleulInfo = extrait(blocF);
+    commentLu = 'les mentions « parrain » et « filleul » de votre note';
   } else {
-    // Heuristique : premier email/tel/nom = parrain, deuxième = filleul
-    const names = raw.match(reName) || [];
-    parrainInfo = { email: emails[0]||'', tel: tels[0]||'', name: names[0]||'' };
-    filleulInfo = { email: emails[1]||'', tel: tels[1]||'', name: names[1]||'' };
+    const mPassif = rePassif.exec(raw);
+    const mActif  = mPassif ? null : reActif.exec(raw);
+    const m = mPassif || mActif;
+    if (m) {
+      const avant = raw.slice(0, m.index), apres = raw.slice(m.index + m[0].length);
+      const a = extrait(avant), b = extrait(apres);
+      if (mPassif) { filleulInfo = a; parrainInfo = b; }
+      else         { parrainInfo = a; filleulInfo = b; }
+      commentLu = 'la tournure « ' + m[0].trim() + ' »';
+      // Un e-mail ou un téléphone cité d'un seul côté profite à l'autre s'il n'en a pas.
+      const em = mailsDe(raw), te = telsDe(raw);
+      if (!parrainInfo.email && em.length > 1) parrainInfo.email = em.find(x => x !== filleulInfo.email) || '';
+      if (!filleulInfo.email && em.length > 1) filleulInfo.email = em.find(x => x !== parrainInfo.email) || '';
+      if (!parrainInfo.tel && te.length > 1) parrainInfo.tel = te.find(x => x !== filleulInfo.tel) || '';
+      if (!filleulInfo.tel && te.length > 1) filleulInfo.tel = te.find(x => x !== parrainInfo.tel) || '';
+    } else {
+      // 3) Aucune tournure reconnue : premier cité = parrain, à vérifier à l'œil.
+      const noms = nomsDe(raw), em = mailsDe(raw), te = telsDe(raw);
+      parrainInfo = { name: noms[0] || '', email: em[0] || '', tel: te[0] || '' };
+      filleulInfo = { name: noms[1] || '', email: em[1] || '', tel: te[1] || '' };
+      commentLu = 'l\'ordre d\'apparition (aucune tournure reconnue) — à vérifier de près';
+    }
   }
-  function splitName(n) {
-    if (!n) return {prenom:'', nom:''};
-    const parts = n.trim().split(/\s+/);
-    if (parts.length === 1) return {prenom: parts[0], nom: ''};
-    return { prenom: parts[0], nom: parts.slice(1).join(' ') };
-  }
-  const pN = splitName(parrainInfo.name);
-  const fN = splitName(filleulInfo.name);
-  // Remplit UNIQUEMENT les champs vides (pas d'écrasement)
-  function fillIf(id, val) { const el = document.getElementById(id); if (el && !el.value && val) el.value = val; }
-  fillIf('p-prenom', pN.prenom);
-  fillIf('p-nom',    pN.nom);
-  fillIf('p-email',  parrainInfo.email);
-  fillIf('p-tel',    parrainInfo.tel);
-  fillIf('f-prenom', fN.prenom);
-  fillIf('f-nom',    fN.nom);
-  fillIf('f-email',  filleulInfo.email);
-  fillIf('f-tel',    filleulInfo.tel);
-  // Résumé
-  const found = [];
-  if (parrainInfo.name || parrainInfo.email) found.push(`Parrain : ${parrainInfo.name||'?'} ${parrainInfo.email?'· '+parrainInfo.email:''}`);
-  if (filleulInfo.name || filleulInfo.email) found.push(`Filleul : ${filleulInfo.name||'?'} ${filleulInfo.email?'· '+filleulInfo.email:''}`);
-  msg('add-msg','ok', `✨ Extrait : ${esc(found.join(' — ') || 'rien de reconnaissable, remplissez à la main.')} — vérifiez les champs avant d'envoyer.`);
+
+  const coupe = (n) => {
+    if (!n) return { prenom: '', nom: '' };
+    const t = n.trim().split(/\s+/);
+    return t.length === 1 ? { prenom: t[0], nom: '' } : { prenom: t[0], nom: t.slice(1).join(' ') };
+  };
+  const pN = coupe(parrainInfo.name), fN = coupe(filleulInfo.name);
+
+  // v295 — La relecture écrase désormais les champs : si vous corrigez la note et
+  // relancez, le formulaire suit. (Avant, une première lecture fausse restait figée.)
+  const pose = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+  pose('p-prenom', pN.prenom); pose('p-nom', pN.nom); pose('p-email', parrainInfo.email); pose('p-tel', parrainInfo.tel);
+  pose('f-prenom', fN.prenom); pose('f-nom', fN.nom); pose('f-email', filleulInfo.email); pose('f-tel', filleulInfo.tel);
+
+  afficherLecture(commentLu);
+}
+
+// v295 — Récapitulatif explicite « qui recommande qui », avec rattrapage en un clic.
+function afficherLecture(commentLu) {
+  const val = (id) => (document.getElementById(id) || {}).value || '';
+  const nomComplet = (a, b) => ((val(a) + ' ' + val(b)).trim() || '—');
+  const coord = (e, t) => [val(e), val(t)].filter(Boolean).map(esc).join(' · ');
+  const z = document.getElementById('parse-msg'); if (!z) return;
+  z.innerHTML =
+    '<div style="margin-top:10px;padding:12px 14px;background:#fff;border:1px solid var(--pc-gold-soft);border-radius:9px;font-size:13px;line-height:1.75;">'
+    + '<div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--pc-gold);font-weight:700;margin-bottom:7px;">Ce que j\'ai compris</div>'
+    + '<b>' + esc(nomComplet('p-prenom','p-nom')) + '</b> <span style="color:#64748b;">recommande</span> <b>' + esc(nomComplet('f-prenom','f-nom')) + '</b>'
+    + '<div style="margin-top:7px;color:#334155;">Parrain : ' + esc(nomComplet('p-prenom','p-nom')) + (coord('p-email','p-tel') ? ' — ' + coord('p-email','p-tel') : ' — <i>aucune coordonnée</i>') + '</div>'
+    + '<div style="color:#334155;">Filleul : ' + esc(nomComplet('f-prenom','f-nom')) + (coord('f-email','f-tel') ? ' — ' + coord('f-email','f-tel') : ' — <i>aucune coordonnée</i>') + '</div>'
+    + (commentLu ? '<div style="color:#64748b;font-size:12px;margin-top:7px;">Lecture fondée sur ' + esc(commentLu) + '.</div>' : '')
+    + '<button type="button" class="btn btn-secondary" style="margin-top:9px;padding:6px 12px;font-size:12px;" onclick="inverserParrainFilleul()">⇅ Inverser parrain et filleul</button>'
+    + '</div>';
+}
+
+function inverserParrainFilleul() {
+  [['p-prenom','f-prenom'],['p-nom','f-nom'],['p-email','f-email'],['p-tel','f-tel']].forEach(function (paire) {
+    const a = document.getElementById(paire[0]), b = document.getElementById(paire[1]);
+    if (a && b) { const t = a.value; a.value = b.value; b.value = t; }
+  });
+  afficherLecture('votre correction manuelle');
 }
 
 async function doAdd(e) {
