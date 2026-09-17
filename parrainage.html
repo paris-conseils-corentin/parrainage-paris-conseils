@@ -51,11 +51,15 @@
     .pc-topbar .links a:hover{color:#fff;}
     /* v297 — Bouton « Recommander » : or plus profond, fileté, ombre discrète.
        L'ancien passait au bleu au survol, ce qui cassait l'accent doré. */
-    .pc-topbar .btn-mini{background:#b08f43;color:#fff;padding:12px 24px;border-radius:12px;
+    /* Selecteur plus precis que « .pc-topbar .links a », sinon la couleur du
+       texte du bouton est celle des liens de la barre (bleu illisible sur or). */
+    .pc-topbar .links a.btn-mini,
+    .pc-topbar .btn-mini{background:#b08f43;color:var(--pc-navy);padding:12px 24px;border-radius:12px;
       font-family:Inter,sans-serif;font-size:14px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
       border:1px solid rgba(255,255,255,.22);box-shadow:0 2px 10px rgba(10,30,63,.28);
       transition:background .18s,border-color .18s,transform .18s,box-shadow .18s;}
-    .pc-topbar .btn-mini:hover{background:#96772f;border-color:rgba(255,255,255,.38);transform:translateY(-1px);
+    .pc-topbar .links a.btn-mini:hover,
+    .pc-topbar .btn-mini:hover{background:#a07f31;color:var(--pc-navy);border-color:rgba(255,255,255,.38);transform:translateY(-1px);
       box-shadow:0 8px 22px rgba(10,30,63,.38);}
     .pc-topbar .btn-mini:active{transform:translateY(0);box-shadow:0 2px 8px rgba(10,30,63,.30);}
 
