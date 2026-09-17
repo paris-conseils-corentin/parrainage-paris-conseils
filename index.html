@@ -49,11 +49,15 @@
     .pc-topbar .links{display:flex;gap:26px;align-items:center;font-size:15px;font-family:Inter,sans-serif;}
     .pc-topbar .links a{color:var(--pc-blue);text-decoration:none;font-weight:500;transition:color .15s;}
     .pc-topbar .links a:hover{color:#fff;}
-    .pc-topbar .btn-mini{background:var(--pc-gold);color:var(--pc-navy);padding:12px 24px;border-radius:12px;
+    /* v297 — Bouton « Recommander » : or plus profond, fileté, ombre discrète.
+       L'ancien passait au bleu au survol, ce qui cassait l'accent doré. */
+    .pc-topbar .btn-mini{background:#b08f43;color:#fff;padding:12px 24px;border-radius:12px;
       font-family:Inter,sans-serif;font-size:14px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
-      border:0;transition:background .15s,transform .15s,box-shadow .15s;}
-    .pc-topbar .btn-mini:hover{background:var(--pc-blue);transform:translateY(-1px);
-      box-shadow:0 6px 18px rgba(72,112,175,.35);}
+      border:1px solid rgba(255,255,255,.22);box-shadow:0 2px 10px rgba(10,30,63,.28);
+      transition:background .18s,border-color .18s,transform .18s,box-shadow .18s;}
+    .pc-topbar .btn-mini:hover{background:#96772f;border-color:rgba(255,255,255,.38);transform:translateY(-1px);
+      box-shadow:0 8px 22px rgba(10,30,63,.38);}
+    .pc-topbar .btn-mini:active{transform:translateY(0);box-shadow:0 2px 8px rgba(10,30,63,.30);}
 
     /* ===== Hero navy ===== */
     .pc-hero{position:relative;
@@ -659,7 +663,7 @@
             <span class="it">une pierre dorée de plus</span>
           </button>
 
-          <div class="form-section-title">Quel conseiller ?</div>
+          <div class="form-section-title">Choisir mon conseiller</div>
           <div class="cons-cards" id="cons-cards">
             <div class="cons-card" data-id="pereira"><div class="avatar">DP</div><div class="nom">David Pereira</div></div>
             <div class="cons-card" data-id="moreau"><div class="avatar">NM</div><div class="nom">Nicolas Moreau</div></div>
@@ -670,12 +674,22 @@
           <!-- v273 : RIB dans un bloc replié, clairement optionnel, rassurance explicite -->
           <details style="margin:18px 0 8px 0;background:#faf6ec;border:1px solid #e6d9b8;border-radius:10px;padding:0;">
             <summary style="cursor:pointer;padding:14px 18px;font-weight:600;color:var(--pc-navy);font-size:14px;list-style:none;display:flex;justify-content:space-between;align-items:center;">
-              <span>Renseigner mon RIB maintenant <span style="font-weight:400;color:var(--muted);font-size:13px;font-style:italic;">— facultatif, à faire plus tard si vous préférez</span></span>
+              <span>Renseigner mon RIB maintenant pour recevoir ma prime <span style="font-weight:400;color:var(--muted);font-size:13px;font-style:italic;">— facultatif</span></span>
               <span style="color:var(--pc-gold);font-size:18px;">+</span>
             </summary>
             <div style="padding:8px 18px 18px 18px;border-top:1px dashed #e6d9b8;">
-              <div style="font-size:13px;color:var(--muted);margin:10px 0 14px 0;line-height:1.55;">
-                Votre RIB sert uniquement au versement de votre prime, une fois qu'un filleul a validé. <b>Vous pouvez le communiquer plus tard</b> par retour de mail à <a href="mailto:contact@parisconseils.fr" style="color:var(--pc-navy);">contact@parisconseils.fr</a> — ça n'a aucun impact sur l'enregistrement de votre parrainage.
+              <div style="font-size:13px;color:var(--muted);margin:10px 0 12px 0;line-height:1.55;">
+                Votre RIB sert uniquement au versement de votre prime, une fois qu'un filleul a validé. Le renseigner maintenant nous permet de vous payer sans vous relancer. <b>Vous pouvez aussi le communiquer plus tard</b> par retour de mail à <a href="mailto:contact@parisconseils.fr" style="color:var(--pc-navy);">contact@parisconseils.fr</a> — ça n'a aucun impact sur l'enregistrement de votre parrainage.
+              </div>
+              <!-- v297 — Rassurance explicite demandée : chiffrement, accès restreint, RGPD. -->
+              <div style="display:flex;gap:11px;align-items:flex-start;background:#fff;border:1px solid #e6d9b8;border-radius:9px;padding:12px 14px;margin:0 0 14px 0;">
+                <div style="font-size:19px;line-height:1.1;">&#128274;</div>
+                <div style="font-size:12.5px;color:#4A5A75;line-height:1.6;">
+                  <b style="color:var(--pc-navy);">Coordonnées bancaires protégées par Paris Conseils.</b><br>
+                  Transmission <b>chiffrée</b> (HTTPS), conservation <b>chiffrée</b> sur nos serveurs en France, <b>accès restreint</b> à la seule personne qui prépare le virement. Aucun prélèvement n'est possible avec un IBAN&nbsp;: il ne sert qu'à <b>recevoir</b>.<br>
+                  Traitement conforme au <b>RGPD</b> — finalité unique&nbsp;: le versement de votre prime. Aucune transmission à un tiers, aucun usage commercial.
+                  <b>Droit d'accès, de rectification et de suppression</b> à tout moment sur simple demande à <a href="mailto:contact@parisconseils.fr" style="color:var(--pc-navy);">contact@parisconseils.fr</a>.
+                </div>
               </div>
               <div class="form-group"><label for="iban">IBAN</label>
                 <input id="iban" placeholder="FR76 0000 0000 0000 0000 0000 000"
@@ -683,8 +697,8 @@
               </div>
               <div class="consent-row"><input type="checkbox" id="cgu_rib">
                 <label for="cgu_rib" style="font-size:13px;color:var(--muted);margin:0;font-weight:400;">
-                  <strong>RGPD :</strong> j'autorise Paris Conseils à conserver mon IBAN pour le versement.
-                  Suppression à <a href="mailto:contact@parisconseils.fr">contact@parisconseils.fr</a>.
+                  <strong>RGPD :</strong> j'autorise Paris Conseils à conserver mon IBAN, de façon chiffrée et pour ce seul usage, jusqu'au versement de ma prime.
+                  Suppression sur simple demande à <a href="mailto:contact@parisconseils.fr">contact@parisconseils.fr</a>.
                 </label>
               </div>
             </div>
