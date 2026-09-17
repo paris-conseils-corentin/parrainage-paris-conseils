@@ -20,7 +20,7 @@
 
 // v200am — Bascule Resend → SMTP direct via parisconseils.fr
 // build-stamp: 2026-09-11-v288-PRIME-AUTO
-const BUILD_STAMP = '2026-09-14-v294-CODE-10MIN';
+const BUILD_STAMP = '2026-09-17-v296-CODE-REPARE';
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 
@@ -1415,8 +1415,12 @@ async function verifierFormOtp(email, code) {
   if (propre.length !== 6) return { ok: false, error: 'Code à six chiffres attendu.' };
   const store = getBlobStore('parrainages-otp');
   const cle = cleEmail(email);
-  let etat = null;
-  try { etat = await store.get(cle, { type: 'json' }); } catch (_e) {}
+  let etat = null, panne = false;
+  // v296 — Si le stockage des codes tombe en panne, on ne bloque PAS la
+  // recommandation : une panne technique de notre côté ne doit jamais coûter
+  // un parrainage. Elle est enregistrée et signalée comme non vérifiée.
+  try { etat = await store.get(cle, { type: 'json' }); } catch (_e) { panne = true; }
+  if (panne) return { ok: true, nonVerifie: true, raison: 'stockage des codes indisponible' };
   if (!etat || !etat.hash) return { ok: false, error: 'Demandez d\'abord un code de validation.' };
   if (Date.now() > (etat.expire || 0)) return { ok: false, error: 'Ce code a expiré. Demandez-en un nouveau.' };
   if ((etat.essais || 0) >= FORM_OTP_MAX_ESSAIS) return { ok: false, error: 'Trop d\'essais. Demandez un nouveau code.' };
@@ -2170,9 +2174,14 @@ const innerHandler = async (event) => {
 
   // v293 — Dernier verrou : l'adresse du parrain doit avoir été vérifiée par code.
   // (Le dépôt manuel depuis l'espace pro, lui, passe par une autre route.)
+  let otpNonVerifie = false;
   {
     const v = await verifierFormOtp(parrain.email, payload.otp);
     if (!v.ok) return jsonResp(403, { ok: false, error: v.error, codeRequis: true });
+    otpNonVerifie = !!v.nonVerifie;
+    if (otpNonVerifie) {
+      console.warn('[v296] parrainage accepté sans vérification du code :', v.raison || '');
+    }
   }
 
   // 1) Dashboard (best-effort, skip si non configuré)
