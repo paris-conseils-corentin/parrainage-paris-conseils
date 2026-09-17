@@ -71,6 +71,13 @@ tr:hover td { background: var(--pc-bg); }
 #login-screen { max-width: 460px; margin: 80px auto; }
 #login-screen .card { padding: 34px; }
 #app { display: none; }
+.liste-parrain{margin-top:6px;border:1px solid var(--line);border-radius:10px;background:#fff;overflow:hidden;max-height:250px;overflow-y:auto;}
+.ligne-parrain{display:block;width:100%;text-align:left;padding:9px 12px;background:#fff;border:0;border-bottom:1px solid var(--line);cursor:pointer;font:inherit;}
+.ligne-parrain:last-child{border-bottom:0;}
+.ligne-parrain:hover{background:var(--gold-tint);}
+.ligne-nom{display:block;font-size:14px;color:var(--navy);font-weight:600;}
+.ligne-sous{display:block;font-size:12px;color:var(--muted);margin-top:1px;}
+.liste-vide{padding:9px 12px;font-size:13px;color:var(--muted);}
 </style>
 </head>
 <body>
@@ -201,6 +208,15 @@ tr:hover td { background: var(--pc-bg); }
 
       <form id="addForm" onsubmit="return doAdd(event)">
         <h3 style="font-size:12px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin:12px 0 6px;">Le parrain</h3>
+        <!-- v295 - Le parrain est presque toujours deja client : on le retrouve
+             dans le fichier du cabinet plutot que de retaper ses coordonnees. -->
+        <div style="position:relative;margin-bottom:12px;">
+          <label>Chercher dans le fichier clients</label>
+          <input id="p-recherche" autocomplete="off" placeholder="Nom, prénom, e-mail ou téléphone du parrain…"
+                 oninput="chercherParrain(this.value)" onfocus="chercherParrain(this.value)">
+          <div class="hint" style="margin-top:4px;">Vos clients du RIP. Choisissez-en un : ses coordonnées se remplissent toutes seules.</div>
+          <div id="p-resultats"></div>
+        </div>
         <div class="row">
           <div><label>Prénom *</label><input id="p-prenom" required></div>
           <div><label>Nom *</label><input id="p-nom" required></div>
@@ -819,6 +835,65 @@ async function doDelete(id, parrainName) {
     if (!j.ok) { alert('Erreur : ' + (j.error || 'inconnue')); return; }
     loadData();
   } catch (err) { alert('Erreur réseau : ' + err.message); }
+}
+
+// v295 — Retrouver le parrain dans le fichier clients du cabinet.
+// La recherche part au RIP (via une fonction Netlify qui vérifie la session) :
+// l'administrateur cherche dans tout le fichier, un conseiller dans ses seuls
+// contacts. Rien n'est enregistré tant que vous n'avez pas cliqué sur un nom.
+let __chrono = null, __dernier = '';
+function chercherParrain(q) {
+  q = (q || '').trim();
+  const zone = document.getElementById('p-resultats');
+  if (!zone) return;
+  if (__chrono) clearTimeout(__chrono);
+  if (q.length < 2) { zone.innerHTML = ''; return; }
+  __chrono = setTimeout(async () => {
+    __dernier = q;
+    zone.innerHTML = '<div class="liste-parrain"><div class="liste-vide">Recherche…</div></div>';
+    try {
+      const r = await fetch(`${API}/contacts-parrain?q=` + encodeURIComponent(q),
+                            { headers: { 'Authorization': 'Bearer ' + getToken() } });
+      const j = await r.json();
+      if (q !== __dernier) return;              // une frappe plus récente a pris la main
+      if (!j.ok) { zone.innerHTML = '<div class="liste-parrain"><div class="liste-vide">' + esc(j.error || 'Recherche indisponible.') + '</div></div>'; return; }
+      afficherContacts(j.contacts || []);
+    } catch (e) {
+      zone.innerHTML = '<div class="liste-parrain"><div class="liste-vide">Recherche indisponible (' + esc(e.message) + ').</div></div>';
+    }
+  }, 280);
+}
+
+function afficherContacts(liste) {
+  const zone = document.getElementById('p-resultats');
+  if (!liste.length) {
+    zone.innerHTML = '<div class="liste-parrain"><div class="liste-vide">Aucun client trouvé — saisissez les coordonnées à la main ci-dessous.</div></div>';
+    return;
+  }
+  window.__contactsTrouves = liste;
+  zone.innerHTML = '<div class="liste-parrain">' + liste.map((c, i) => {
+    const nom = ((c.prenom || '') + ' ' + (c.nom || '')).trim() || '—';
+    const sous = [c.email, c.tel, c.ville].filter(Boolean).map(esc).join(' · ');
+    return '<button type="button" class="ligne-parrain" onclick="choisirParrain(' + i + ')">'
+      + '<span class="ligne-nom">' + esc(nom) + '</span>'
+      + (sous ? '<span class="ligne-sous">' + sous + '</span>' : '')
+      + '</button>';
+  }).join('') + '</div>';
+}
+
+function choisirParrain(i) {
+  const c = (window.__contactsTrouves || [])[i];
+  if (!c) return;
+  const pose = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
+  pose('p-prenom', c.prenom); pose('p-nom', c.nom);
+  pose('p-email', c.email);   pose('p-tel', c.tel);
+  document.getElementById('p-resultats').innerHTML =
+    '<div style="margin-top:8px;padding:9px 12px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;font-size:13px;color:#047857;">'
+    + '✓ Parrain repris du fichier clients : <b>' + esc(((c.prenom||'') + ' ' + (c.nom||'')).trim()) + '</b>'
+    + (c.conseiller ? ' <span style="color:#059669;">· conseiller ' + esc(c.conseiller) + '</span>' : '')
+    + '</div>';
+  const champ = document.getElementById('p-recherche');
+  if (champ) champ.value = ((c.prenom || '') + ' ' + (c.nom || '')).trim();
 }
 
 // v264 — Parser de notes libres : extrait emails, téléphones FR, noms
