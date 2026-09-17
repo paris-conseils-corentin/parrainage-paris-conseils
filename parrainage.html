@@ -1470,6 +1470,53 @@
           var consNameEl = document.querySelector('.cons-card[data-id="' + consId + '"] .nom');
           var consName = consNameEl ? consNameEl.textContent.trim() : consId;
 
+          // v296 — L'etape du code de verification etait posee dans l'ancien bloc
+          // d'envoi, celui qui ne sert plus. Resultat : la page promettait un code
+          // qu'elle n'envoyait jamais, et le serveur refusait tout. Elle est
+          // desormais ici, dans le seul code d'envoi reellement utilise.
+          var champCode = document.getElementById('otp-parrain');
+          var codeSaisi = champCode ? (champCode.value || '').replace(/\D/g, '') : '';
+
+          if (!champCode) {
+            btn.disabled = true;
+            var labelInit = btn.textContent;
+            btn.textContent = 'ENVOI DU CODE...';
+            showFlash('info', 'Envoi de votre code de verification...');
+            fetch('/.netlify/functions/parrainage-relay?action=form-otp', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: parrain.email, prenom: parrain.prenom })
+            })
+            .then(function (r) { return r.json().catch(function () { return { ok: false, error: 'reponse illisible' }; }); })
+            .then(function (j) {
+              btn.disabled = false;
+              if (!j || !j.ok) {
+                btn.textContent = labelInit;
+                showFlash('error', 'Envoi du code impossible (' + ((j && j.error) || 'inconnue') + '). Verifiez votre adresse e-mail, ou ecrivez a <a href="mailto:contact@parisconseils.fr">contact@parisconseils.fr</a>.');
+                return;
+              }
+              btn.textContent = 'VALIDER LE CODE →';
+              showFlash('info',
+                '<strong>Code envoye a ' + (j.envoyeA || parrain.email) + '</strong><br>' +
+                'Recopiez-le ci-dessous dans les <strong>' + (j.validiteMin || 10) + ' minutes</strong>, puis cliquez sur « Valider le code ».' +
+                '<div style="margin-top:12px;"><input id="otp-parrain" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456" ' +
+                'style="font-size:22px;letter-spacing:8px;text-align:center;width:190px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font-family:inherit;"></div>' +
+                '<div style="margin-top:8px;font-size:13px;opacity:.75;">Pas de code ? Regardez vos indesirables. Vos informations restent saisies.</div>');
+              setTimeout(function () { var c = document.getElementById('otp-parrain'); if (c) c.focus(); }, 150);
+            })
+            .catch(function (e) {
+              btn.disabled = false; btn.textContent = labelInit;
+              showFlash('error', 'Connexion impossible (' + (e.message || 'reseau') + '). Reessayez, ou ecrivez a <a href="mailto:contact@parisconseils.fr">contact@parisconseils.fr</a>.');
+            });
+            return;
+          }
+
+          if (codeSaisi.length !== 6) {
+            showFlash('error', 'Saisissez les <strong>six chiffres</strong> du code recu par e-mail.');
+            try { champCode.focus(); } catch (e) {}
+            return;
+          }
+
           btn.disabled = true;
           var originalLabel = btn.textContent;
           btn.textContent = 'ENVOI EN COURS...';
@@ -1478,7 +1525,7 @@
           fetch('/.netlify/functions/parrainage-relay', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ parrain: parrain, conseiller: consName, filleuls: filleuls })
+            body: JSON.stringify({ parrain: parrain, conseiller: consName, filleuls: filleuls, otp: codeSaisi })
           })
           .then(function(resp){
             return resp.json().then(function(j){
@@ -1501,7 +1548,16 @@
           .catch(function(err){
             btn.disabled = false;
             btn.textContent = originalLabel;
-            showFlash('error', 'Erreur d\'envoi (' + (err.message || 'inconnue') + '). Vos donnees ne sont pas perdues : copiez-les et reessayez, ou ecrivez a <a href="mailto:contact@parisconseils.fr">contact@parisconseils.fr</a>.');
+            var m = err.message || 'inconnue';
+            // v296 — Si c'est le code qui coince, on reste sur l'etape du code
+            // au lieu de renvoyer la personne au depart.
+            if (/code/i.test(m)) {
+              btn.textContent = 'VALIDER LE CODE →';
+              showFlash('error', m + '<br><span style="font-size:13px;">Vos informations restent saisies. <a href="#" onclick="var c=document.getElementById(\'otp-parrain\'); if(c){c.remove();} document.getElementById(\'submit-btn\').click(); return false;">Recevoir un nouveau code</a></span>');
+              var cc = document.getElementById('otp-parrain'); if (cc) { cc.value = ''; try { cc.focus(); } catch(e){} }
+              return;
+            }
+            showFlash('error', 'Erreur d\'envoi (' + m + '). Vos donnees ne sont pas perdues : copiez-les et reessayez, ou ecrivez a <a href="mailto:contact@parisconseils.fr">contact@parisconseils.fr</a>.');
           });
 
         } catch (err) {
