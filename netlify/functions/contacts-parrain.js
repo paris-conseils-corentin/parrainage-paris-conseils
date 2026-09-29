@@ -32,6 +32,7 @@ function getBlobStore(name) {
 }
 
 const ALLOWED_ORIGINS = [
+  'https://parrainage.parisconseils.com',
   'https://parrainage.parisconseils.fr',
   'https://parisconseils-parrainage.fr',
   'http://localhost:8888',

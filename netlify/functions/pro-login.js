@@ -8,6 +8,7 @@ const { getStore } = require('@netlify/blobs');
 
 // ---------------------------------------------------------------- CORS
 const ALLOWED_ORIGINS = [
+  'https://parrainage.parisconseils.com',
   'https://parrainage.parisconseils.fr',
   'https://parisconseils-parrainage.fr',
   'https://paris-conseils-parrain.netlify.app',

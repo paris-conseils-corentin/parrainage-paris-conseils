@@ -1,7 +1,9 @@
 // v284 — Surveillance quotidienne du parcours parrainage (planifiée dans netlify.toml, 07:00 UTC = 9h Paris).
 // Délègue au relay (?action=healthcheck) : pages servies, intégrité des scripts du formulaire,
 // base Blobs, fournisseur mail, config RIP. Le relay envoie lui-même le mail d'alerte (ou le « OK » du lundi).
-const SITE_URL = 'https://parrainage.parisconseils.fr';
+// v298 — L'adresse officielle devient le .com ; on garde la .fr en secours
+// tant que la bascule DNS n'est pas confirmee.
+const SITE_URL = process.env.SITE_PUBLIC_URL || 'https://parrainage.parisconseils.fr';
 
 exports.handler = async () => {
   const token = process.env.PARRAINAGE_ADMIN_TOKEN || '';
