@@ -72,6 +72,16 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
+# ==== v299 — L'adresse technique en .app ne doit jamais être vue ====
+# Toute visite sur paris-conseils-parrain.netlify.app est renvoyée sur
+# l'adresse officielle, en conservant la page demandée. Les anciens liens
+# continuent donc de fonctionner.
+[[redirects]]
+  from = "https://paris-conseils-parrain.netlify.app/*"
+  to = "https://parrainage.parisconseils.fr/:splat"
+  status = 301
+  force = true
+
 # ==== Redirects (existants) ====
 [[redirects]]
   from = "/parrainage"
