@@ -22,7 +22,7 @@
     :root{
       /* Palette alignée sur parisconseils.com */
       --pc-navy:#0A1E3F;         /* navy profond (couleur boutons parisconseils.com) */
-      --pc-navy-d:#0A1E3F;
+      --pc-navy-d:#0E2851;        /* v300 : bleu de fond, un cran moins sombre */
       --pc-navy-x:#061530;       /* extra dark pour hero radial */
       --pc-blue:#4870AF;          /* bleu moyen (nav / liens parisconseils.com) */
       --pc-blue-l:#7a9ed6;
@@ -41,7 +41,7 @@
     h1,h2,h3{color:var(--pc-heading);}
 
     /* ===== Topbar ===== */
-    .pc-topbar{background:var(--pc-navy);border-bottom:2px solid var(--pc-gold);
+    .pc-topbar{background:var(--pc-navy-d);border-bottom:2px solid var(--pc-gold);
       padding:14px 28px;display:flex;align-items:center;justify-content:space-between;
       position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(15,23,42,.04);}
     .pc-topbar .logo-wrap{height:68px;display:flex;align-items:center;}
@@ -65,11 +65,13 @@
 
     /* ===== Hero navy ===== */
     .pc-hero{position:relative;
-      background:radial-gradient(ellipse at 80% -20%, rgba(59,111,191,.25), transparent 60%),
-                 linear-gradient(135deg, var(--pc-navy-d) 0%, var(--pc-navy) 60%, #2a4f80 100%);
+      /* v300 — Bleu un peu moins sombre et dégradé un peu plus lisible :
+         on part du navy éclairci, on passe par un bleu intermédiaire, on finit plus clair. */
+      background:radial-gradient(ellipse at 80% -20%, rgba(76,130,210,.30), transparent 62%),
+                 linear-gradient(135deg, var(--pc-navy-d) 0%, #163B6D 55%, #2F5F96 100%);
       color:#fff;padding:90px 24px 110px;overflow:hidden;}
     .pc-hero::before{content:"";position:absolute;inset:0;
-      background:radial-gradient(circle at 15% 80%, rgba(201,169,97,.12), transparent 50%);pointer-events:none;}
+      background:radial-gradient(circle at 15% 80%, rgba(201,169,97,.14), transparent 50%);pointer-events:none;}
     .pc-hero-inner{max-width:1120px;margin:0 auto;display:grid;
       grid-template-columns:1.15fr 1fr;gap:60px;align-items:center;position:relative;z-index:2;}
     .pc-hero .eyebrow{display:inline-block;background:rgba(201,169,97,.18);color:var(--pc-gold);
